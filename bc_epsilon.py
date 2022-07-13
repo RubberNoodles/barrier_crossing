@@ -72,19 +72,6 @@ tfd = tfp.distributions
 # SAVE FILE PATH
 save_filepath = "./bc_epsilon_"+sys.argv[1]+"/"
 
-def seed_stream(seed): #will 'yield' a diff. random # each time it is called
-  k = jax.random.PRNGKey(seed)
-  while True:
-    k, y = jax.random.split(k)
-    yield y
-
-def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt):
-  stddev = jnp.std(x, axis)
-  mn = jnp.mean(x, axis)
-
-  ax.fill_between(jnp.arange(mn.shape[0]),
-                  mn + n * stddev, mn - n * stddev, alpha=.3)
-  ax.plot(mn, '-o', label=label)
 
 
 # Hyper parameters

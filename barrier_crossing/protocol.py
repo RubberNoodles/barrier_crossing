@@ -1,3 +1,11 @@
+import typing
+
+import scipy.special as sps
+
+import jax.numpy as jnp
+import numpy as onp
+
+from jax import lax
 
 """##Protocol parametrizations"""
 
@@ -27,7 +35,7 @@ class Chebyshev(typing.NamedTuple):
       y *= x
       return y, y
     ones = jnp.ones_like(x)
-    _, powers = jax.lax.scan(
+    _, powers = lax.scan(
         _multiply_by_x, ones, None, length=self.degree, reverse=True)
     return jnp.concatenate([powers, ones[jnp.newaxis]], axis=0)
 
@@ -59,16 +67,16 @@ def linear_chebyshev_coefficients(r0_init, r0_final, simulation_steps, degree=12
 
 """## Making Trap Trajectory (Forward & Reverse)"""
 
-def make_trap_fxn(timevec,coeffs,r0_init,r0_final):
-  positions = make_schedule_chebyshev(timevec,coeffs,r0_init,r0_final)
+def make_trap_fxn(time_vec,coeffs,r0_init,r0_final):
+  positions = make_schedule_chebyshev(time_vec,coeffs,r0_init,r0_final)
   def Get_r0(step):
     return positions[step]
   return Get_r0
 
-def make_trap_fxn_rev(timevec,coeffs,r0_init,r0_final):
+def make_trap_fxn_rev(time_vec,coeffs,r0_init,r0_final):
   """ Returns function with slices/index inputs that returns
     the reverse time trap position depending on the chebyshev """
-  positions = jnp.flip(make_schedule_chebyshev(timevec,coeffs,r0_init,r0_final))
+  positions = jnp.flip(make_schedule_chebyshev(time_vec,coeffs,r0_init,r0_final))
   def Get_r0(step):
     return positions[step]
   return Get_r0

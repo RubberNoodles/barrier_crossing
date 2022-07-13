@@ -1,13 +1,37 @@
 
-"""###Optimization
+import functools
+import pickle
+import time
+import tqdm
 
-Note, I think the gradient isn't actually taking the average, but rather just taking a sum over all trajectories... maybe?
+import matplotlib.pyplot as plt
 
-Nah probably not.
-"""
+import jax
+import jax_md
 
+import jax.numpy as jnp
+from jax import random
+from jax.experimental import optimizers as jopt
 
-"""##Potential energy functions"""
+from jax_md import quantity, space
+
+from energy import run_brownian_opt, V_biomolecule
+from protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
+
+def seed_stream(seed): #will 'yield' a diff. random # each time it is called
+  k = jax.random.PRNGKey(seed)
+  while True:
+    k, y = jax.random.split(k)
+    yield y
+
+def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt):
+  stddev = jnp.std(x, axis)
+  mn = jnp.mean(x, axis)
+
+  ax.fill_between(jnp.arange(mn.shape[0]),
+                  mn + n * stddev, mn - n * stddev, alpha=.3)
+  ax.plot(mn, '-o', label=label)
+
 
 def single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma):
   @functools.partial(jax.value_and_grad, has_aux=True) #the 'aux' is the summary
@@ -33,7 +57,7 @@ def estimate_gradient(batch_size, energy_fn, init_position, r0_init, r0_final, N
     #mapped_estimate = jax.soft_pmap(lambda s: single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
     @jax.jit #why am I allowed to jit something whose output is a function? Thought it had to be pytree output...
     def _estimate_gradient(coeffs, seed):
-      seeds = jax.random.split(seed, batch_size)
+      seeds = random.split(seed, batch_size)
       (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
       return jnp.mean(grad, axis=0), (gradient_estimator, summary)
     return _estimate_gradient # < # delta ln P (W not graded) + delta W > averaged over,
@@ -61,18 +85,64 @@ def estimate_gradient_rev(batch_size, energy_fn, init_position, r0_init, r0_fina
     mapped_estimate = jax.vmap(rev_single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta), [None, 0])  
     @jax.jit 
     def _estimate_gradient(coeffs, seed):
-      seeds = jax.random.split(seed, batch_size)
+      seeds = random.split(seed, batch_size)
       (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
       return jnp.mean(grad, axis=0), (gradient_estimator, summary)
     return _estimate_gradient # < # delta ln P (W not graded) + delta W > averaged over,
 
-init_coeffs = lin_cheby_coef(r0_init, r0_final, simulation_steps, degree =12, y_intercept = 0.) # This implements a linear schedule
+
+
+# ============== PARAMETERS ================
+
+# Hyper parameters
+N = 1
+dim = 1
+end_time = 0.01 #s
+dt = 3e-7 #s
+simulation_steps = int((end_time)/dt)+1
+teq=0.001 #s
+Neq=int(teq/dt)
+
+batch_size= 4#2504 number of trajectories
+opt_steps = 2#1000 number of optimization steps
+#temperature = 4.114 #at 298K = 25C
+temperature = 4.183 #at 303K=30C
+beta=1.0/temperature #1/(pNnm)
+mass = 1e-17 #1e-17 #g
+D = 0.44*1e6 #(in nm**2/s) 
+gamma = 1./(beta*D*mass) #s^(-1)
+
+k_s = 0.4 #pN/nm
+epsilon = 0.5 * (1.0/beta)
+sigma = 1.0/jnp.sqrt(beta * k_s)
+
+#harmonic potential (I call it a "trap") parameters:
+r0_init = -0. #initial pos
+r0_final = sigma*2. #final pos
+init_position = r0_init * jnp.ones((N,dim))
+
+#landscape params:
+x_m=10. #nm
+delta_E=0 #pN nm
+kappa_l=21.3863/(beta*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
+#kappa_l=6.38629/(beta*x_m**2) #pN/nm #for Ebarrier = 2.5kT and delta_E=0, as C&S use
+#kappa_l=2.6258/(beta*x_m**2)#barrier 0.625kT
+kappa_r=kappa_l #pN/nm 
+
+energy_fn = V_biomolecule(kappa_l, kappa_r, x_m, delta_E, k_s, beta, epsilon, sigma)
+force_fn = quantity.force(energy_fn)
+displacement_fn, shift_fn = space.free()
+
+save_filepath = "temp/"
+
+init_coeffs = linear_chebyshev_coefficients(r0_init, r0_final, simulation_steps, degree =12, y_intercept = 0.) # This implements a linear schedule
 trap_fn = make_trap_fxn(jnp.arange(simulation_steps), init_coeffs, r0_init, r0_final)
 
 #optimizer = jopt.adam(.1)
 #use learning rate decay to converge more accurately on the global opt value:
 lr = jopt.exponential_decay(0.1, opt_steps, 0.001)
 optimizer = jopt.adam(lr)
+
 
 total_norm = 0 
 summaries = []
@@ -181,8 +251,8 @@ simulation_steps = int((end_time)/dt)+1
 teq=0.001 #s
 Neq=int(teq/dt)
 
-batch_size= 3600#2504 number of trajectories
-opt_steps = 500#1000 number of optimization steps
+batch_size= 4#2504 number of trajectories
+opt_steps = 2#1000 number of optimization steps
 #temperature = 4.114 #at 298K = 25C
 temperature = 4.183 #at 303K=30C
 beta=1.0/temperature #1/(pNnm)
@@ -213,7 +283,7 @@ displacement_fn, shift_fn = space.free()
 
 # ======== REVERSE OPTIMIZATION =============
 
-init_coeffs = lin_cheby_coef(r0_init, r0_final, simulation_steps, degree = 12, y_intercept = 0.)
+init_coeffs = linear_chebyshev_coefficients(r0_init, r0_final, simulation_steps, degree = 12, y_intercept = 0.)
 
 trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), init_coeffs, r0_init, r0_final)
 key = random.PRNGKey(int(time.time()))

@@ -1,5 +1,14 @@
-# TODO: Imports
+import collections
 
+import jax
+import jax.numpy as jnp
+from jax import random, lax, jit
+
+import jax_md as jmd
+from tensorflow_probability.substrates import jax as tfp
+tfd = tfp.distributions
+
+from protocol import make_trap_fxn, make_trap_fxn_rev
 """##Custom Brownian simulator
 
 This is a modification of the JAX-MD Brownian simulator that also returns the log probability of any trajectory that runs. This is needed in order to compute gradients correctly (eq'n 12 in my arXiv paper)
