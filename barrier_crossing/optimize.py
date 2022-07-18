@@ -15,8 +15,8 @@ from jax.experimental import optimizers as jopt
 
 from jax_md import quantity, space
 
-from energy import run_brownian_opt, V_biomolecule
-from protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
+from .energy import run_brownian_opt, V_biomolecule
+from .protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
 
 def seed_stream(seed): #will 'yield' a diff. random # each time it is called
   k = jax.random.PRNGKey(seed)
@@ -32,8 +32,7 @@ def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt):
                   mn + n * stddev, mn - n * stddev, alpha=.3)
   ax.plot(mn, '-o', label=label)
 
-
-def single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma):
+def single_estimate_fwd(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma):
   @functools.partial(jax.value_and_grad, has_aux=True) #the 'aux' is the summary
   def _single_estimate(coeffs, seed): #function only of the params to be differentiated w.r.t.
       # OLD forward direction
@@ -52,8 +51,8 @@ def single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, sim
       return gradient_estimator, summary
   return _single_estimate 
 
-def estimate_gradient(batch_size, energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma):
-    mapped_estimate = jax.vmap(single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
+def estimate_gradient_fwd(batch_size, energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma):
+    mapped_estimate = jax.vmap(single_estimate_fwd(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
     #mapped_estimate = jax.soft_pmap(lambda s: single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
     @jax.jit #why am I allowed to jit something whose output is a function? Thought it had to be pytree output...
     def _estimate_gradient(coeffs, seed):
@@ -63,7 +62,7 @@ def estimate_gradient(batch_size, energy_fn, init_position, r0_init, r0_final, N
     return _estimate_gradient # < # delta ln P (W not graded) + delta W > averaged over,
 
 
-def rev_single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta):
+def single_estimate_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta):
   @functools.partial(jax.value_and_grad, has_aux = True)
   def _single_estimate(coeffs, seed):
       positions, log_probs, works = run_brownian_opt(
@@ -82,7 +81,8 @@ def rev_single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift,
   return _single_estimate 
 
 def estimate_gradient_rev(batch_size, energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta):
-    mapped_estimate = jax.vmap(rev_single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta), [None, 0])  
+    """Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size)(2010 Geiger and Dellago). """
+    mapped_estimate = jax.vmap(single_estimate_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta), [None, 0])  
     @jax.jit 
     def _estimate_gradient(coeffs, seed):
       seeds = random.split(seed, batch_size)
@@ -91,7 +91,7 @@ def estimate_gradient_rev(batch_size, energy_fn, init_position, r0_init, r0_fina
     return _estimate_gradient # < # delta ln P (W not graded) + delta W > averaged over,
 
 
-
+# TODO: Make a optimization loop code that can just be run as a single function
 # ============== PARAMETERS ================
 
 # Hyper parameters
@@ -144,36 +144,39 @@ lr = jopt.exponential_decay(0.1, opt_steps, 0.001)
 optimizer = jopt.adam(lr)
 
 
-total_norm = 0 
-summaries = []
-coeffs_ = []
-all_works = []
-init_state = optimizer.init_fn(init_coeffs)
-opt_state = optimizer.init_fn(init_coeffs)
-key = random.PRNGKey(int(time.time()))
-key, split = random.split(key, 2)
-
 grad_fxn = estimate_gradient(batch_size, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, temperature, mass, gamma)
-coeffs_.append((0,) + (optimizer.params_fn(opt_state),))
-
-for j in tqdm.trange(opt_steps,position=0):
-  key, split = random.split(key)
-  grad, (_, summary) = grad_fxn(optimizer.params_fn(opt_state), split)
-  print(grad)
-  print(f"\n Gradient norm: {jnp.linalg.norm(grad)}")
-  total_norm += jnp.linalg.norm(grad)
-  opt_state = optimizer.update_fn(j, grad, opt_state)
-  all_works.append(summary[2])
-  if j % 100 == 0:
-    coeffs_.append(((j+1),) + (optimizer.params_fn(opt_state),))
-  if j == (opt_steps-1):
-    coeffs_.append((j+1,) + (optimizer.params_fn(opt_state),))
-    
-coeffs_.append((opt_steps,) + (optimizer.params_fn(opt_state),))
 
 
-print("init parameters: ", optimizer.params_fn(init_state))
-print("final parameters: ", optimizer.params_fn(opt_state))
+def optimize_protocol(init_coeffs: Chebyshev, grad_fn, optimizer)
+    key = random.PRNGKey(int(time.time()))
+    key, split = random.split(key, 2)
+    init_state = optimizer.init_fn(init_coeffs)
+    opt_state = optimizer.init_fn(init_coeffs)
+    coeffs_.append((0,) + (optimizer.params_fn(opt_state),))
+
+    summaries = []
+    coeffs_ = []
+    all_works = []
+
+    for j in tqdm.trange(opt_steps,position=0):
+    key, split = random.split(key)
+    grad, (_, summary) = grad_fxn(optimizer.params_fn(opt_state), split)
+    print(grad)
+    print(f"\n Gradient norm: {jnp.linalg.norm(grad)}")
+    total_norm += jnp.linalg.norm(grad)
+    opt_state = optimizer.update_fn(j, grad, opt_state)
+    all_works.append(summary[2])
+    if j % 100 == 0:
+        coeffs_.append(((j+1),) + (optimizer.params_fn(opt_state),))
+    if j == (opt_steps-1):
+        coeffs_.append((j+1,) + (optimizer.params_fn(opt_state),))
+        
+    coeffs_.append((opt_steps,) + (optimizer.params_fn(opt_state),))
+
+    print("init parameters: ", optimizer.params_fn(init_state))
+    print("final parameters: ", optimizer.params_fn(opt_state))
+
+    return coeffs_, summaries, all_works
 #all_summaries = jax.tree_multimap(lambda *args: jnp.stack(args), *summaries)
 all_works = jax.tree_multimap(lambda *args: jnp.stack(args), *all_works)
 

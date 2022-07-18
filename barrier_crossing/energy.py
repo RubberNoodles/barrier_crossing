@@ -8,7 +8,8 @@ import jax_md as jmd
 from tensorflow_probability.substrates import jax as tfp
 tfd = tfp.distributions
 
-from protocol import make_trap_fxn, make_trap_fxn_rev
+from barrier_crossing.protocol import make_trap_fxn, make_trap_fxn_rev
+
 """##Custom Brownian simulator
 
 This is a modification of the JAX-MD Brownian simulator that also returns the log probability of any trajectory that runs. This is needed in order to compute gradients correctly (eq'n 12 in my arXiv paper)
@@ -87,7 +88,18 @@ def brownian(energy_or_force,
 
   return init_fn, apply_fn
 
-def V_biomolecule(kappa_l, kappa_r, x_m, delta_E, k_s, beta, epsilon, sigma):
+# 2016 Sivak and Crooks energy landscape.
+def V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s, beta):
+  def total_energy(position, r0=0.0, **unused_kwargs):
+      x = position[0][0]
+      Em = -(1./beta)*jnp.log(jnp.exp(-0.5*beta*kappa_l*(x+x_m)**2)+jnp.exp(-(0.5*beta*kappa_r*(x-x_m)**2+beta*delta_E)))
+      #moving harmonic potential:
+      Es = k_s/2 * (x-r0) ** 2
+      return Em + Es
+  return total_energy
+
+# 2010 Geiger and Dellago energy landscape.
+def V_biomolecule_geiger(k_s, epsilon, sigma):
   def total_energy(position, r0=0.0, **unused_kwargs):
       x = position[0][0]
       #underlying energy landscape:
@@ -98,6 +110,7 @@ def V_biomolecule(kappa_l, kappa_r, x_m, delta_E, k_s, beta, epsilon, sigma):
       return Em + Es
   return total_energy
 
+# Currently unused
 def V_simple_spring(r0,k,box_size):
   def spring_energy(position, **unused_kwargs):
     #dR = jnp.mod((position - r0) + box_size * f32(0.5), box_size) - f32(0.5) * box_size

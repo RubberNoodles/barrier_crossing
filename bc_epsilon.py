@@ -58,12 +58,15 @@ import scipy.special as sps
 from numpy import polynomial
 import numpy as onp 
 
-import jax.profiler
-server = jax.profiler.start_server(port=1234)
+#import jax.profiler
+#server = jax.profiler.start_server(port=1234)
 
 from tensorflow_probability.substrates import jax as tfp
 tfd = tfp.distributions
 
+from barrier_crossing import energy as bc_energy
+from barrier_crossing import protocol as pc
+from barrier_crossing.simulate import simulate_protocol
 """#Function definitions
 
 ##Miscellaneous
@@ -109,7 +112,7 @@ kappa_l=21.3863/(beta*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S 
 #kappa_l=2.6258/(beta*x_m**2)#barrier 0.625kT
 kappa_r=kappa_l #pN/nm 
 
-energy_fn = V_biomolecule(kappa_l, kappa_r, x_m, delta_E, k_s, beta, epsilon, sigma)
+energy_fn = bc_energy.V_biomolecule(kappa_l, kappa_r, x_m, delta_E, k_s, beta, epsilon, sigma)
 force_fn = quantity.force(energy_fn)
 displacement_fn, shift_fn = space.free()
 
@@ -123,11 +126,11 @@ fig, ax = plt.subplots(figsize=(12,12))
 
 ax.set_title('Optimal Protocols for Work vs. Error')
 
-error_trap_fn = make_trap_fxn(jnp.arange(simulation_steps),rev_coeffs_[-1][1],r0_init,r0_final)
+error_trap_fn = pc.make_trap_fxn(jnp.arange(simulation_steps),rev_coeffs_[-1][1],r0_init,r0_final)
 error_sched = error_trap_fn(jnp.arange(simulation_steps))
 ax.plot(jnp.arange(simulation_steps), error_sched, '-', label=f'Error Optimized')
 
-work_trap_fn = make_trap_fxn(jnp.arange(simulation_steps),coeffs_[-1][1],r0_init,r0_final)
+work_trap_fn = pc.make_trap_fxn(jnp.arange(simulation_steps),coeffs_[-1][1],r0_init,r0_final)
 work_sched = work_trap_fn(jnp.arange(simulation_steps))
 ax.plot(jnp.arange(simulation_steps), work_sched, '-', label=f'Work Optimized')
 

@@ -10,8 +10,8 @@ from jax import random
 
 from jax_md import quantity, space
 
-from energy import V_biomolecule, V_simple_spring, run_brownian_opt
-from protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
+from barrier_crossing.energy import V_biomolecule_geiger, V_simple_spring, brownian
+from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
 """#Simulations
 
 ##Brownian particle simulation
@@ -19,148 +19,229 @@ from protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn
 ###Parameters:
 """
 
-#the parameters as I have set them are meant to be similar to an experiment where DNA hairpins are unfolded by laser tweezers
-save_filepath = "temp/"
-N = 1 # number of particles
-dim = 1 # number of dimensions
-end_time = 0.001 
-dt = 3e-7 #integration time step
-simulation_steps = int((end_time)/dt)+1
-teq=0.001 #how long to let the system equilibrate in the initial potentials before you start applying the protocol 
-Neq=int(teq/dt) #number of equilibration timesteps
-
-batch_size=5000 # how many simulations/trajectories to perform
-beta=1.0/4.114 #inverse temperature kT (Boltzmann factor times temperature)
-mass = 1e-17 #particle mass 
-D = 0.44*1e6 #diffusion constant (tells you how fast the particle is able to move around (friction slows it down)) 
-gamma = 1./(beta*D*mass) #friction coefficient
-
-k_s = 0.4 #stiffness
-epsilon = int(sys.argv[1])/2 * (1.0/beta) # PRESIDENTIAL EPSILON
-print(f"Epsilon is: {int(sys.argv[1])/2} * 1/beta = {epsilon}")
-sigma = 1.0/jnp.sqrt(beta * k_s)
-
-#harmonic potential (I call it a "trap") parameters:
-r0_init = -0. #initial pos
-r0_final = sigma*2. #final pos
-
-#landscape params (see the 2016 Sivak and Crooks paper for what the parameters mean in the mathematical expression)
-x_m=10. #How far the energy barrier is from the left-most well 
-delta_E=0 #how separated the two minima are from each other -- take them to be at the same height
-kappa_l=6.38629/(beta*x_m**2)#for a barrier height 2.5kT
-kappa_r=kappa_l #set wells to have equal curvature (not necessary for us, but 2016 Crooks paper does this)
-
 """###Run Simulation:"""
-trap_coeffs = linear_chebyshev_coefficients(r0_init, r0_final, simulation_steps, degree = 12, y_intercept = 0.) # what shape the trap protocol is 
-trap_fn = make_trap_fxn(jnp.arange(simulation_steps), trap_coeffs, r0_init, r0_final)
+
+def simulate_brownian_harmonic(energy_fn, init_position, trap_fn, simulation_steps, Neq, shift, key, dt=1e-5, temperature=1e-5, mass=1.0, gamma=1.0):
+  """Simulation of Brownian particle being dragged by a moving harmonic trap.
+  Args:
+    energy_fn: the function that governs particle energy. Here, an external harmonic potential
+    r0_init: initial position of the trap, for which equilibration is done
+    Neq: number of equilibration steps
+    shift: shift_fn governing the Brownian simulation
+    key: random key
+    num_steps: total # simulation steps
+    dt: integration time step 
+    temperature: simulation temperature kT
+
+  Returns:
+    total work required to drag the particle, from eq'n 17 in Jarzynski 2008
+  """
+
+  def equilibrate(init_state, Neq, apply, r0_init):
+    @jit
+    def scan_eq(state, step):
+      state = apply(state, step, r0=r0_init)
+      return state, 0
+    state, _ = jax.lax.scan(scan_eq,init_state,jnp.arange(Neq))
+    return state
+    
+  def increment_work(state, step):
+        return (energy_fn(state.position, r0=trap_fn(step)) - energy_fn(state.position, r0=trap_fn(step-1)))
+
+  @jit
+  def scan_fn(state, step):
+    dW = increment_work(state, step) #increment based on position BEFORE 'thermal kick' a la Crooks
+    # Dynamically pass r0 to apply, which passes it on to energy_fn
+    state = apply(state, step, r0=trap_fn(step))
+    return state, (state.position, state.log_prob, dW)
+
+  r0_init = trap_fn(0)
+  key, split = random.split(key)  
+
+  init, apply = brownian(energy_fn, shift, dt=dt, T_schedule=temperature, gamma=gamma)
+  apply = jax.jit(apply)
+
+  eq_state = equilibrate(init(split, init_position, mass=mass), Neq, apply, r0_init)
+  state = eq_state
+  state, (positions, log_probs, works) = jax.lax.scan(scan_fn,state,(jnp.arange(simulation_steps-1)+1))
+  #print("Log probability:")
+  #print(log_probs)
+  works = jnp.concatenate([jnp.reshape(0., [1]), works])
+  positions = jnp.concatenate([jnp.reshape(eq_state.position, [1,1,1]), positions])
+  return positions, log_probs, works
 
 
-def simulate_protocol(trap_coeffs):  
-  #generate random keys for simulation:
+def batch_simulate_harmonic(energy_fn,
+                            simulate_fn,
+                            batch_size,
+                            simulation_steps,
+                            trap_coeffs = None, 
+                            cheby_degree = 12 
+                            ): 
+  
+  """ Makes a function to describe the trap schedule and runs the simulation code on it
+  in JAX optimized batches.
+  Args:
+    energy_fn: Callable(particle_position, r0) -> float. Gives the energy of a particle at a particular
+      position + trap at position r0
+    simulate_fn: Callable(Energy_fn, trap_schedule) 
+      -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
+      Function that simulates moving the particle along the given trap_schedule given a specified
+      energy function.
+    batch_size: Integer specifying how many different trajectories to simulate.
+    key: rng, jax.random.
+    init_position: array specifying the initial position of the particles. Generally an array of shape
+      (1,1).
+    mass: float specifying mass of the particle.
+    beta: float describing reciprocal temperature, equal to 1/K_bT.
+    gamma: A float specifying the friction coefficient between the particles
+      and the solvent.
+    r0_init, r0_final: floats specifying initial and final trap positions.
+    simulation_steps: Integer specifying number of steps to run the simulation for.
+  Returns:
+    Output of simulate_fn, each element as an array of length batch_size.
+  """
 
-  key = random.PRNGKey(int(time.time()))
-  key, split = random.split(key, 2)
-  init_position=-0.*jnp.ones((N,dim)) #initial particle location
+  # If no trap coefficients are passed, produce linear schedule.
+  if not trap_coeffs:
+    trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, cheby_degree, y_intercept = r0_init)
+  
+  trap_fn = make_trap_fxn(jnp.arange(simulation_steps),trap_coeffs,r0_init,r0_final)
+
 
   #see JAX-MD documentation for details on how these energy/force/displacement functions work:
-  energy_fn = V_biomolecule(kappa_l, kappa_r, x_m, delta_E, k_s, beta, epsilon, sigma)
-  force_fn = quantity.force(energy_fn)
-  displacement_fn, shift_fn = space.free()
+  # force_fn = quantity.force(energy_fn) # This is not useful code right now.
+  _, shift_fn = space.free()
 
-  tot_works = []
+  total_works = []
 
   # To generate a bunch of samples, we 'map' across seeds.
-  mapped_sim = jax.soft_pmap(lambda keys : run_brownian_opt(energy_fn, trap_coeffs, init_position, r0_init, r0_final, Neq, shift_fn, keys, simulation_steps, dt, 1./beta, mass, gamma))
+  mapped_sim = jax.soft_pmap(lambda keys : simulate_fn(energy_fn, keys))
   seeds = jax.random.split(split, batch_size)
   trajectories, _, works = mapped_sim(seeds) #seed is array with diff seed for each run. I'm discarding the log prob data, here
 
-  tot_works = jnp.sum(works, 1)
+  total_works = jnp.sum(works, 1)
   
-  return tot_works, (trajectories, works)
+  return total_works, (trajectories, works)
 
 
-tot_works, (trajectories, works) = simulate_protocol(trap_coeffs)
+### ALL TEMPORARY
+simulation_steps = 1000
+N = 1
+dim = 1
+beta = 1.
+mass = 1.
+gamma = 1.0
+init_position = jnp.ones((N,dim))
+r0_init = 0.
+r0_final = 2.
+dt = 1e-6
+Neq = 100
+_, shift_fn = space.free()
+
+key = random.PRNGKey(int(time.time()))
+key, split = random.split(key, 2)  
+
+trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
+trap_fn = make_trap_fxn(jnp.arange(simulation_steps), trap_coeffs, r0_init, r0_final)
+simulate_fn_fwd = lambda energy_fn, keys: simulate_brownian_harmonic(
+  energy_fn,
+  init_position,
+  trap_fn, simulation_steps, Neq,
+  shift_fn,
+  key,
+  dt,
+  temperature = 1/beta,
+  mass = mass,
+  gamma = gamma)
+
+
+batch_size = 1000
+energy_fn = V_biomolecule_geiger(k_s = 0.4, epsilon = 1., sigma = 1.)
+
+tot_works, (trajectories, works) = batch_simulate_harmonic(energy_fn, simulate_fn_fwd, batch_size, simulation_steps)
 print("average work done in moving the particle: ",jnp.mean(tot_works))
 
-"""###plots"""
+def plot_simulations():
+  """###plots"""
 
-#what the underlying 'molecular' potential looks like:
+  #what the underlying 'molecular' potential looks like:
 
-x=jnp.linspace(-4,10,200)
-xvec=jnp.reshape(jnp.linspace(-4,10,200), [200,1,1])
-k_splot = 0.
-Vfn = V_biomolecule(0, 0, 0, 0, k_splot, beta, epsilon, sigma) # returns in pN nm
-V = []
-for j in range(len(xvec)):
-  V.append(Vfn(xvec[j], r0=0.))
-plt.figure(figsize=(10,10))
-plt.plot(x,V,'-o')
-plt.savefig(save_filepath+ "potential.png")
-plt.show()
-####PLOT RESULTS FORWARD#####
+  x=jnp.linspace(-4,10,200)
+  xvec=jnp.reshape(jnp.linspace(-4,10,200), [200,1,1])
+  k_splot = 0.
+  Vfn = V_biomolecule(0, 0, 0, 0, k_splot, beta, epsilon, sigma) # returns in pN nm
+  V = []
+  for j in range(len(xvec)):
+    V.append(Vfn(xvec[j], r0=0.))
+  plt.figure(figsize=(10,10))
+  plt.plot(x,V,'-o')
+  plt.savefig(save_filepath+ "potential.png")
+  plt.show()
+  ####PLOT RESULTS FORWARD#####
 
-_, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=[30, 12])
-ax0.plot(dt*1000*jnp.arange(simulation_steps),trap_fn(jnp.arange(simulation_steps)), '-o')
-ax0.set(xlabel="time (ms)")
-ax0.set_title('Initial trap schedule')
+  _, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=[30, 12])
+  ax0.plot(dt*1000*jnp.arange(simulation_steps),trap_fn(jnp.arange(simulation_steps)), '-o')
+  ax0.set(xlabel="time (ms)")
+  ax0.set_title('Initial trap schedule')
 
 
 
-for j in range(batch_size):
+  for j in range(batch_size):
+      if j % 1000 == 0:
+        ax1.plot(dt*1000*jnp.arange(simulation_steps), trajectories[j][:,0,0])
+  #ax1.legend()#
+  ax1.set(xlabel="time (ms)")
+  ax1.set_title('Particle positions')
+
+
+  for j in range(batch_size):
     if j % 1000 == 0:
-      ax1.plot(dt*1000*jnp.arange(simulation_steps), trajectories[j][:,0,0])
-#ax1.legend()#
-ax1.set(xlabel="time (ms)")
-ax1.set_title('Particle positions')
+      ax2.plot(dt*1000*jnp.arange(simulation_steps)+1, works[j], '-o')
+  #ax2.plot(dt*1000*jnp.arange(simulation_steps)+1, summary[1], '-o')
+  ax2.set(xlabel="time (ms)")
+  ax2.set_title('Energy increments')
+  plt.savefig(save_filepath+ "forward_sim.png")
+  plt.show()
 
-
-for j in range(batch_size):
-  if j % 1000 == 0:
-    ax2.plot(dt*1000*jnp.arange(simulation_steps)+1, works[j], '-o')
-#ax2.plot(dt*1000*jnp.arange(simulation_steps)+1, summary[1], '-o')
-ax2.set(xlabel="time (ms)")
-ax2.set_title('Energy increments')
-plt.savefig(save_filepath+ "forward_sim.png")
-plt.show()
-
-####PLOT RESULTS BACKWARD#####
-back_sim_steps = jnp.flip(jnp.arange(simulation_steps))
-_, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=[30, 12])
-ax0.plot(dt*1000*back_sim_steps,trap_fn(jnp.flip(back_sim_steps)), '-o')
-ax0.set(xlabel="time (ms)")
-ax0.set_title('Initial backwards trap schedule')
+  ####PLOT RESULTS BACKWARD#####
+  back_sim_steps = jnp.flip(jnp.arange(simulation_steps))
+  _, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=[30, 12])
+  ax0.plot(dt*1000*back_sim_steps,trap_fn(jnp.flip(back_sim_steps)), '-o')
+  ax0.set(xlabel="time (ms)")
+  ax0.set_title('Initial backwards trap schedule')
 
 
 
-for j in range(batch_size):
+  for j in range(batch_size):
+      if j % 1000 == 0:
+        ax1.plot(dt*1000*back_sim_steps, trajectories[j][:,0,0])
+  #ax1.legend()#
+  ax1.set(xlabel="time (ms)")
+  ax1.set_title('Backward Particle positions')
+
+
+  for j in range(batch_size):
     if j % 1000 == 0:
-      ax1.plot(dt*1000*back_sim_steps, trajectories[j][:,0,0])
-#ax1.legend()#
-ax1.set(xlabel="time (ms)")
-ax1.set_title('Backward Particle positions')
+      ax2.plot(dt*1000*back_sim_steps+1, works[j], '-o')
+  #ax2.plot(dt*1000*jnp.arange(simulation_steps)+1, summary[1], '-o')
+  ax2.set(xlabel="time (ms)")
+  ax2.set_title('Backward Energy increments')
+  plt.savefig(save_filepath+ "backward_sim.png")
+  plt.show()
 
+  ##### PLOT WORK DISTRIBUTION #####
+  plt.figure(figsize=[12, 12])
+  # plt.hist(jnp.array(tot_works)*beta,20,alpha=1.0,color='g')
 
-for j in range(batch_size):
-  if j % 1000 == 0:
-    ax2.plot(dt*1000*back_sim_steps+1, works[j], '-o')
-#ax2.plot(dt*1000*jnp.arange(simulation_steps)+1, summary[1], '-o')
-ax2.set(xlabel="time (ms)")
-ax2.set_title('Backward Energy increments')
-plt.savefig(save_filepath+ "backward_sim.png")
-plt.show()
+  plt.xlabel("Work (kbT)")
+  plt.ylabel("counts")
+  plt.legend()
+  plt.savefig(save_filepath+ "USELESSwork_distribution.png")
+  plt.show()
+  print("forward mean:", jnp.mean(jnp.array(tot_works)*beta), "kbT")
 
-##### PLOT WORK DISTRIBUTION #####
-plt.figure(figsize=[12, 12])
-# plt.hist(jnp.array(tot_works)*beta,20,alpha=1.0,color='g')
+  """## Optimization of trap protocol
 
-plt.xlabel("Work (kbT)")
-plt.ylabel("counts")
-plt.legend()
-plt.savefig(save_filepath+ "USELESSwork_distribution.png")
-plt.show()
-print("forward mean:", jnp.mean(jnp.array(tot_works)*beta), "kbT")
-
-"""## Optimization of trap protocol
-
-### Parameters
-"""
+  ### Parameters
+  """
