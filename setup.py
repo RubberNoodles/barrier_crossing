@@ -15,5 +15,6 @@ setup(
     "jax",
     "jraph",
     "jax-md"
-  ]
+  ],
+  packages = setuptools.find_packages()
 )
