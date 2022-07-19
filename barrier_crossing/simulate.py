@@ -38,7 +38,7 @@ def simulate_brownian_harmonic(energy_fn, init_position, trap_fn, simulation_ste
   """
 
   def equilibrate(init_state, Neq, apply, r0_init):
-    @jit
+    @jax.jit
     def scan_eq(state, step):
       state = apply(state, step, r0=r0_init)
       return state, 0
@@ -48,7 +48,7 @@ def simulate_brownian_harmonic(energy_fn, init_position, trap_fn, simulation_ste
   def increment_work(state, step):
         return (energy_fn(state.position, r0=trap_fn(step)) - energy_fn(state.position, r0=trap_fn(step-1)))
 
-  @jit
+  @jax.jit
   def scan_fn(state, step):
     dW = increment_work(state, step) #increment based on position BEFORE 'thermal kick' a la Crooks
     # Dynamically pass r0 to apply, which passes it on to energy_fn
@@ -71,10 +71,12 @@ def simulate_brownian_harmonic(energy_fn, init_position, trap_fn, simulation_ste
   return positions, log_probs, works
 
 
-def batch_simulate_harmonic(energy_fn,
+def batch_simulate_harmonic(batch_size,
+                            energy_fn,
                             simulate_fn,
-                            batch_size,
+                            trap_fn,
                             simulation_steps,
+                            key,
                             trap_coeffs = None, 
                             cheby_degree = 12 
                             ): 
@@ -102,13 +104,7 @@ def batch_simulate_harmonic(energy_fn,
     Output of simulate_fn, each element as an array of length batch_size.
   """
 
-  # If no trap coefficients are passed, produce linear schedule.
-  if not trap_coeffs:
-    trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, cheby_degree, y_intercept = r0_init)
-  
-  trap_fn = make_trap_fxn(jnp.arange(simulation_steps),trap_coeffs,r0_init,r0_final)
-
-
+  key, split = jax.random.split(key)
   #see JAX-MD documentation for details on how these energy/force/displacement functions work:
   # force_fn = quantity.force(energy_fn) # This is not useful code right now.
   _, shift_fn = space.free()
@@ -124,46 +120,9 @@ def batch_simulate_harmonic(energy_fn,
   
   return total_works, (trajectories, works)
 
-
-### ALL TEMPORARY
-simulation_steps = 1000
-N = 1
-dim = 1
-beta = 1.
-mass = 1.
-gamma = 1.0
-init_position = jnp.ones((N,dim))
-r0_init = 0.
-r0_final = 2.
-dt = 1e-6
-Neq = 100
-_, shift_fn = space.free()
-
-key = random.PRNGKey(int(time.time()))
-key, split = random.split(key, 2)  
-
-trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
-trap_fn = make_trap_fxn(jnp.arange(simulation_steps), trap_coeffs, r0_init, r0_final)
-simulate_fn_fwd = lambda energy_fn, keys: simulate_brownian_harmonic(
-  energy_fn,
-  init_position,
-  trap_fn, simulation_steps, Neq,
-  shift_fn,
-  key,
-  dt,
-  temperature = 1/beta,
-  mass = mass,
-  gamma = gamma)
-
-
-batch_size = 1000
-energy_fn = V_biomolecule_geiger(k_s = 0.4, epsilon = 1., sigma = 1.)
-
-tot_works, (trajectories, works) = batch_simulate_harmonic(energy_fn, simulate_fn_fwd, batch_size, simulation_steps)
-print("average work done in moving the particle: ",jnp.mean(tot_works))
-
 def plot_simulations():
-  """###plots"""
+  """DEPRECATED
+  ###plots """
 
   #what the underlying 'molecular' potential looks like:
 
