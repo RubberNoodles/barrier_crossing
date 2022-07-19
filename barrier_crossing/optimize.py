@@ -26,8 +26,8 @@ def single_estimate_fwd(energy_fn,
                         simulation_steps, dt,
                         temperature, mass, gamma):
   @functools.partial(jax.value_and_grad, has_aux=True) #the 'aux' is the summary
-  def _single_estimate(coeffs, seed): #function only of the params to be differentiated w.r.t.
-      # OLD forward direction
+  def _single_estimate(coeffs, seed): 
+      # Forward direction to compute the gradient of the work used.
       trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
       positions, log_probs, works = simulate_brownian_harmonic(
           energy_fn, 
@@ -54,13 +54,13 @@ def estimate_gradient_fwd(batch_size,
                           simulation_steps, dt,
                           temperature, mass, gamma):
     mapped_estimate = jax.vmap(single_estimate_fwd(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
-    #mapped_estimate = jax.soft_pmap(lambda s: single_estimate(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
+
     @jax.jit #why am I allowed to jit something whose output is a function? Thought it had to be pytree output...
     def _estimate_gradient(coeffs, seed):
       seeds = jax.random.split(seed, batch_size)
       (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
       return jnp.mean(grad, axis=0), (gradient_estimator, summary)
-    return _estimate_gradient # < # delta ln P (W not graded) + delta W > averaged over,
+    return _estimate_gradient
 
 
 def single_estimate_rev(energy_fn,
@@ -82,7 +82,6 @@ def single_estimate_rev(energy_fn,
     tot_log_prob = log_probs.sum()
     summary = (positions, tot_log_prob, jnp.exp(beta*total_work))
 
-    # NEW delta ln P * e^(beta W) (not graded) + delta W * e^(beta W) (no grad)
     gradient_estimator = (tot_log_prob) * jax.lax.stop_gradient(jnp.exp(beta * total_work)) + jax.lax.stop_gradient(beta * jnp.exp(beta*total_work)) * total_work
     return gradient_estimator, summary
   return _single_estimate 
@@ -93,19 +92,28 @@ def estimate_gradient_rev(batch_size,
                           Neq, shift,
                           simulation_steps, dt,
                           temperature, mass, gamma, beta):
-    """Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size)(2010 Geiger and Dellago). """
+    """Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). """
     mapped_estimate = jax.vmap(single_estimate_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta), [None, 0])  
     @jax.jit 
     def _estimate_gradient(coeffs, seed):
       seeds = jax.random.split(seed, batch_size)
       (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
       return jnp.mean(grad, axis=0), (gradient_estimator, summary)
-    return _estimate_gradient # < # delta ln P (W not graded) + delta W > averaged over,
-
-# TODO: Make a optimization loop code that can just be run as a single function
-# ============== PARAMETERS ================
+    return _estimate_gradient
 
 def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_steps, save_path = None):
+  """ Training loop to optimize the coefficients of a chebyshev polynomial that defines the 
+  protocol of moving a harmonic trap over a free energy landscape.
+  
+  Args:
+    batch_grad_fn: Callable[Float] -> Callable[Array[Float], JaxRNG Key]
+      Function that takes in the number of batches and outputs a function that computes the gradient
+    by running `batch_size` number of simulations and finding the gradient of the loss with respect to
+    the coefficients of the Chebyshev polynomials. 
+      Currently used for Engel's work reduction (forward) and Geiger & Dellago 2010 Part IV. D. (reverse)
+    
+    # TODO: describe other self-explanatory args
+  """
   summaries = []
   coeffs_ = []
   all_works = []
@@ -123,8 +131,6 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
     key, split = jax.random.split(key)
     grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state), split)
 
-    print(f"\n Gradient norm: {jnp.linalg.norm(grad)}")
-
     opt_state = optimizer.update_fn(j, grad, opt_state)
     all_works.append(summary[2])
     if j % 100 == 0:
@@ -137,12 +143,9 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
   print("init parameters: ", optimizer.params_fn(init_state))
   print("final parameters: ", optimizer.params_fn(opt_state))
 
-  #all_summaries = jax.tree_multimap(lambda *args: jnp.stack(args), *summaries)
   all_works = jax.tree_multimap(lambda *args: jnp.stack(args), *all_works)
 
-  # note that you cannot pickle locally-defined functions 
-  # (like the log_temp_baseline() thing), so I need to save the weights 
-  # and then later recreate the schedules
+  # Pickle coefficients and optimization outputs in order to recreate schedules for future use.
   if save_path != None:
     afile = open(save_path+'coeffs.pkl', 'wb')
     pickle.dump(coeffs_, afile)

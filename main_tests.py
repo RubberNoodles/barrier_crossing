@@ -17,29 +17,35 @@ from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
 from barrier_crossing.optimize import optimize_protocol, estimate_gradient_fwd
 
-
-
 def test_geiger_simulate():
-  simulation_steps = 1000
-  N = 1
-  dim = 1
-  beta = 1.
-  mass = 1.
-  gamma = 1.0
-  
-  r0_init = 0.
-  r0_final = 2.
-  init_position = r0_init*jnp.ones((N,dim))
-  
-  dt = 1e-6
-  Neq = 100
-  _, shift_fn = space.free()
+  """ Simulate moving a Brownian Particle moving across a double-well landscape
+   as described by 2010 Geiger and Dellago. Parameters are currently arbitrary
+  """
 
-  key = random.PRNGKey(int(time.time()))
+  N = 1 # Number of particles.
+  dim = 1 # Number of dimensions that the particle can move in.
+  
+  dt = 1e-6 # Time-step
+  Neq = 100 # Number of steps we use to equilibrate the particle. 
+  simulation_steps = 1000 # Number of time steps to run the simulation for.
+  
+  r0_init = 0. # Initial position of the trap
+  r0_final = 2. # Final position of the trap
+  init_position = r0_init*jnp.ones((N,dim)) # Initial position of the particle
+  
+  beta = 1. # 1/temperature
+  mass = 1. # mass of the particle (UNITS?)
+  gamma = 1. # friction coefficient (see brownian simulator)
+  
+  _, shift_fn = space.free() # Describes the simulation bounding/periodic conditions. Free means no boundaries.
+
+  key = random.PRNGKey(int(time.time())) # Set-up RNG
   key, split = random.split(key, 2)  
-
+  
+  # Describe linear movement of the harmonic trap from r0_init to r0_final
   trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
   trap_fn = make_trap_fxn(jnp.arange(simulation_steps), trap_coeffs, r0_init, r0_final)
+  
   simulate_fn_fwd = lambda energy_fn, keys: simulate_brownian_harmonic(
     energy_fn,
     init_position,
@@ -55,13 +61,16 @@ def test_geiger_simulate():
   batch_size = 1000
   energy_fn = V_biomolecule_geiger(k_s = 0.4, epsilon = 1., sigma = 1.)
 
-  tot_works, (trajectories, works) = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn_fwd, trap_fn, simulation_steps, key)
-  print("average work done in moving the particle: ",jnp.mean(tot_works))
+  # Run `batch_size` number of simulations with JAX-optimized looping
+  total_works, (trajectories, works) = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn_fwd, trap_fn, simulation_steps, key)
+  
+  print("average work done in moving the particle: ",jnp.mean(total_works))
   
 def test_fwd_opt():
-  
-  # Make linear chebyshev
-  
+  """ Optimize a set of coefficients for the first 12 Chebyshev polynomials to find
+  the protocol that minimizes the amount of work used to move a brownian particle
+  over a 2010 Geiger and Dellago double-well landscape. """
+
   end_time = 0.01
   dt = 1e-6
   simulation_steps = int(end_time/dt)

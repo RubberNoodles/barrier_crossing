@@ -15,7 +15,6 @@ from barrier_crossing.protocol import make_trap_fxn, make_trap_fxn_rev
 This is a modification of the JAX-MD Brownian simulator that also returns the log probability of any trajectory that runs. This is needed in order to compute gradients correctly (eq'n 12 in my arXiv paper)
 """
 
-
 class BrownianState(collections.namedtuple('BrownianState',
                                            'position mass rng log_prob')):
   pass
