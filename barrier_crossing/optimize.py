@@ -42,7 +42,8 @@ def single_estimate_fwd(energy_fn, init_position, r0_init, r0_final, Neq, shift,
           energy_fn, 
           init_position,
           trap_fn,
-          Neq, shift, seed, simulation_steps, 
+          simulation_steps,
+          Neq, shift, seed, 
           dt, temperature, mass, gamma
           )
       total_work = works.sum()
@@ -72,7 +73,8 @@ def single_estimate_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift,
     positions, log_probs, works = simulate_brownian_harmonic(
         energy_fn, 
         init_position, trap_fn,
-        Neq, shift, seed, simulation_steps, 
+        simulation_steps,
+        Neq, shift, seed, 
         dt, temperature, mass, gamma
         )
     total_work = works.sum()

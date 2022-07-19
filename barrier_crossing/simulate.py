@@ -64,7 +64,7 @@ def simulate_brownian_harmonic(energy_fn,
     return state, (state.position, state.log_prob, dW)
 
   r0_init = trap_fn(0)
-  key, split = random.split(key)  
+  key, split = jax.random.split(key)  
 
   init, apply = brownian(energy_fn, shift, dt=dt, T_schedule=temperature, gamma=gamma)
   apply = jax.jit(apply)
