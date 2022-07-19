@@ -3,6 +3,8 @@ from setuptools import setup
 setup(
   name = "barrier_crossing",
   version = "0.0.2",
+  url = "https://github.com/RubberNoodles/barrier_crossing.git",
+  packages = setuptools.find_packages(),
   install_requires = [
     "numpy",
     "matplotlib",
@@ -15,6 +17,5 @@ setup(
     "jax",
     "jraph",
     "jax-md"
-  ],
-  packages = setuptools.find_packages()
+  ]
 )
