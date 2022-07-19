@@ -27,8 +27,19 @@ Install the [JAX library with GPU](https://github.com/google/jax#installation), 
 
 **NOTE:** For users without a GPU, install JAX with CPU instead.
 
-main.py: NOT implemented.
-energy.py: brownian state, energy functions
-protocol.py: chebyshev coefficient stuff protocol generation with harmonic trap
-simulate.py: forward or backward simulations
-optimize.py: given landscape, find optimial protocol
+## Overview
+
+This sections describes the individual files that are a part of this package contained in the `barrier_crossing` folder.
+
+### `energy.py`
+Implements the potential energy functions for molecular dynamics simulations. Currently contains `brownian(...)` to describe Brownian motion, as well as
+code for two double well landscapes (Geiger & Dellago 2010) and (Sivak & Crooks 2016).
+
+### `protocol.py`
+Functions to create a protocol/schedule described by Chebyshev polynomials. 
+
+### `simulate.py`
+Contains `simulate_brownian_harmonic` and `batch_simulate_harmonic` functions in order to simulate a Brownian particle moving over a given free energy landscape dragged by a harmonic trap with schedule specified by Chebyshev polynomials. Use `batch_simulate_harmonic` in order to run a simulating functing such as `simulate_brownian_harmonic` in large batches to replicate running large batches of experiments to find different trajectories.
+
+### `optimize.py`
+Training loop using Jarzynski equality error (Geiger & Dellago 2010, Engel 2022, Jarzynski 1997) or work used to drag the particle over the landscape as a loss function.
