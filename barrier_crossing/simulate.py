@@ -21,8 +21,16 @@ from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_f
 
 """###Run Simulation:"""
 
-def simulate_brownian_harmonic(energy_fn, init_position, trap_fn, simulation_steps, Neq, shift, key, dt=1e-5, temperature=1e-5, mass=1.0, gamma=1.0):
-  """Simulation of Brownian particle being dragged by a moving harmonic trap.
+def simulate_brownian_harmonic(energy_fn,
+                               init_position,
+                               trap_fn,
+                               simulation_steps,
+                               Neq,
+                               shift,
+                               key,
+                               dt=1e-5,
+                               temperature=1e-5, mass=1.0, gamma=1.0):
+  """Simulation of Brownian particle being dragged by a moving harmonic trap. Previously called run_brownian_opt
   Args:
     energy_fn: the function that governs particle energy. Here, an external harmonic potential
     r0_init: initial position of the trap, for which equilibration is done

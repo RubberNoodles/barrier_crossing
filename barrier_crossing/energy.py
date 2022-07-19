@@ -88,7 +88,7 @@ def brownian(energy_or_force,
 
   return init_fn, apply_fn
 
-# 2016 Sivak and Crooks energy landscape.
+# 2016 Sivak and Crooks energy landscape. [ ] TODO: Full Citations.
 def V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s, beta):
   def total_energy(position, r0=0.0, **unused_kwargs):
       x = position[0][0]
@@ -117,57 +117,4 @@ def V_simple_spring(r0,k,box_size):
     dR=(position[0][0]-r0)
     return k/2 * dR ** 2
   return spring_energy
-
-
-"""##Functions for estimating gradients of the MD simulations"""
-
-def run_brownian_opt(energy_fn, coeffs, init_position, r0_init, r0_final, Neq, shift, key, simulation_steps, dt=1e-5, temperature=1e-5, mass=1.0, gamma=1.0):
-  """Simulation of Brownian particle being dragged by a moving harmonic trap.
-  Args:
-    energy_fn: the function that governs particle energy. Here, an external harmonic potential
-    r0_init: initial position of the trap, for which equilibration is done
-    Neq: number of equilibration steps
-    shift: shift_fn governing the Brownian simulation
-    key: random key
-    num_steps: total # simulation steps
-    dt: integration time step 
-    temperature: simulation temperature kT
-
-  Returns:
-    total work required to drag the particle, from eq'n 17 in Jarzynski 2008
-  """
-  sim_step = jnp.arange(simulation_steps)  
-  trap_fn = make_trap_fxn(sim_step,coeffs,r0_init,r0_final)
-
-  def equilibrate(init_state, Neq, apply, r0_init):
-    @jit
-    def scan_eq(state, step):
-      state = apply(state, step, r0=r0_init)
-      return state, 0
-    state, _ = lax.scan(scan_eq,init_state,jnp.arange(Neq))
-    return state
-    
-  def increment_work(state, step):
-        return (energy_fn(state.position, r0=trap_fn(step)) - energy_fn(state.position, r0=trap_fn(step-1)))
-
-  @jit
-  def scan_fn(state, step):
-    dW = increment_work(state, step) #increment based on position BEFORE 'thermal kick' a la Crooks
-    # Dynamically pass r0 to apply, which passes it on to energy_fn
-    state = apply(state, step, r0=trap_fn(step))
-    return state, (state.position, state.log_prob, dW)
-
-  key, split = random.split(key)  
-
-  init, apply = brownian(energy_fn, shift, dt=dt, T_schedule=temperature, gamma=gamma)
-  apply = jit(apply)
-
-  eq_state = equilibrate(init(split, init_position, mass=mass), Neq, apply, r0_init)
-  state = eq_state
-  state, (positions, log_probs, works) = lax.scan(scan_fn,state,(jnp.arange(simulation_steps-1)+1))
-  #print("Log probability:")
-  #print(log_probs)
-  works = jnp.concatenate([jnp.reshape(0., [1]), works])
-  positions = jnp.concatenate([jnp.reshape(eq_state.position, [1,1,1]), positions])
-  return positions, log_probs, works
 
