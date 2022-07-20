@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --gres=gpu:4                # Number of cores (-c)
 #SBATCH -t 0-01:00          # Runtime in D-HH:MM, minimum of 10 minutes
-#SBATCH -p gpu_test   # Partition to submit to
-#SBATCH --mem-per-cpu=64000           # Memory pool for all cores (see also --mem-per-cpu)
+#SBATCH -p seas_dgx1   # Partition to submit to
+#SBATCH --mem-per-cpu=128000           # Memory pool for all cores (see also --mem-per-cpu)
 #SBATCH -o logs/out_%A_eps_%a.out  # File to which STDOUT will be written, %j inserts jobid
 #SBATCH -e logs/err_%A_eps_%a.err  # File to which STDERR will be written, %j inserts jobid
 module load python/3.8.5-fasrc01
