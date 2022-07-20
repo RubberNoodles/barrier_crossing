@@ -139,6 +139,3 @@ setup(
         'upload': UploadCommand,
     },
 )
-
-# COPY AND PASTE THE CODE IN https://github.com/navdeep-G/setup.py/blob/master/setup.py
-# BECAUSE APPARENTLY THIS WORKS SOMEHOW LMAO.
