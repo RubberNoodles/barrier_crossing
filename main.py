@@ -20,8 +20,8 @@ from main_geiger import geiger_error_opt, geiger_work_opt, get_linear_works
 if __name__ == "__main__":
   # test_geiger_simulate()
   # test_fwd_opt()
-  batch_size = 1e3
-  opt_steps = 5
+  batch_size = 1e6
+  opt_steps = 500
   task_num = int(sys.argv[1])
   geiger_work_opt(task_num, batch_size, opt_steps)
   geiger_error_opt(task_num, batch_size, opt_steps)
