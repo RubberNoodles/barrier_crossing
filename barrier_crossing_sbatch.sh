@@ -11,9 +11,9 @@ module load cudnn/8.2.2.26_cuda11.4-fasrc01
 pip3 install -r requirements.txt
 python3 main.py ${SLURM_ARRAY_TASK_ID}
 
-if [ ${SLURM_ARRAY_TASK_ID}==2 ]; then
+if [ ${SLURM_ARRAY_TASK_ID}==8 ]; then
 	git add .
-	git commit -m "Test auto commit."
+	git commit -m "Auto-commit."
 	git push
 fi
 
