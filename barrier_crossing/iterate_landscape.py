@@ -1,6 +1,7 @@
 import copy
 import time
 import logging
+import tqdm
 
 import matplotlib.pyplot as plt
 
@@ -18,7 +19,7 @@ from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate
 from barrier_crossing.optimize import estimate_gradient_fwd, optimize_protocol
 
 def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, batch_size, k_s, beta):
-  print("Reconstructing the landscape...")
+  logging.info("Reconstructing the landscape...")
   """
   Outputs a (midpoints, free_energies) tuple for reconstructing 
   free-energy landscapes.
@@ -137,8 +138,7 @@ def optimize_landscape(ground_truth_energy_fn,
   trap_fn = init_trap_fn
   trap_coeffs = init_trap_coeffs
   
-  while (diff > 0.0001 and iter_num < max_iter):
-    logging.info(f"RECONSTRUCTION ITERATION {iter_num+1} STARTING \n")
+  for iter_num in tqdm.trange(max_iter, position=1, desc="Optimize Landscape: "):
     if new_landscape:
       old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1])) # TODO
 
@@ -173,7 +173,7 @@ def optimize_landscape(ground_truth_energy_fn,
     
     if iter_num > 0:
       diff = landscape_diff(old_landscape, new_landscape) # take the norm of the difference
-      print(f"Difference between prior landscape: {diff:.4f}")
+      logging.info(f"Difference between prior landscape: {diff:.4f}")
 
     iter_num += 1
   

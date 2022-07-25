@@ -3,6 +3,7 @@ import functools
 import pickle
 import time
 import tqdm
+import logging
 
 import matplotlib.pyplot as plt
 
@@ -127,7 +128,7 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
 
   grad_fn = batch_grad_fn(batch_size)
   
-  for j in tqdm.trange(num_steps,position=0):
+  for j in tqdm.trange(num_steps,position=0, desc="Optimize Protocol: "):
     key, split = jax.random.split(key)
     grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state), split)
 
@@ -140,8 +141,8 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
       
   coeffs_.append((num_steps,) + (optimizer.params_fn(opt_state),))
 
-  print("init parameters: ", optimizer.params_fn(init_state))
-  print("final parameters: ", optimizer.params_fn(opt_state))
+  logging.info("init parameters: ", optimizer.params_fn(init_state))
+  logging.info("final parameters: ", optimizer.params_fn(opt_state))
 
   all_works = jax.tree_multimap(lambda *args: jnp.stack(args), *all_works)
 
