@@ -16,6 +16,7 @@ from barrier_crossing.energy import V_biomolecule_geiger
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
 from barrier_crossing.optimize import optimize_protocol, estimate_gradient_fwd
+from barrier_crossing.iterate_landscape import optimize_landscape
 
 def test_geiger_simulate():
   """ Simulate moving a Brownian Particle moving across a double-well landscape
@@ -109,6 +110,86 @@ def test_fwd_opt():
   
   optimize_protocol(trap_coeffs, grad_fxn, optimizer, batch_size, opt_steps)
 
+def test_opt_landscape():
+  end_time = 0.01
+  dt = 1e-4
+  simulation_steps = int(end_time/dt)
+  
+  N = 1
+  dim = 1
+  beta = 1.
+  mass = 1.
+  gamma = 1.0
+  k_s = 1.
+  epsilon = 1.
+  sigma = 1.
+  
+  r0_init = 0.
+  r0_final = 2.
+  init_position = r0_init * jnp.ones((N,dim))
+  
+  eq_time = 0.01
+  Neq = int(eq_time / dt)
+  
+  _, shift_fn = space.free()
+
+  key = random.PRNGKey(int(time.time()))
+  key, split = random.split(key, 2)  
+
+  energy_fn = V_biomolecule_geiger(k_s, epsilon, sigma)
+
+  init_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
+  init_trap_fn = make_trap_fxn(jnp.arange(simulation_steps), init_trap_coeffs, r0_init, r0_final)
+  
+  batch_size = 500
+  opt_steps = 10
+  
+  lr = jopt.exponential_decay(0.1, opt_steps, 0.001)
+  optimizer = jopt.adam(lr)
+
+  simulate_fn = lambda energy_fn, keys: simulate_brownian_harmonic(energy_fn,
+    init_position, init_trap_fn, simulation_steps, Neq, shift_fn, keys, dt,
+     temperature = 1/beta, mass = mass, gamma = gamma)
+  
+  # =========== LANDSCAPE OPTIMIZATION LOOP ==============
+  
+  max_iter = 5
+  bins = 10
+  
+  grad_no_E = lambda num_batches, energy_fn: estimate_gradient_fwd(num_batches, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, 1/beta, mass, gamma)
+  
+  landscapes, coeffs, positions = optimize_landscape(energy_fn,
+                     simulate_fn,
+                     init_trap_fn,
+                     init_trap_coeffs,
+                     grad_no_E,
+                     key,
+                     max_iter,
+                     bins,
+                     simulation_steps,
+                     batch_size,
+                     opt_steps, optimizer,
+                     r0_init, r0_final,
+                     k_s, beta)
+
+  positions = jnp.array(positions)
+    
+  plt.figure(figsize = (10,10))
+  true_E = []
+  pos_vec = jnp.reshape(positions, (positions.shape[0], 1, 1))
+  for j in range(positions.shape[0]):
+    true_E.append(energy_fn(pos_vec[j]))
+  plt.plot(positions, true_E, label = "True Landscape")
+
+  for num, energies in enumerate(landscapes):
+    plt.plot(positions, energies, label = f"Iteration {num}")
+  
+  plt.plot(positions, landscapes[-1], label = "Final Landscape")
+  plt.legend()
+  plt.xlabel("Position (x)")
+  plt.ylabel("Free Energy (G)")
+  
+  plt.show()
 
 def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt):
   stddev = jnp.std(x, axis)
