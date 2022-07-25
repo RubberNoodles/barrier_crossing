@@ -128,7 +128,7 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
 
   grad_fn = batch_grad_fn(batch_size)
   
-  for j in tqdm.trange(num_steps,position=0, desc="Optimize Protocol: "):
+  for j in tqdm.trange(num_steps,position=1, desc="Optimize Protocol: "):
     key, split = jax.random.split(key)
     grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state), split)
 

@@ -51,7 +51,7 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
 
   midpoints = []
   free_energies = []
-  for k in range(bins):
+  for k in tqdm.trange(bins, position=0, desc="Reconstruct Landscape Bins:"):
     logging.info(f"Reconstructing for bin {k+1}")
     energy = free_energy_q(k)[0][0]
     free_energies.append(energy)
@@ -138,7 +138,7 @@ def optimize_landscape(ground_truth_energy_fn,
   trap_fn = init_trap_fn
   trap_coeffs = init_trap_coeffs
   
-  for iter_num in tqdm.trange(max_iter, position=1, desc="Optimize Landscape: "):
+  for iter_num in tqdm.trange(max_iter, position=2, desc="Optimize Landscape: "):
     if new_landscape:
       old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1])) # TODO
 
