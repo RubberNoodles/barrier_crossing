@@ -54,14 +54,19 @@ def estimate_gradient_fwd(batch_size,
                           shift,
                           simulation_steps, dt,
                           temperature, mass, gamma):
-    mapped_estimate = jax.vmap(single_estimate_fwd(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
+  """Compute the total gradient with forward trajectories and loss based on work used.
+    Returns:
+      Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
+      ``seed`` to set rng."""
+  
+  mapped_estimate = jax.vmap(single_estimate_fwd(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
 
-    @jax.jit #why am I allowed to jit something whose output is a function? Thought it had to be pytree output...
-    def _estimate_gradient(coeffs, seed):
-      seeds = jax.random.split(seed, batch_size)
-      (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
-      return jnp.mean(grad, axis=0), (gradient_estimator, summary)
-    return _estimate_gradient
+  @jax.jit #why am I allowed to jit something whose output is a function? Thought it had to be pytree output...
+  def _estimate_gradient(coeffs, seed):
+    seeds = jax.random.split(seed, batch_size)
+    (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
+    return jnp.mean(grad, axis=0), (gradient_estimator, summary)
+  return _estimate_gradient
 
 
 def single_estimate_rev(energy_fn,
@@ -93,14 +98,18 @@ def estimate_gradient_rev(batch_size,
                           Neq, shift,
                           simulation_steps, dt,
                           temperature, mass, gamma, beta):
-    """Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). """
-    mapped_estimate = jax.vmap(single_estimate_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta), [None, 0])  
-    @jax.jit 
-    def _estimate_gradient(coeffs, seed):
-      seeds = jax.random.split(seed, batch_size)
-      (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
-      return jnp.mean(grad, axis=0), (gradient_estimator, summary)
-    return _estimate_gradient
+  """Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). 
+  Compute the total gradient with forward trajectories and loss based on work used.
+    Returns:
+      Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
+      ``seed`` to set rng."""
+  mapped_estimate = jax.vmap(single_estimate_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta), [None, 0])  
+  @jax.jit 
+  def _estimate_gradient(coeffs, seed):
+    seeds = jax.random.split(seed, batch_size)
+    (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
+    return jnp.mean(grad, axis=0), (gradient_estimator, summary)
+  return _estimate_gradient
 
 def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_steps, save_path = None):
   """ Training loop to optimize the coefficients of a chebyshev polynomial that defines the 
@@ -114,6 +123,10 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
       Currently used for Engel's work reduction (forward) and Geiger & Dellago 2010 Part IV. D. (reverse)
     
     # TODO: describe other self-explanatory args
+  Returns:
+    ``coeffs``: List of tuples of (``optimization_step``, ``protocol coefficients``)
+    ``summaries``: List of outputs from batch_harmonic_simulator
+    ``all_works``: List of lists of amount of work (ΔW) for each trajectory
   """
   summaries = []
   coeffs_ = []
@@ -128,7 +141,7 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
 
   grad_fn = batch_grad_fn(batch_size)
   
-  for j in tqdm.trange(num_steps,position=1, desc="Optimize Protocol: "):
+  for j in tqdm.trange(num_steps,position=1, desc="Optimize Protocol: ", leave = True):
     key, split = jax.random.split(key)
     grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state), split)
 

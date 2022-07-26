@@ -45,7 +45,8 @@ def brownian(energy_or_force,
     gamma: A float specifying the friction coefficient between the particles
       and the solvent.
   Returns:
-    See above.
+    Tuple of `init_fn` to initialize the simulator and `apply_fn` to move orward one step
+      in time.
     [1] E. Carlon, M. Laleman, S. Nomidis. "Molecular Dynamics Simulation."
         http://itf.fys.kuleuven.be/~enrico/Teaching/molecular_dynamics_2015.pdf
         Accessed on 06/05/2019.
@@ -89,6 +90,9 @@ def brownian(energy_or_force,
 
 # 2016 Sivak and Crooks energy landscape. [ ] TODO: Full Citations.
 def V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s, beta):
+  """Returns:
+      Function that takes arguments of `position` and `trap_position` to output the total
+        energy of the system for those parameters."""
   def total_energy(position, r0=0.0, **unused_kwargs):
       x = position[0][0]
       Em = -(1./beta)*jnp.log(jnp.exp(-0.5*beta*kappa_l*(x+x_m)**2)+jnp.exp(-(0.5*beta*kappa_r*(x-x_m)**2+beta*delta_E)))
@@ -99,6 +103,9 @@ def V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s, beta):
 
 # 2010 Geiger and Dellago energy landscape.
 def V_biomolecule_geiger(k_s, epsilon, sigma):
+  """Returns:
+    Function that takes arguments of `position` and `trap_position` to output the total
+      energy of the system for those parameters."""
   def total_energy(position, r0=0.0, **unused_kwargs):
       x = position[0][0]
       #underlying energy landscape:

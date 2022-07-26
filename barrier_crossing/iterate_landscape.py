@@ -51,7 +51,7 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
 
   midpoints = []
   free_energies = []
-  for k in tqdm.trange(bins, position=0, desc="Reconstruct Landscape Bins:"):
+  for k in tqdm.trange(bins, position=0, desc="Reconstruct Landscape Bins: "):
     logging.info(f"Reconstructing for bin {k+1}")
     energy = free_energy_q(k)[0][0]
     free_energies.append(energy)
@@ -124,6 +124,10 @@ def optimize_landscape(ground_truth_energy_fn,
   to create a protocol that will allow for more accurate reconstructions.
   Args:
     ground_truth_energy_fn: # TODO
+  
+  Returns:
+    ``landscapes``: List of landscapes length ``max_iter``.
+    ``coeffs``: List of Chebyshev coefficients that are optimal at each iteration. 
   """
 
   old_landscape = None

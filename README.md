@@ -43,3 +43,6 @@ Contains `simulate_brownian_harmonic` and `batch_simulate_harmonic` functions in
 
 ### `optimize.py`
 Training loop using Jarzynski equality error (Geiger & Dellago 2010, Engel 2022, Jarzynski 1997) or work used to drag the particle over the landscape as a loss function.
+
+### `iterate_landscape.py`
+Iteratively attempt to reconstruct a black box landscape by looping over two tasks: based on a protocol for pulling the molecule, take a large number of simulations to reconstruct an energy landscape. Using this energy landscape, optimize a protocol to use to once again simulate and reconstruct.
