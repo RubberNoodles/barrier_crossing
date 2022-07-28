@@ -34,7 +34,9 @@ def simulate_brownian_harmonic(energy_fn,
     temperature: simulation temperature kT
 
   Returns:
-    total work required to drag the particle, from eq'n 17 in Jarzynski 2008
+    positions: particle positions (trajectory) for each simulation step.
+    log_probs: log probability of a particle being at each point on the trajectory.
+    works: total work required to drag the particle, from eq'n 17 in Jarzynski 2008
   """
 
   def equilibrate(init_state, Neq, apply, r0_init):
@@ -98,7 +100,10 @@ def batch_simulate_harmonic(batch_size,
       and the solvent.
     simulation_steps: Integer specifying number of steps to run the simulation for.
   Returns:
-    Output of simulate_fn, each element as an array of length batch_size.
+    total_works: dissipative work for each trajectory
+    trajectories: array of shape ``(batch_size, simulation_steps)`` with the particle positions
+      for each trajectory.
+    works: array of shape ``(batch_size, simulation_steps)`` containing works for each trajectory for each simulation step
   """
 
   key, split = jax.random.split(key)

@@ -3,6 +3,10 @@ __pycache__
 */temp
 .vscode
 .DS_Store
-build
+
 *.egg-info
+
+# Folders for auto-generated outputs.
+build
 logs
+geiger_output
