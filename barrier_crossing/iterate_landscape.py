@@ -166,7 +166,7 @@ def optimize_landscape(ground_truth_energy_fn,
     # Optimize a protocol with this new landscape
     logging.info("Optimiziing protocol from linear using reconstructed landscape.")
     
-    grad_fxn = lambda num_batches: grad_fn_no_E(trajectories, num_batches, energy_fn_guess)
+    grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)
     lin_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
     coeffs_, _, losses = optimize_protocol(lin_trap_coeffs, grad_fxn, optimizer, batch_size, opt_steps)
     
