@@ -116,6 +116,43 @@ def V_biomolecule_geiger(k_s, epsilon, sigma):
       return Em + Es
   return total_energy
 
+def V_biomolecule_reconstructed(k_s, positions, energies):
+  """Returns a function that takes position and outputs the free energy of 
+  a particle on a reconstructed landscape. 
+  
+  Args:
+    positions: Array[Floats]. An array of particle positions
+    energies: Array[Floats]
+      Same shape as positions, and the i-th value of the array is equal to
+    the free energy of a particle at the i-th position.
+  
+  Returns: Callable[particle_position, r0 = trap_position]
+  """
+  # Assuming a particle at positions[i] has G = energies[i]
+
+  start = positions[0]
+  end = positions[-1]
+  dx = positions[1]-positions[0]
+
+  def total_energy(particle_position, r0, **unused_kwargs):
+    x = particle_position[0][0]
+    bin_num = (x-start)/dx
+    bin_num = bin_num.astype(int)
+    
+    # if bin_num + 1 >= end:
+    #   raise ValueError
+    # else:
+    # Error checking will not work
+  
+    # interpolate
+    t = (x-bin_num*dx)/dx
+    Em = jax.lax.stop_gradient(t * energies[bin_num+1] + (1-t) * energies[bin_num])
+  
+    # moving harmonic potential
+    Es = k_s/2 * (x-r0) ** 2
+    return Em + Es
+  return total_energy
+
 # Currently unused
 def V_simple_spring(r0,k,box_size):
   def spring_energy(position, **unused_kwargs):

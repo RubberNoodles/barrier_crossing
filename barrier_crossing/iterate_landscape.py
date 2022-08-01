@@ -13,19 +13,19 @@ from jax.experimental import optimizers as jopt
 
 from jax_md import space
 
-from barrier_crossing.energy import V_biomolecule_geiger
+from barrier_crossing.energy import V_biomolecule_geiger, V_biomolecule_reconstructed
 from barrier_crossing.protocol import make_trap_fxn, make_trap_fxn_rev, linear_chebyshev_coefficients
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 from barrier_crossing.optimize import estimate_gradient_fwd, optimize_protocol
 
 def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, batch_size, k_s, beta):
-  logging.info("Reconstructing the landscape...")
   """
   Outputs a (midpoints, free_energies) tuple for reconstructing 
   free-energy landscapes.
   t - time step
   l - bin index (0 <= l < number of bins)
   """
+  logging.info("Reconstructing the landscape...")
   traj_min = traj_min = min(trajectories[:,0]) 
   traj_max = max(trajectories[:, simulation_steps]) 
   bin_width = (traj_max-traj_min)/bins
@@ -65,43 +65,6 @@ def landscape_diff(ls_1, ls_2):
   #assert(ls_1.shape == ls_2.shape)
   return jnp.linalg.norm(jnp.array(ls_2[1])-jnp.array(ls_1[1]))
 
-def V_biomolecule_reconstructed(k_s, positions, energies):
-  """Returns a function that takes position and outputs the free energy of 
-  a particle on a reconstructed landscape. 
-  
-  Args:
-    positions: Array[Floats]. An array of particle positions
-    energies: Array[Floats]
-      Same shape as positions, and the i-th value of the array is equal to
-    the free energy of a particle at the i-th position.
-  
-  Returns: Callable[particle_position, r0 = trap_position]
-  """
-  # Assuming a particle at positions[i] has G = energies[i]
-
-  start = positions[0]
-  end = positions[-1]
-  dx = positions[1]-positions[0]
-
-  def total_energy(particle_position, r0, **unused_kwargs):
-    x = particle_position[0][0]
-    bin_num = (x-start)/dx
-    bin_num = bin_num.astype(int)
-    
-    # if bin_num + 1 >= end:
-    #   raise ValueError
-    # else:
-    # Error checkingwill not work I suppose
-      # interpolate
-    t = (x-bin_num*dx)/dx
-    Em = jax.lax.stop_gradient(t * energies[bin_num+1] + (1-t) * energies[bin_num])
-  
-    # moving harmonic potential
-    Es = k_s/2 * (x-r0) ** 2
-    return Em + Es
-  return total_energy
-
-
 
 def optimize_landscape(ground_truth_energy_fn,
                       simulate_fn,
@@ -123,7 +86,22 @@ def optimize_landscape(ground_truth_energy_fn,
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
   to create a protocol that will allow for more accurate reconstructions.
   Args:
-    ground_truth_energy_fn: # TODO
+    ground_truth_energy_fn: Energy landscape we are trying to reconstruct. Callable(particle_position, trap_position) ->
+      energy. 
+        Intended to act as an unknown landscape with outputs of particle trajectory that would be obtained
+      from experimentation.
+    simulate_fn: Callable(Energy_fn, trap_schedule) 
+      -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
+        Function that simulates moving the particle along the given trap_schedule given a specified
+      energy function.
+    init_trap_fn: Callable(time_step) -> trap_position
+    init_trap_coeffs: Array[Float]. Coefficients of Chebyshev polynomial of initial protocol
+    grad_fn_no_E: Callable(batch_size, energy_fn) -> Callable(coeffs, seed, *args)
+        Function that allows input of arbitrary energy, function. Intended to be used as follows
+      ``grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)``
+    key: rng
+    max_iter: Integer specifying number of iterations of reconstruction.
+    bins: Integer specifying number of checkpoints/locations we try to estimate the energy landscape at.
   
   Returns:
     ``landscapes``: List of landscapes length ``max_iter``.
