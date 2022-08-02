@@ -78,12 +78,8 @@ def batch_simulate_harmonic(batch_size,
                             simulate_fn,
                             trap_fn,
                             simulation_steps,
-                            key,
-                            trap_coeffs = None, 
-                            cheby_degree = 12 
-                            ): 
-  
-  """ Makes a function to describe the trap schedule and runs the simulation code on it
+                            key): 
+  """Given trap and simulation functions, run code to simulate a brownian particle moved by trap
   in JAX optimized batches.
   Args:
     energy_fn: Callable(particle_position, r0) -> float. Gives the energy of a particle at a particular
@@ -94,30 +90,29 @@ def batch_simulate_harmonic(batch_size,
       energy function.
     batch_size: Integer specifying how many different trajectories to simulate.
     key: rng, jax.random.
-    mass: float specifying mass of the particle.
-    beta: float describing reciprocal temperature, equal to 1/K_bT.
-    gamma: A float specifying the friction coefficient between the particles
-      and the solvent.
     simulation_steps: Integer specifying number of steps to run the simulation for.
   Returns:
+    Array[], Tuple(Array[Array[]], Array[Array[]], Array[])
+
     total_works: dissipative work for each trajectory
     trajectories: array of shape ``(batch_size, simulation_steps)`` with the particle positions
       for each trajectory.
     works: array of shape ``(batch_size, simulation_steps)`` containing works for each trajectory for each simulation step
+    log_probs: Log probability of the trajectory.
   """
+  # TODO: Find out why you cannot take the gradient of this function.
 
   key, split = jax.random.split(key)
   #see JAX-MD documentation for details on how these energy/force/displacement functions work:
   # force_fn = quantity.force(energy_fn) # This is not useful code right now.
-  _, shift_fn = space.free()
 
   total_works = []
 
   # To generate a bunch of samples, we 'map' across seeds.
   mapped_sim = jax.soft_pmap(lambda keys : simulate_fn(energy_fn, keys))
   seeds = jax.random.split(split, batch_size)
-  trajectories, _, works = mapped_sim(seeds) #seed is array with diff seed for each run. I'm discarding the log prob data, here
+  trajectories, log_probs, works = mapped_sim(seeds) #seed is array with diff seed for each run. I'm discarding the log prob data, here
 
   total_works = jnp.sum(works, 1)
   
-  return total_works, (trajectories, works)
+  return total_works, (trajectories, works, log_probs)
