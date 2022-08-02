@@ -143,7 +143,7 @@ def optimize_landscape(ground_truth_energy_fn,
     
     # Optimize a protocol with this new landscape
     logging.info("Optimiziing protocol from linear using reconstructed landscape.")
-    bin_timesteps = find_bin_times(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
+    bin_timesteps = find_bin_timesteps(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
     
     grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess, bin_timesteps)
     lin_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
