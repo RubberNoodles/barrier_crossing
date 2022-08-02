@@ -111,6 +111,90 @@ def estimate_gradient_rev(batch_size,
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
 
+def find_bin_timesteps(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, key, bins):
+  """Given a (reversed) protocol and set of bins, return an array of the average time it takes for the particle to reach the midpoint
+  of each of these bins.
+  
+  Returns:
+    Array[]
+  """
+  total_works, (trajectories, works) = batch_simulate_harmonic(batch_size,
+                            energy_fn,
+                            simulate_fn,
+                            rev_trap_fn,
+                            simulation_steps,
+                            key)
+
+  mean_traj = jnp.mean(trajectories, axis = 0)
+
+  # Find timestep that mean trajectory is at the middle of each bin
+  midpoint_timestep = []
+
+  p_min = jnp.min(mean_traj)
+  p_max = jnp.max(mean_traj)
+  interval_len = (p_max - p_min)/bins
+
+  midpoints = [ p_max - (bin_num + 0.5) * interval_len for bin_num in range(bins) ]
+
+  time_step = 0
+
+  for bin_num in range(bins):
+    while float(mean_traj[time_step]) > midpoints[bin_num]:
+      time_step = time_step + 1
+    
+    midpoint_timestep.append(time_step)
+
+  midpoint_timestep = jnp.array(midpoint_timestep)
+  return midpoint_timestep
+
+def single_estimate_acc(energy_fn,
+                        init_position, r0_init, r0_final,
+                        Neq, shift,
+                        simulation_steps, dt,
+                        temperature, mass, gamma, beta,
+                        bin_timesteps):
+    @functools.partial(jax.value_and_grad, has_aux = True)
+    def _single_estimate(coeffs, seed):
+      trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
+      positions, log_probs, works = simulate_brownian_harmonic(
+          energy_fn, 
+          init_position, trap_fn,
+          simulation_steps,
+          Neq, shift, seed, 
+          dt, temperature, mass, gamma
+          )
+      gradient_estimator = 0.
+      summary = [positions, [], []]
+      for time_slice in bin_timesteps:
+        log_prob = jax.lax.dynamic_slice(log_probs, (0,), (time_slice,)).sum()
+        work = jax.lax.dynamic_slice(works, (0,), (time_slice,)).sum()
+        gradient_estimator += log_prob * jax.lax.stop_gradient(jnp.exp(beta*work)) + \
+                jax.lax.stop_gradient(beta * jnp.exp(beta * work)) * work
+        
+        summary[1].append(log_prob)
+        summary[2].append(jnp.exp(beta*work))
+      return gradient_estimator, summary
+    return _single_estimate
+
+def estimate_gradient_acc(batch_size,
+                          energy_fn,
+                          init_position, r0_init, r0_final,
+                          Neq, shift,
+                          simulation_steps, dt,
+                          temperature, mass, gamma, beta,
+                          bin_timesteps):
+  """Estimate the error across an entire landscape based on the number of bins.
+  
+  Returns:
+    Callable(Array[], jax.random RNG key)
+  """
+  mapped_estimate = jax.vmap(single_estimate_acc(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, bin_timesteps), [None, 0])  
+  def _estimate_gradient(coeffs, seed):
+    seeds = jax.random.split(seed, batch_size)
+    (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
+    return jnp.mean(grad, axis=0), (gradient_estimator, summary)
+  return _estimate_gradient
+
 def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_steps, save_path = None):
   """ Training loop to optimize the coefficients of a chebyshev polynomial that defines the 
   protocol of moving a harmonic trap over a free energy landscape.
