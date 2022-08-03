@@ -145,8 +145,8 @@ def V_biomolecule_reconstructed(k_s, positions, energies):
     # Error checking will not work
   
     # interpolate
-    t = (x-bin_num*dx)/dx
-    Em = jax.lax.stop_gradient(t * energies[bin_num+1] + (1-t) * energies[bin_num])
+    t = (x-(bin_num * dx + start))/dx
+    Em = jax.lax.stop_gradient(t * energies[bin_num] + (1-t) * energies[bin_num+1])
   
     # moving harmonic potential
     Es = k_s/2 * (x-r0) ** 2
