@@ -124,14 +124,12 @@ def optimize_landscape(ground_truth_energy_fn,
     if new_landscape:
       old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1])) # TODO
 
-    _, (trajectories, works) = batch_simulate_harmonic(batch_size,
+    _, (trajectories, works, log_probs) = batch_simulate_harmonic(batch_size,
                             ground_truth_energy_fn,
                             simulate_fn,
                             trap_fn,
                             simulation_steps,
-                            key,
-                            trap_coeffs = None, 
-                            cheby_degree = 12 )
+                            key)
     
     logging.info("Creating landscape.")
     new_landscape = energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, batch_size, k_s, beta) # TODO: 

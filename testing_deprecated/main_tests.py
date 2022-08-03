@@ -63,7 +63,7 @@ def test_geiger_simulate():
   energy_fn = V_biomolecule_geiger(k_s = 0.4, epsilon = 1., sigma = 1.)
 
   # Run `batch_size` number of simulations with JAX-optimized looping
-  total_works, (trajectories, works) = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn_fwd, trap_fn, simulation_steps, key)
+  total_works, (trajectories, works, log_probs) = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn_fwd, trap_fn, simulation_steps, key)
   
   print("average work done in moving the particle: ",jnp.mean(total_works))
   

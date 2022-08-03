@@ -118,7 +118,7 @@ def find_bin_timesteps(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, ke
   Returns:
     Array[]
   """
-  total_works, (trajectories, works) = batch_simulate_harmonic(batch_size,
+  total_works, (trajectories, works, log_probs) = batch_simulate_harmonic(batch_size,
                             energy_fn,
                             simulate_fn,
                             rev_trap_fn,

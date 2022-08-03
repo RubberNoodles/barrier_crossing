@@ -74,7 +74,7 @@ def geiger_work_opt(task_num, batch_size, opt_steps):
     init_position, trap_fn_optimized, simulation_steps, Neq, shift_fn, keys, dt, temperature = 1/beta, mass = mass, gamma = gamma)
 
   total_works_forward_opt, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn_fwd, trap_fn_optimized, simulation_steps, 
-  key, coeffs_, cheby_degree = 12)
+  key)
 
   afile = open(save_filepath + 'works_forward_opt.pkl', 'wb')
   pickle.dump(total_works_forward_opt, afile)
@@ -142,7 +142,7 @@ def geiger_error_opt(task_num, batch_size, opt_steps):
     r0_init*jnp.ones((N,dim)), trap_fn_optimized, simulation_steps, Neq, shift_fn, keys, dt, temperature = 1/beta, mass = mass, gamma = gamma)
 
   total_works_reverse_opt, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn ,trap_fn_optimized, simulation_steps, 
-  key, coeffs_, cheby_degree = 12)
+  key)
 
   afile = open(save_filepath + 'works_reverse_opt.pkl', 'wb')
   pickle.dump(total_works_reverse_opt, afile)
@@ -193,7 +193,7 @@ def get_linear_works(task_num, batch_size):
     init_position, trap_fn, simulation_steps, Neq, shift_fn, keys, dt, temperature = 1/beta, mass = mass, gamma = gamma)
   
   total_works_linear, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn ,trap_fn, simulation_steps, 
-  key, cheby_degree = 12)
+  key)
 
   afile = open(save_filepath + 'works_linear.pkl', 'wb')
   pickle.dump(total_works_linear, afile)
