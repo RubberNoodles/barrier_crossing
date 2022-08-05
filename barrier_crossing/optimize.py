@@ -12,7 +12,7 @@ import jax_md
 
 import jax.numpy as jnp
 from jax import random
-from jax.experimental import optimizers as jopt
+import jax.example_libraries.optimizers as jopt
 
 from jax_md import quantity, space
 
@@ -231,12 +231,8 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
 
     opt_state = optimizer.update_fn(j, grad, opt_state)
     all_works.append(summary[2])
-    if j % 100 == 0:
-        coeffs_.append(((j+1),) + (optimizer.params_fn(opt_state),))
-    if j == (num_steps-1):
-        coeffs_.append((j+1,) + (optimizer.params_fn(opt_state),))
       
-  coeffs_.append((num_steps,) + (optimizer.params_fn(opt_state),))
+    coeffs_.append((num_steps,) + (optimizer.params_fn(opt_state),))
 
   logging.info("init parameters: ", optimizer.params_fn(init_state))
   logging.info("final parameters: ", optimizer.params_fn(opt_state))

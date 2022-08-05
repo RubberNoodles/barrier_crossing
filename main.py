@@ -14,8 +14,8 @@ from barrier_crossing.energy import V_biomolecule_geiger
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
 
-from main_tests import test_geiger_simulate, test_fwd_opt, test_opt_landscape
-from main_geiger import geiger_error_opt, geiger_work_opt, get_linear_works
+#from main_tests import test_geiger_simulate, test_fwd_opt, test_opt_landscape
+from testing_deprecated.main_geiger import geiger_error_opt, geiger_work_opt, get_linear_works
 
 # from barrier_crossing.iterate_landscape import optimize_landscape
 
@@ -30,7 +30,7 @@ def geiger_optimize():
 if __name__ == "__main__":
   # test_geiger_simulate()
   # test_fwd_opt()
-  test_opt_landscape()
-  
+  #test_opt_landscape()
+  geiger_optimize()
   #optimize_landscape()
   

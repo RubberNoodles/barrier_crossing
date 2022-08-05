@@ -10,7 +10,7 @@ from jax import random
 
 from jax_md import quantity, space
 
-from jax.experimental import optimizers as jopt
+import jax.example_libraries.optimizers as jopt
 
 from barrier_crossing.energy import V_biomolecule_geiger
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic

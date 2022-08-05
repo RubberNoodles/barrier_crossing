@@ -9,7 +9,7 @@ import jax.numpy as jnp
 import jax.random as random
 import jax
 
-from jax.experimental import optimizers as jopt
+import jax.example_libraries.optimizers as jopt
 
 from jax_md import space
 
