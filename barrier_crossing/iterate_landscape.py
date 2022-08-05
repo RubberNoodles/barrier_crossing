@@ -30,6 +30,10 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
   traj_max = max(trajectories[:, simulation_steps]) 
   bin_width = (traj_max-traj_min)/bins
 
+  # Use less than 10 gb of memory:
+  num_pages = int(simulation_steps * batch_size * batch_size / 1e9)
+  page_size = int(simulation_steps / num_pages)
+
   def exponential_avg(t): #find exponential average using eq. 3.20
     exp_works_t = jnp.exp(-beta * works)[:,t] #find exponential of work at t
     return (1/batch_size)*(jnp.sum(exp_works_t, 0)) 
@@ -42,24 +46,40 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
     q_l = traj_min + (l + 0.5) * bin_width # midpoint of the lth extension bin
     return 0.5 * k_s * (trap_fn(t) - q_l)**2
   def free_energy_q(l): # find free energy for lth bin
-    sum1 = 0.0
-    sum2 = 0.0
     #for t in range(simulation_steps):
-    for t in tqdm.trange(simulation_steps, position=3, desc="Reconstruct Landscape Bins: "):
-      sum1 += numerator(t,l)/ exponential_avg(t)
-      sum2 += (jnp.exp(-beta*potential_energy(l,t)))/ exponential_avg(t)
-    return (-(1/beta) * jnp.log(sum1/sum2))
+    #for t in tqdm.trange(simulation_steps, position=3, desc="Adding things: ", leave = True):
+    num = 0.
+    denom = 0.
+    page_start = 0
+
+    batch_num = jax.vmap(lambda t: numerator(t,l)/ exponential_avg(t))
+    batch_denom =jax.vmap(lambda t: (jnp.exp(-beta*potential_energy(l,t))) / exponential_avg(t))
+
+    
+    for _ in range(num_pages):
+      page_end = int(page_start + page_size)
+      page_range = jnp.arange(page_start, page_end)
+      num += batch_num(page_range).sum()
+      denom += batch_denom(page_range).sum() 
+      
+      page_start = page_end
+
+    page_range = jnp.arange(page_start, simulation_steps)
+    if page_range.shape[0] != 0:
+      num += batch_num(page_range).sum()
+      denom += batch_denom(page_range).sum()
+    
+    return (-(1/beta) * jnp.log(num/denom))
 
   midpoints = []
   free_energies = []
   for k in tqdm.trange(bins, position=0, desc="Reconstruct Landscape Bins: "):
     logging.info(f"Reconstructing for bin {k+1}")
-    energy = free_energy_q(k)[0][0]
+    energy = free_energy_q(k)
     free_energies.append(energy)
     midpoints.append((traj_min[0][0] + (k+0.5)*bin_width[0][0]))
   
   return (midpoints, free_energies)
-
 
 def landscape_diff(ls_1, ls_2):
   # TODO depending on the form might need to change which index to take
