@@ -44,7 +44,8 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
   def free_energy_q(l): # find free energy for lth bin
     sum1 = 0.0
     sum2 = 0.0
-    for t in range(simulation_steps):
+    #for t in range(simulation_steps):
+    for t in tqdm.trange(simulation_steps, position=3, desc="Reconstruct Landscape Bins: "):
       sum1 += numerator(t,l)/ exponential_avg(t)
       sum2 += (jnp.exp(-beta*potential_energy(l,t)))/ exponential_avg(t)
     return (-(1/beta) * jnp.log(sum1/sum2))
