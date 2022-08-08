@@ -46,8 +46,6 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
     q_l = traj_min + (l + 0.5) * bin_width # midpoint of the lth extension bin
     return 0.5 * k_s * (trap_fn(t) - q_l)**2
   def free_energy_q(l): # find free energy for lth bin
-    #for t in range(simulation_steps):
-    #for t in tqdm.trange(simulation_steps, position=3, desc="Adding things: ", leave = True):
     num = 0.
     denom = 0.
     page_start = 0
@@ -102,7 +100,8 @@ def optimize_landscape(ground_truth_energy_fn,
                       r0_init,
                       r0_final,
                       k_s,
-                      beta):
+                      beta,
+                      bin_timesteps):
   """Iteratively reconstruct a black box energy landscape from simulated trajectories. Optimize a protocol
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
   to create a protocol that will allow for more accurate reconstructions.
@@ -162,7 +161,7 @@ def optimize_landscape(ground_truth_energy_fn,
     
     # Optimize a protocol with this new landscape
     logging.info("Optimiziing protocol from linear using reconstructed landscape.")
-    bin_timesteps = find_bin_timesteps(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
+    # bin_timesteps = find_bin_timesteps(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
     
     grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess, bin_timesteps)
     lin_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)

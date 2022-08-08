@@ -158,6 +158,8 @@ def test_opt_landscape():
   
   grad_no_E = lambda num_batches, energy_fn: estimate_gradient_fwd(num_batches, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, 1/beta, mass, gamma)
   
+  bin_timesteps = jnp.arange(1,20) * int(simulation_steps/20)
+  
   landscapes, coeffs, positions = optimize_landscape(energy_fn,
                      simulate_fn,
                      init_trap_fn,
@@ -170,7 +172,8 @@ def test_opt_landscape():
                      batch_size,
                      opt_steps, optimizer,
                      r0_init, r0_final,
-                     k_s, beta)
+                     k_s, beta,
+                     bin_timesteps)
 
   positions = jnp.array(positions)
     
