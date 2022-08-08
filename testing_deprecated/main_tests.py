@@ -15,7 +15,7 @@ import jax.example_libraries.optimizers as jopt
 from barrier_crossing.energy import V_biomolecule_geiger
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
-from barrier_crossing.optimize import optimize_protocol, estimate_gradient_fwd
+from barrier_crossing.optimize import optimize_protocol, estimate_gradient_work
 from barrier_crossing.iterate_landscape import optimize_landscape
 
 def test_geiger_simulate():
@@ -105,7 +105,7 @@ def test_fwd_opt():
 
   energy_fn = V_biomolecule_geiger(k_s = 0.4, epsilon = 1., sigma = 1.)
   
-  grad_fxn = lambda num_batches: estimate_gradient_fwd(num_batches, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, 1/beta, mass, gamma)
+  grad_fxn = lambda num_batches: estimate_gradient_work(num_batches, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, 1/beta, mass, gamma)
   
   
   optimize_protocol(trap_coeffs, grad_fxn, optimizer, batch_size, opt_steps)
@@ -156,9 +156,9 @@ def test_opt_landscape():
   max_iter = 5
   bins = 10
   
-  grad_no_E = lambda num_batches, energy_fn: estimate_gradient_fwd(num_batches, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, 1/beta, mass, gamma)
+  grad_no_E = lambda num_batches, energy_fn: estimate_gradient_work(num_batches, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, 1/beta, mass, gamma)
   
-  bin_timesteps = jnp.arange(1,20) * int(simulation_steps/20)
+  error_samples = jnp.arange(1,20) * int(simulation_steps/20)
   
   landscapes, coeffs, positions = optimize_landscape(energy_fn,
                      simulate_fn,
@@ -173,7 +173,7 @@ def test_opt_landscape():
                      opt_steps, optimizer,
                      r0_init, r0_final,
                      k_s, beta,
-                     bin_timesteps)
+                     error_samples)
 
   positions = jnp.array(positions)
     

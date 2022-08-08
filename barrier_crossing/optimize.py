@@ -20,7 +20,7 @@ from barrier_crossing.energy import V_biomolecule_geiger
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
 from barrier_crossing.simulate import simulate_brownian_harmonic
 
-def single_estimate_fwd(energy_fn,
+def single_estimate_work(energy_fn,
                         init_position, r0_init, r0_final,
                         Neq,
                         shift,
@@ -47,7 +47,7 @@ def single_estimate_fwd(energy_fn,
       return gradient_estimator, summary
   return _single_estimate 
 
-def estimate_gradient_fwd(batch_size,
+def estimate_gradient_work(batch_size,
                           energy_fn,
                           init_position, r0_init, r0_final,
                           Neq,
@@ -59,7 +59,7 @@ def estimate_gradient_fwd(batch_size,
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
   
-  mapped_estimate = jax.vmap(single_estimate_fwd(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
+  mapped_estimate = jax.vmap(single_estimate_work(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
 
   @jax.jit #why am I allowed to jit something whose output is a function? Thought it had to be pytree output...
   def _estimate_gradient(coeffs, seed):
@@ -111,7 +111,7 @@ def estimate_gradient_rev(batch_size,
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
 
-def find_bin_timesteps(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, key, bins):
+def find_error_samples(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, key, bins):
   """Given a (reversed) protocol and set of bins, return an array of the average time it takes for the particle to reach the midpoint
   of each of these bins.
   
@@ -147,12 +147,12 @@ def find_bin_timesteps(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, ke
   midpoint_timestep = jnp.array(midpoint_timestep)
   return midpoint_timestep
 
-def single_estimate_acc(energy_fn,
+def single_estimate_acc_rev(energy_fn,
                         init_position, r0_init, r0_final,
                         Neq, shift,
                         simulation_steps, dt,
                         temperature, mass, gamma, beta,
-                        bin_timesteps):
+                        error_samples):
     @functools.partial(jax.value_and_grad, has_aux = True)
     def _single_estimate(coeffs, seed):
       trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
@@ -165,7 +165,7 @@ def single_estimate_acc(energy_fn,
           )
       gradient_estimator = 0.
       summary = [positions, [], []]
-      for time_slice in bin_timesteps:
+      for time_slice in error_samples:
         log_prob = jax.lax.dynamic_slice(log_probs, (0,), (time_slice,)).sum()
         work = jax.lax.dynamic_slice(works, (0,), (time_slice,)).sum()
         gradient_estimator += log_prob * jax.lax.stop_gradient(jnp.exp(beta*work)) + \
@@ -176,19 +176,19 @@ def single_estimate_acc(energy_fn,
       return gradient_estimator, summary
     return _single_estimate
 
-def estimate_gradient_acc(batch_size,
+def estimate_gradient_acc_rev(batch_size,
                           energy_fn,
                           init_position, r0_init, r0_final,
                           Neq, shift,
                           simulation_steps, dt,
                           temperature, mass, gamma, beta,
-                          bin_timesteps):
+                          error_samples):
   """Estimate the error across an entire landscape based on the number of bins.
   
   Returns:
     Callable(Array[], jax.random RNG key)
   """
-  mapped_estimate = jax.vmap(single_estimate_acc(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, bin_timesteps), [None, 0])  
+  mapped_estimate = jax.vmap(single_estimate_acc_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, error_samples), [None, 0])  
   def _estimate_gradient(coeffs, seed):
     seeds = jax.random.split(seed, batch_size)
     (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)

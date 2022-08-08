@@ -17,7 +17,7 @@ import jax.example_libraries.optimizers as jopt
 from barrier_crossing.energy import V_biomolecule_geiger
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
-from barrier_crossing.optimize import optimize_protocol, estimate_gradient_fwd, estimate_gradient_rev
+from barrier_crossing.optimize import optimize_protocol, estimate_gradient_work, estimate_gradient_rev
 
 
 def geiger_work_opt(task_num, batch_size, opt_steps):
@@ -62,7 +62,7 @@ def geiger_work_opt(task_num, batch_size, opt_steps):
 
   energy_fn = V_biomolecule_geiger(k_s, epsilon, sigma)
   
-  grad_fxn = lambda num_batches: estimate_gradient_fwd(num_batches, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, 1/beta, mass, gamma)
+  grad_fxn = lambda num_batches: estimate_gradient_work(num_batches, energy_fn, init_position, r0_init, r0_final, Neq, shift_fn, simulation_steps, dt, 1/beta, mass, gamma)
   
   coeffs_, summaries, all_works = optimize_protocol(trap_coeffs, grad_fxn, optimizer, batch_size, opt_steps, save_filepath + "forward_")
   
