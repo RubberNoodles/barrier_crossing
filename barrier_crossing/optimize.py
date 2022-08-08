@@ -76,7 +76,7 @@ def single_estimate_rev(energy_fn,
                         temperature, mass, gamma, beta):
   @functools.partial(jax.value_and_grad, has_aux = True)
   def _single_estimate(coeffs, seed):
-    trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
+    trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
     positions, log_probs, works = simulate_brownian_harmonic(
         energy_fn, 
         init_position, trap_fn,
@@ -155,7 +155,7 @@ def single_estimate_acc_rev(energy_fn,
                         error_samples):
     @functools.partial(jax.value_and_grad, has_aux = True)
     def _single_estimate(coeffs, seed):
-      trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
+      trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
       positions, log_probs, works = simulate_brownian_harmonic(
           energy_fn, 
           init_position, trap_fn,
