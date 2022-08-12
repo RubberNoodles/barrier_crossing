@@ -161,7 +161,7 @@ def single_estimate_acc_rev(energy_fn,
       summary = [[], [], []]
       for time_slice in error_samples:
         r0_i = r0_final - (dr*time_slice)
-        trap_fn = make_trap_fxn_rev(jnp.arange(time_slice), coeffs, r0_i, r0_final)
+        trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_i, r0_final)
         positions, log_probs, works = simulate_brownian_harmonic(
             energy_fn, 
             init_position, trap_fn,
