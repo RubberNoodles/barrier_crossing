@@ -95,6 +95,7 @@ def make_custom_trap_fxn(time_vec, timestep_trap_position, r0_init, r0_final):
 def make_custom_trap_fxn_rev(time_vec, timestep_trap_position, r0_init, r0_final):
   """Create trap function. Return Callable to interpolate between 
   (time, position)` pairs of `time_trap_position"""
+  simulation_steps = time_vec.shape[0]
   custom_positions = jnp.interp(jnp.arange(simulation_steps), timestep_trap_position[:,0], timestep_trap_position[:,1])
   custom_positions = custom_positions.at[0].set(r0_init)
   custom_positions = custom_positions.at[-1].set(r0_final)
