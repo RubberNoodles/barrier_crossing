@@ -52,7 +52,7 @@ def brownian(energy_or_force,
         Accessed on 06/05/2019.
   """
 
-  force_fn = jmd.quantity.canonicalize_force(energy_or_force)
+  force_fn = jmd.simulate.canonicalize_force(energy_or_force)
 
   dt, gamma = jmd.util.static_cast(dt, gamma)
 
