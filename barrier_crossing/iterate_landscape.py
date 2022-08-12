@@ -32,7 +32,10 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
 
   # Use less than 10 gb of memory:
   num_pages = int(simulation_steps * batch_size * batch_size / 1e9)
-  page_size = int(simulation_steps / num_pages)
+  if num_pages == 0:
+    page_size = 0
+  else:
+    page_size = int(simulation_steps / num_pages)
 
   def exponential_avg(t): #find exponential average using eq. 3.20
     exp_works_t = jnp.exp(-beta * works)[:,t] #find exponential of work at t
@@ -55,6 +58,7 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
 
     
     for _ in range(num_pages):
+      assert(page_size > 0)
       page_end = int(page_start + page_size)
       page_range = jnp.arange(page_start, page_end)
       num += batch_num(page_range).sum()
