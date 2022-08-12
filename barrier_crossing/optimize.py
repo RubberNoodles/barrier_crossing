@@ -155,22 +155,26 @@ def single_estimate_acc_rev(energy_fn,
                         error_samples):
     @functools.partial(jax.value_and_grad, has_aux = True)
     def _single_estimate(coeffs, seed):
-      trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
-      positions, log_probs, works = simulate_brownian_harmonic(
-          energy_fn, 
-          init_position, trap_fn,
-          simulation_steps,
-          Neq, shift, seed, 
-          dt, temperature, mass, gamma
-          )
+      dr = (r0_final - r0_init)/simulation_steps
+
       gradient_estimator = 0.
-      summary = [positions, [], []]
+      summary = [[], [], []]
       for time_slice in error_samples:
-        log_prob = jax.lax.dynamic_slice(log_probs, (0,), (time_slice,)).sum()
-        work = jax.lax.dynamic_slice(works, (0,), (time_slice,)).sum()
+        r0_i = r0_final - (dr*time_slice)
+        trap_fn = make_trap_fxn_rev(jnp.arange(time_slice), coeffs, r0_i, r0_final)
+        positions, log_probs, works = simulate_brownian_harmonic(
+            energy_fn, 
+            init_position, trap_fn,
+            time_slice,
+            Neq, shift, seed, 
+            dt, temperature, mass, gamma
+            )
+        
+        log_prob = log_probs.sum()
+        work = works.sum()
         gradient_estimator += log_prob * jax.lax.stop_gradient(jnp.exp(beta*work)) + \
                 jax.lax.stop_gradient(beta * jnp.exp(beta * work)) * work
-        
+        summary[0].append(positions)
         summary[1].append(log_prob)
         summary[2].append(jnp.exp(beta*work))
       return gradient_estimator, summary
