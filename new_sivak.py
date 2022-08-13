@@ -70,9 +70,15 @@ if __name__ == "__main__":
   
   Neq = 500
   
-  lin_coeffs_sc = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree = 12, y_intercept = r0_init_sc)
-  trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
-  trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
+  init_coeffs_sc = jnp.array([ 7.0646591e-02  3.3362978e+00  5.1728708e-01  1.0489219e+00
+ -2.1314605e-01  4.8330837e-01  6.5749837e-03  6.6173322e-02
+  1.0880868e-01  1.5066752e-01  1.2060404e-02  1.8294835e-02
+ -7.4395780e-03  6.5247095e-03  3.5647728e-02 -1.1163305e-02
+  6.0015433e-02 -6.1670109e-03  1.6130991e-02  3.9281033e-02
+  1.6379565e-02  3.1714685e-02  1.4345808e-02  1.7843667e-02
+ -1.1081177e-04]))
+  trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), init_coeffs_sc, r0_init_sc, r0_final_sc)
+  trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), init_coeffs_sc, r0_init_sc, r0_final_sc)
   
   _, shift = space.free() # Defines how to move a particle by small distances dR.
   # RNG
@@ -139,7 +145,7 @@ if __name__ == "__main__":
   lr = jopt.exponential_decay(0.3, opt_steps, 0.01)
   optimizer = jopt.adam(lr)
 
-  coeffs, summaries, losses = bc_optimize.optimize_protocol(lin_coeffs_sc, grad_no_batch, optimizer, batch_size, opt_steps)
+  coeffs, summaries, losses = bc_optimize.optimize_protocol(init_coeffs_sc, grad_no_batch, optimizer, batch_size, opt_steps)
 
   with open("./coeffs_sivak.pkl", "wb") as f:
     pickle.dump(coeffs, f)
@@ -165,7 +171,7 @@ if __name__ == "__main__":
   ax[0].set_xlabel('Number of Optimization Steps')
   ax[0].set_ylabel('Error')
 
-  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
+  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), init_coeffs_sc, r0_init_sc, r0_final_sc)
   init_sched = trap_fn(jnp.arange(simulation_steps_sc))
   ax[1].plot(jnp.arange(simulation_steps_sc), init_sched, label='Initial guess')
 
@@ -190,7 +196,7 @@ if __name__ == "__main__":
   batch_size_sc_rec = 1000
   bins = 4
 
-
+  lin_coeffs_sc = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree=24, y_intercept = 0)
   lin_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   opt_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs[-1][1], r0_init_sc, r0_final_sc)
 
@@ -219,3 +225,49 @@ if __name__ == "__main__":
   plt.plot(positions, sivak_E, label = "Ground Truth")
   plt.legend()
   plt.savefig("./landscape_reconstruction.png")
+    
+  # max_iter = 5
+  # opt_steps_landscape = 3
+  # bins = 3
+
+  # _, shift = space.free()
+
+  # grad_no_E = lambda num_batches, energy_fn, error_samples: bc_optimize.estimate_gradient_acc_rev(
+  #     num_batches, energy_fn, init_position_rev_sc, 
+  #     r0_init_sc, r0_final_sc, Neq, shift, 
+  #     simulation_steps_sc, dt_sc, 
+  #     temperature_sc, mass_sc, gamma_sc, beta_sc,
+  #     error_samples)
+
+  # landscapes, coeffs, positions = bc_landscape.optimize_landscape(energy_sivak,
+  #                     simulate_sivak_fn_rev,
+  #                     trap_fn_rev_sc, 
+  #                     init_coeffs_sc, 
+  #                     grad_no_E,
+  #                     key,
+  #                     max_iter,
+  #                     bins,
+  #                     simulation_steps_sc,
+  #                     batch_size,
+  #                     opt_steps_landscape, optimizer,
+  #                     r0_init_sc, r0_final_sc,
+  #                     k_s_sc, beta_sc,
+  #                     grad_sampling_timesteps_sc)
+
+  # positions = jnp.array(positions)
+    
+  # plt.figure(figsize = (10,10))
+  # true_E = []
+  # pos_vec = jnp.reshape(positions, (positions.shape[0], 1, 1))
+  # for j in range(positions.shape[0]):
+  #   true_E.append(energy_sivak(pos_vec[j]))
+  # plt.plot(positions, true_E, label = "True Landscape")
+
+  # for num, energies in enumerate(landscapes):
+  #   plt.plot(positions, energies, label = f"Iteration {num}")
+
+  # plt.plot(positions, landscapes[-1], label = "Final Landscape")
+  # plt.legend()
+  # plt.xlabel("Position (x)")
+  # plt.ylabel("Free Energy (G)")
+  # plt.savefig("./iterate_landscape.png")
