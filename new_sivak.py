@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
   # Even Sampling weighted to second well 
   cb_timestep = int(cross_barrier_time / dt_sc)
-  grad_sampling_timesteps_sc = jnp.arange(int((simulation_steps_sc - cb_timestep)/200))* 200 + cb_timestep
+  grad_sampling_timesteps_sc = jnp.arange(int((simulation_steps_sc - cb_timestep)/100))* 100 + cb_timestep
 
   grad_no_batch = lambda num_batches: bc_optimize.estimate_gradient_acc_rev(
       num_batches,
@@ -133,8 +133,8 @@ if __name__ == "__main__":
       beta_sc,
       grad_sampling_timesteps_sc)
   
-  batch_size = 5 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 3 # Number of gradient descent steps to take.
+  batch_size = 4000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 200 # Number of gradient descent steps to take.
 
   lr = jopt.exponential_decay(0.3, opt_steps, 0.01)
   optimizer = jopt.adam(lr)
@@ -188,7 +188,7 @@ if __name__ == "__main__":
   
     
   batch_size_sc_rec = 1000
-  bins = 4
+  bins = 40
 
 
   lin_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
