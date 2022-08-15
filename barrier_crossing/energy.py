@@ -134,7 +134,7 @@ def V_biomolecule_reconstructed(k_s, positions, energies):
   end = positions[-1]
   dx = positions[1]-positions[0]
 
-  def total_energy(particle_position, r0, **unused_kwargs):
+  def total_energy(particle_position, r0 = 0., **unused_kwargs):
     x = particle_position[0][0]
     bin_num = (x-start)/dx
     bin_num = bin_num.astype(int)
