@@ -76,7 +76,6 @@ def simulate_brownian_harmonic(energy_fn,
 def batch_simulate_harmonic(batch_size,
                             energy_fn,
                             simulate_fn,
-                            trap_fn,
                             simulation_steps,
                             key): 
   """Given trap and simulation functions, run code to simulate a brownian particle moved by trap
