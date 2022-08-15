@@ -151,7 +151,6 @@ def optimize_landscape(ground_truth_energy_fn,
     _, (trajectories, works, log_probs) = batch_simulate_harmonic(batch_size,
                             ground_truth_energy_fn,
                             simulate_fn,
-                            trap_fn,
                             simulation_steps,
                             key)
     

@@ -38,7 +38,7 @@ if __name__ == "__main__":
   # ================= SIVAK & CROOKE =====================
 
   # Harmonic Trap Parameters S&C
-  k_s_sc = 0.4 # stiffness; 
+  k_s_sc = 0.7 # stiffness; 
   r0_init_sc = -10. #nm; initial trap position
   r0_final_sc = 10. #nm; final trap position
 
@@ -65,18 +65,18 @@ if __name__ == "__main__":
   energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
   
   end_time_sc = 0.01
-  dt_sc = 1e-6
+  dt_sc = 3e-6
   simulation_steps_sc = int(end_time_sc / dt_sc)
   
   Neq = 500
   
-  init_coeffs_sc = jnp.array([ 7.0646591e-02  3.3362978e+00  5.1728708e-01  1.0489219e+00
- -2.1314605e-01  4.8330837e-01  6.5749837e-03  6.6173322e-02
-  1.0880868e-01  1.5066752e-01  1.2060404e-02  1.8294835e-02
- -7.4395780e-03  6.5247095e-03  3.5647728e-02 -1.1163305e-02
-  6.0015433e-02 -6.1670109e-03  1.6130991e-02  3.9281033e-02
-  1.6379565e-02  3.1714685e-02  1.4345808e-02  1.7843667e-02
- -1.1081177e-04]))
+  init_coeffs_sc = jnp.array([ 7.0646591e-02,  3.3362978e+00,  5.1728708e-01,  1.0489219e+00
+ ,-2.1314605e-01,  4.8330837e-01,  6.5749837e-03,  6.6173322e-02
+ , 1.0880868e-01,  1.5066752e-01,  1.2060404e-02,  1.8294835e-02
+ ,-7.4395780e-03,  6.5247095e-03,  3.5647728e-02, -1.1163305e-02
+ , 6.0015433e-02, -6.1670109e-03,  1.6130991e-02,  3.9281033e-02
+ , 1.6379565e-02,  3.1714685e-02,  1.4345808e-02,  1.7843667e-02
+ ,-1.1081177e-04])
   trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), init_coeffs_sc, r0_init_sc, r0_final_sc)
   trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), init_coeffs_sc, r0_init_sc, r0_final_sc)
   
@@ -100,7 +100,7 @@ if __name__ == "__main__":
   batch_size_sc = 1000 # Number of simulations ran. i.e. # of trajectories
 
   total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
-    batch_size_sc, energy_sivak, simulate_sivak_fn_fwd, trap_fn_fwd_sc, simulation_steps_sc, key)
+    batch_size_sc, energy_sivak, simulate_sivak_fn_fwd, simulation_steps_sc, key)
 
   cross_barrier_time = jnp.where(jnp.mean(batch_trajectories, axis = 0) > 0.)[0][0] * dt_sc
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
   # Even Sampling weighted to second well 
   cb_timestep = int(cross_barrier_time / dt_sc)
   grad_sampling_timesteps_sc = jnp.arange(int((simulation_steps_sc - cb_timestep)/100))* 100 + cb_timestep
-
+  print(grad_sampling_timesteps_sc)
   grad_no_batch = lambda num_batches: bc_optimize.estimate_gradient_acc_rev(
       num_batches,
       energy_sivak,
@@ -139,8 +139,8 @@ if __name__ == "__main__":
       beta_sc,
       grad_sampling_timesteps_sc)
   
-  batch_size = 4000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 200 # Number of gradient descent steps to take.
+  batch_size = 3000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 300 # Number of gradient descent steps to take.
 
   lr = jopt.exponential_decay(0.3, opt_steps, 0.01)
   optimizer = jopt.adam(lr)
@@ -199,14 +199,14 @@ if __name__ == "__main__":
   lin_coeffs_sc = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree=24, y_intercept = 0)
   lin_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   opt_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs[-1][1], r0_init_sc, r0_final_sc)
-
+  # REDO SIMULATE FN
   total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
-      batch_size_sc_rec, energy_sivak, simulate_sivak_fn_fwd, lin_trap_fn_sc, simulation_steps_sc, key)
+      batch_size_sc_rec, energy_sivak, simulate_sivak_fn_fwd, simulation_steps_sc, key)
 
   midpoints_lin, energies_lin = bc_landscape.energy_reconstruction(batch_works, batch_trajectories, bins, lin_trap_fn_sc, simulation_steps_sc, batch_size_sc_rec, k_s_sc, beta_sc)
-
+  # REDO SIMULATE FN
   total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
-      batch_size_sc_rec, energy_sivak, simulate_sivak_fn_fwd, opt_trap_fn_sc, simulation_steps_sc, key)
+      batch_size_sc_rec, energy_sivak, simulate_sivak_fn_fwd, simulation_steps_sc, key)
 
   midpoints_opt, energies_opt = bc_landscape.energy_reconstruction(batch_works, batch_trajectories, bins, opt_trap_fn_sc, simulation_steps_sc, batch_size_sc_rec, k_s_sc, beta_sc)
     

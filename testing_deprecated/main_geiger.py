@@ -73,7 +73,8 @@ def geiger_work_opt(task_num, batch_size, opt_steps):
   simulate_fn_fwd = lambda energy_fn, keys: simulate_brownian_harmonic(energy_fn,
     init_position, trap_fn_optimized, simulation_steps, Neq, shift_fn, keys, dt, temperature = 1/beta, mass = mass, gamma = gamma)
 
-  total_works_forward_opt, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn_fwd, trap_fn_optimized, simulation_steps, 
+  # REDO SIMULATE FN
+  total_works_forward_opt, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn_fwd, simulation_steps, 
   key)
 
   afile = open(save_filepath + 'works_forward_opt.pkl', 'wb')
@@ -140,8 +141,8 @@ def geiger_error_opt(task_num, batch_size, opt_steps):
   
   simulate_fn = lambda energy_fn, keys: simulate_brownian_harmonic(energy_fn,
     r0_init*jnp.ones((N,dim)), trap_fn_optimized, simulation_steps, Neq, shift_fn, keys, dt, temperature = 1/beta, mass = mass, gamma = gamma)
-
-  total_works_reverse_opt, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn ,trap_fn_optimized, simulation_steps, 
+  # REDO SIMULATE FN
+  total_works_reverse_opt, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn, simulation_steps, 
   key)
 
   afile = open(save_filepath + 'works_reverse_opt.pkl', 'wb')
@@ -191,8 +192,8 @@ def get_linear_works(task_num, batch_size):
   energy_fn = V_biomolecule_geiger(k_s, epsilon, sigma)
   simulate_fn = lambda energy_fn, keys: simulate_brownian_harmonic(energy_fn,
     init_position, trap_fn, simulation_steps, Neq, shift_fn, keys, dt, temperature = 1/beta, mass = mass, gamma = gamma)
-  
-  total_works_linear, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn ,trap_fn, simulation_steps, 
+  # REDO SIMULATE FN
+  total_works_linear, _ = batch_simulate_harmonic(batch_size, energy_fn, simulate_fn, simulation_steps, 
   key)
 
   afile = open(save_filepath + 'works_linear.pkl', 'wb')
