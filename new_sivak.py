@@ -70,13 +70,14 @@ if __name__ == "__main__":
   
   Neq = 500
   
-  init_coeffs_sc = jnp.array([ 7.0646591e-02,  3.3362978e+00,  5.1728708e-01,  1.0489219e+00
- ,-2.1314605e-01,  4.8330837e-01,  6.5749837e-03,  6.6173322e-02
- , 1.0880868e-01,  1.5066752e-01,  1.2060404e-02,  1.8294835e-02
- ,-7.4395780e-03,  6.5247095e-03,  3.5647728e-02, -1.1163305e-02
- , 6.0015433e-02, -6.1670109e-03,  1.6130991e-02,  3.9281033e-02
- , 1.6379565e-02,  3.1714685e-02,  1.4345808e-02,  1.7843667e-02
- ,-1.1081177e-04])
+  init_coeffs_sc = jnp.array([ 7.0646591e-02,  3.3362978e+00,  5.1728708e-01,  1.0489219e+00,
+  -2.1314605e-01,  4.8330837e-01,  6.5749837e-03,  6.6173322e-02,
+   1.0880868e-01,  1.5066752e-01,  1.2060404e-02,  1.8294835e-02,
+  -7.4395780e-03,  6.5247095e-03,  3.5647728e-02, -1.1163305e-02,
+   6.0015433e-02, -6.1670109e-03,  1.6130991e-02,  3.9281033e-02,
+   1.6379565e-02,  3.1714685e-02,  1.4345808e-02,  1.7843667e-02,
+  -1.1081177e-04])
+
   trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), init_coeffs_sc, r0_init_sc, r0_final_sc)
   trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), init_coeffs_sc, r0_init_sc, r0_final_sc)
   
@@ -97,7 +98,7 @@ if __name__ == "__main__":
     temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
     )
 
-  batch_size_sc = 1000 # Number of simulations ran. i.e. # of trajectories
+  batch_size_sc = 3000 # Number of simulations ran. i.e. # of trajectories
 
   total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
     batch_size_sc, energy_sivak, simulate_sivak_fn_fwd, simulation_steps_sc, key)
@@ -117,12 +118,14 @@ if __name__ == "__main__":
       )
 
   # Where to weight the accumulated gradient the most...
-  batch_size_sc = 1000 # Number of simulations ran. i.e. # of trajectories
+  batch_size_sc = 3000 # Number of simulations ran. i.e. # of trajectories
 
   # Even Sampling weighted to second well 
   cb_timestep = int(cross_barrier_time / dt_sc)
+
   grad_sampling_timesteps_sc = jnp.arange(int((simulation_steps_sc - cb_timestep)/100))* 100 + cb_timestep
   print(grad_sampling_timesteps_sc)
+
   grad_no_batch = lambda num_batches: bc_optimize.estimate_gradient_acc_rev(
       num_batches,
       energy_sivak,
@@ -139,10 +142,13 @@ if __name__ == "__main__":
       beta_sc,
       grad_sampling_timesteps_sc)
   
+
   batch_size = 3000 # Number of simulations/trajectories simulated. GPU optimized.
   opt_steps = 300 # Number of gradient descent steps to take.
 
-  lr = jopt.exponential_decay(0.3, opt_steps, 0.01)
+
+  # lr = jopt.exponential_decay(0.3, opt_steps, 0.01)
+  lr = jopt.polynomial_decay(0.3, opt_steps, 0.001)
   optimizer = jopt.adam(lr)
 
   coeffs, summaries, losses = bc_optimize.optimize_protocol(init_coeffs_sc, grad_no_batch, optimizer, batch_size, opt_steps)
@@ -194,7 +200,7 @@ if __name__ == "__main__":
   
     
   batch_size_sc_rec = 1000
-  bins = 40
+  bins = 50
 
   lin_coeffs_sc = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree=24, y_intercept = 0)
   lin_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
@@ -221,7 +227,7 @@ if __name__ == "__main__":
   sivak_E = []
   positions = jnp.linspace(r0_init_sc-10, r0_final_sc+10, num = 100)
   for i in positions:
-    sivak_E.append(energy_sivak_plot([[i]], r0=0.)-37)
+    sivak_E.append(energy_sivak_plot([[i]], r0=0.)-45)
   plt.plot(positions, sivak_E, label = "Ground Truth")
   plt.legend()
   plt.savefig("./landscape_reconstruction.png")

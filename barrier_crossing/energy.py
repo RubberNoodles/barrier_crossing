@@ -66,7 +66,7 @@ def brownian(energy_or_force,
     return tfd.Normal(mean, jnp.sqrt(variance))
   
   def init_fn(key, R, mass=jnp.float32(1)):
-    mass = jmd.simulate.canonicalize_mass(mass)
+    mass = jmd.quantity.canonicalize_mass(mass)
     return BrownianState(R, mass, key, 0.)
 
   def apply_fn(state, t=jnp.float32(0), **kwargs):
