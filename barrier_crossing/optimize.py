@@ -192,7 +192,8 @@ def estimate_gradient_acc_rev(batch_size,
   Returns:
     Callable(Array[], jax.random RNG key)
   """
-  mapped_estimate = jax.vmap(single_estimate_acc_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, error_samples), [None, 0])  
+  mapped_estimate = jax.vmap(single_estimate_acc_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, error_samples), [None, 0])
+  @jax.jit
   def _estimate_gradient(coeffs, seed):
     seeds = jax.random.split(seed, batch_size)
     (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
