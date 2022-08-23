@@ -1,8 +1,10 @@
 # TO DO
 
-## 1. Determine whether work-optimized protocol does as well as the error-optimized protocol at estimating free energy difference at a single point (i.e. Oliver's presentation)
-## 2. Why isn't gradient descent finding the lowest-error optimal protocols (try 1000-5000 optimization steps) 
-## 3. Is there hope for the iterative procedure?
+## 1. Determine mean+std deviation over several (~10) estimates of the free energy difference via work-optimized, error-optimimzed, and linear protocols.
+## 2. Figure out how to use the gradient with the vmapped simulations
+## 3. Figure out memory issues 
+## 4. Try 1000-5000 optimization steps  
+## 5. Is there hope for the iterative procedure?
 
 # Paper structure/ideas:
 
