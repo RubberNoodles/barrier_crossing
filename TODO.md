@@ -1,9 +1,9 @@
 # TO DO
 
-## 1. Determine mean+std deviation over several (~10) estimates of the free energy difference via work-optimized, error-optimimzed, and linear protocols.
-## 2. Figure out how to use the gradient with the vmapped simulations
-## 3. Figure out memory issues 
-## 4. Try 1000-5000 optimization steps  
+## 1. Determine mean+std deviation over several (~10) estimates of the free energy difference via work-optimized, error-optimized, and linear protocols.
+## 2. Figure out memory issues -- try implementing checkpoint_scan
+## 3. Try 1000-5000 optimization steps
+## 4. Instead of equally distributing bins, try optimization for 10 bins in the folded well, 10 bins in the barrier region, then 10 bins in the unfolded well, and see if perhaps those landscapes can be "stitched" together afterward for a more accurate estimate.
 ## 5. Is there hope for the iterative procedure?
 
 # Paper structure/ideas:
