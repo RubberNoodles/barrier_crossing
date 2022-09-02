@@ -12,7 +12,7 @@ gast==0.5.3
 importlib-resources==5.8.0
 jax==0.3.14
 jaxlib==0.3.14
-jax-md==0.1.29
+jax-md==0.2.0
 jmp==0.0.2
 jraph==0.0.5.dev0
 kiwisolver==1.4.3
