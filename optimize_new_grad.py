@@ -83,7 +83,7 @@ if __name__ == "__main__":
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   Neq = 500
-  batch_size = 10 ##Change
+  batch_size = 1000 
 
   init_coeffs = cheb_coef(init_trap_fn, 12, 0, 10000)
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
   key = random.PRNGKey(int(time.time()))
   key, split = random.split(key, 2)  
 
-  bins = 2 # how many samples on the landscape
+  bins = 30 # how many samples on the landscape
 
   # uniform sampling:
   error_samples = []
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     gamma_sc, beta_sc)
   
   # Optimization:
-  opt_steps = 3
+  opt_steps = 1000
 
   lr = jopt.exponential_decay(0.3, opt_steps, 0.03)
   optimizer = jopt.adam(lr)
