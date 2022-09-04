@@ -83,7 +83,7 @@ if __name__ == "__main__":
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   Neq = 500
-  batch_size = 1000 
+  batch_size = 10000 
 
   init_coeffs = cheb_coef(init_trap_fn, 12, 0, 10000)
 
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     gamma_sc, beta_sc)
   
   # Optimization:
-  opt_steps = 1000
+  opt_steps = 2 #test
 
   lr = jopt.exponential_decay(0.3, opt_steps, 0.03)
   optimizer = jopt.adam(lr)
@@ -132,7 +132,7 @@ if __name__ == "__main__":
   coeffs_.append((0,) + (optimizer.params_fn(opt_state),))
 
   grad_fn = batch_grad_fn(batch_size)
-  
+  opt_coeffs = []
   for j in tqdm.trange(opt_steps,position=1, desc="Optimize Protocol: ", leave = True):
     key, split = jax.random.split(key)
     grad, loss, gradient_estimator_total, summary_total = grad_fn(optimizer.params_fn(opt_state), split)
@@ -142,8 +142,10 @@ if __name__ == "__main__":
 
 
   losses = jax.tree_map(lambda *args: jnp.stack(args), *losses)
-  with open("./coeffs_opt_diff_protocol.pkl", "wb") as f:
-    pickle.dump(coeffs_[-1][1], f)
+  opt_coeffs.append(coeffs_[-1][1])
+  
+  with open("./coeffs_opt.pkl", "wb") as f:
+    pickle.dump(opt_coeffs, f)
 
   _, ax = plt.subplots(1, 2, figsize=[24, 12])
 
