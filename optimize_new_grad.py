@@ -144,8 +144,13 @@ if __name__ == "__main__":
   losses = jax.tree_map(lambda *args: jnp.stack(args), *losses)
   opt_coeffs.append(coeffs_[-1][1])
   
-  with open("./coeffs_opt.pkl", "wb") as f:
-    pickle.dump(opt_coeffs, f)
+  # ToDo: fix error with pickle
+  #with open("./coeffs_opt.pkl", "wb") as f:
+  #  pickle.dump(opt_coeffs, f)
+  
+  # save to txt for now
+  with open('coeffs_optimized.txt', 'w') as f:
+    f.write(str(opt_coeffs))
 
   _, ax = plt.subplots(1, 2, figsize=[24, 12])
 
