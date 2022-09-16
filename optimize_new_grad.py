@@ -45,7 +45,33 @@ def cheb_coef(func, n, min, max): #returns chebyshev coefficients for a function
         for j in range(n):
             coef[j] += f * math.cos(math.pi * j * (i + 0.5) / n)
     return jnp.array(coef)
+  
+def midpoints_to_timesteps(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, key, batch_size, midpoints):
+  """Given a (reversed) protocol and and array midpoints, return an array of the average time it takes for the particle to reach
+  each midpoint.
+  Returns:
+    Array[]
+  """
+  total_works, (trajectories, works, log_probs) = batch_simulate_harmonic(batch_size,
+                            energy_fn,
+                            simulate_fn,
+                            simulation_steps,
+                            key)
 
+  mean_traj = jnp.mean(trajectories, axis = 0)
+  midpoint_timestep = []
+  time_step = 0
+
+  for midpoint in midpoints:
+    while float(mean_traj[time_step]) > midpoint:
+      time_step = time_step + 1
+    
+    midpoint_timestep.append(time_step)
+
+  midpoint_timestep = jnp.array(midpoint_timestep)
+  return midpoint_timestep
+
+  
 if __name__ == "__main__":
 
   N = 1
@@ -54,7 +80,7 @@ if __name__ == "__main__":
   # Harmonic Trap Parameters S&C
   k_s_sc = 0.7 # stiffness; 
   r0_init_sc = -10. #nm; initial trap position
-  r0_final_sc = 10. #nm; final trap position
+  r0_final_sc = 15. #nm; final trap position
 
   # Particle Parameters S&C
   mass_sc = 1e-17 # g
@@ -75,6 +101,8 @@ if __name__ == "__main__":
   #kappa_l=6.38629/(beta*x_m**2) #pN/nm #for Ebarrier = 2.5kT and delta_E=0, as C&S use
   #kappa_l=2.6258/(beta*x_m**2)#barrier 0.625kT
   kappa_r=kappa_l #pN/nm; Symmetric wells.
+  min = -10. # x-coordinate of the minimum of first well
+  max = 10. # x-coordinate of the minimum of second well
 
   energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
 
@@ -95,14 +123,28 @@ if __name__ == "__main__":
   bins = 30 # how many samples on the landscape
 
   # uniform sampling:
-  error_samples = []
-  dr = simulation_steps_sc/bins
-  for i in range(bins):
-    i += 1
-  error_samples.append(int(i * dr))
+  #error_samples = []
+  #dr = simulation_steps_sc/bins
+  #for i in range(bins):
+  #  i += 1
+  #error_samples.append(int(i * dr))
+  
+  # Sample uniformly, but only in the interval between the two wells (since r0_final_sc >10.):
+  dr = (max - min)/bins
+  midpoints = [ max - (bin_num + 0.5) * dr for bin_num in range(bins) ]
+  init_trap_fn = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), init_coeffs, 
+                                 r0_init_sc, r0_final_sc)
+
+  simulate_fn = lambda energy_fn, keys: simulate_brownian_harmonic(energy_fn,
+    init_position_rev_sc, init_trap_fn, simulation_steps_sc, Neq, shift, keys, dt_sc,
+    temperature_sc, mass_sc, gamma_sc)
+  
+  bin_timesteps = midpoints_to_timesteps(energy_sivak, simulate_fn, init_trap_fn,
+                                       simulation_steps_sc, key, batch_size_sc, midpoints)
+  
   
   batch_grad_fn = lambda num_batches: bc_optimize.estimate_gradient_acc_rev2(
-    error_samples,
+    bin_timesteps,
     num_batches,
     energy_sivak,
     init_position_fwd_sc,
