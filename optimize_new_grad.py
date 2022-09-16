@@ -140,7 +140,7 @@ if __name__ == "__main__":
     temperature_sc, mass_sc, gamma_sc)
   
   bin_timesteps = midpoints_to_timesteps(energy_sivak, simulate_fn, init_trap_fn,
-                                       simulation_steps_sc, key, batch_size_sc, midpoints)
+                                       simulation_steps_sc, key, batch_size, midpoints)
   
   
   batch_grad_fn = lambda num_batches: bc_optimize.estimate_gradient_acc_rev2(
