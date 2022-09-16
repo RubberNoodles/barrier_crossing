@@ -52,7 +52,7 @@ def midpoints_to_timesteps(energy_fn, simulate_fn, rev_trap_fn, simulation_steps
   Returns:
     Array[]
   """
-  total_works, (trajectories, works, log_probs) = batch_simulate_harmonic(batch_size,
+  total_works, (trajectories, works, log_probs) = bc_simulate.batch_simulate_harmonic(batch_size,
                             energy_fn,
                             simulate_fn,
                             simulation_steps,
@@ -111,9 +111,13 @@ if __name__ == "__main__":
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   Neq = 500
-  batch_size = 10000 
+  batch_size = 100 #test
 
-  init_coeffs = cheb_coef(init_trap_fn, 12, 0, 10000)
+  #init_coeffs = cheb_coef(init_trap_fn, 12, 0, 10000)
+  #start from linear
+  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree = 12,
+    y_intercept = r0_init_sc)
+  init_coeffs = lin_coeffs
 
   _, shift = space.free() # Defines how to move a particle by small distances dR.
   # RNG
@@ -135,7 +139,7 @@ if __name__ == "__main__":
   init_trap_fn = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), init_coeffs, 
                                  r0_init_sc, r0_final_sc)
 
-  simulate_fn = lambda energy_fn, keys: simulate_brownian_harmonic(energy_fn,
+  simulate_fn = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(energy_fn,
     init_position_rev_sc, init_trap_fn, simulation_steps_sc, Neq, shift, keys, dt_sc,
     temperature_sc, mass_sc, gamma_sc)
   
