@@ -274,7 +274,7 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
   logging.info("init parameters: ", optimizer.params_fn(init_state))
   logging.info("final parameters: ", optimizer.params_fn(opt_state))
 
-  all_works = jax.tree_multimap(lambda *args: jnp.stack(args), *all_works)
+  all_works = jax.tree_util.tree_map(lambda *args: jnp.stack(args), *all_works)
 
   # Pickle coefficients and optimization outputs in order to recreate schedules for future use.
   if save_path != None:
