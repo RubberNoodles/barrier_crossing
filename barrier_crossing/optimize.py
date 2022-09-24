@@ -192,12 +192,45 @@ def estimate_gradient_acc_rev(batch_size,
   Returns:
     Callable(Array[], jax.random RNG key)
   """
-  mapped_estimate = jax.vmap(single_estimate_acc_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, error_samples), [None, 0])  
+  mapped_estimate = jax.vmap(single_estimate_acc_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, error_samples), [None, 0])
+  @jax.jit
   def _estimate_gradient(coeffs, seed):
     seeds = jax.random.split(seed, batch_size)
     (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
+
+def estimate_gradient_acc_rev2(error_samples,batch_size,
+                          energy_fn,
+                          init_position, r0_init, r0_final,
+                          Neq, shift,
+                          simulation_steps, dt,
+                          temperature, mass, gamma, beta):
+  """ 
+  New version of gradient, gives correct losses
+  ToDo: change returns, so it's compatible with optimize_protocol
+  """
+  def _estimate_grad(coeffs, seed):
+    grad_total = jnp.zeros(len(coeffs))
+    gradient_estimator_total = []
+    summary_total = []
+    loss = 0.0
+    for time_slice in error_samples:
+      dr = (r0_final - r0_init)/simulation_steps
+      r0_i = r0_final - (dr*time_slice)
+      grad_func = estimate_gradient_rev(batch_size,
+                          energy_fn,
+                          init_position, r0_i, r0_final,
+                          Neq, shift,
+                          simulation_steps, dt,
+                          temperature, mass, gamma, beta)
+      grad, (gradient_estimator, summary) = grad_func(coeffs, seed)
+      grad_total += grad
+      gradient_estimator_total.append(gradient_estimator)
+      summary_total.append(summary)
+      loss += summary[2]
+    return grad_total, loss, gradient_estimator_total, summary_total
+  return _estimate_grad
 
 def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_steps, save_path = None):
   """ Training loop to optimize the coefficients of a chebyshev polynomial that defines the 
