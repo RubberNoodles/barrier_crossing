@@ -18,7 +18,7 @@ URL = 'https://github.com/RubberNoodles/barrier_crossing.git'
 EMAIL = 'ocheng@college.harvard.edu'
 AUTHOR = 'Megan Engel, Zosia Adamska, Oliver Cheng'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.1.5.1'
+VERSION = '0.1.6.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
