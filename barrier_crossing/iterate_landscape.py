@@ -83,6 +83,66 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
   
   return (midpoints, free_energies)
 
+def find_max_pos(landscape, barrier_pos):
+  """
+  Finds the position of the barrier (maximum)
+  in the reconstructed landscape.
+  Inputs: barrier_pos is the position of the barrier in
+  the true landscape 
+  """
+  max = 0
+  for position in range(barrier_pos-5,barrier_pos+5,1): # maximum expected at around 0
+    if landscape([[position]]) > landscape([[max]]):
+      max = position
+  return max
+
+def find_min_pos(landscape, r0_init, r0_final):
+  """
+  Finds the positions of the minima 
+  in the reconstructed landscape.
+  Inputs: r0_init and r0_final are expected positions of the wells
+  Returns : (position of first well, position of second well)
+  """
+  min1 = r0_init
+  min2 = r0_final
+  for position in range(min1-5,min1+5,1):
+    if landscape([[position]]) < landscape([[min1]]):
+      min1 = position
+  for position2 in range(min2-5, min2+5, 1):
+    if landscape([[position2]]) < landscape([[min2]]):
+      min2 = position2
+  return (min1, min2)
+
+def landscape_error(ls, true_ls, r0_init, r0_final, barrier_pos):
+  """
+  Inputs: 
+  r0_init and r0_final are the positions of the wells (minima)
+  in the true landscape
+  barrier_pos is the position of the barrier in the true landscape
+  Returns:
+  first_well_error : percentage difference between the depth of the first well
+                     in the landscape and the true depth of the first well
+    
+  second_well_error : percentage difference between the depth of the second well
+                     in the landscape and the true depth of the second well
+
+  delta_E_error : percentage difference between the delta_E
+                     in the landscape and the true delta_E
+  """
+  barrier_pos = find_max_pos(ls, barrier_pos)
+  min1, min2 = find_min_pos(ls,r0_init,r0_final)
+  first_well_depth = ls([[barrier_pos]])-ls([[min1]])
+  second_well_depth = ls([[barrier_pos]]) - ls([[min2]])
+  delta_E = abs(first_well_depth - second_well_depth)
+  first_well_true = true_ls([[barrier_pos]])-true_ls([[r0_init]])
+  second_well_true = true_ls([[barrier_pos]])-true_ls([[r0_final]])
+  delta_E_true = abs(true_ls([[r0_init]])-true_ls([[r0_final]]))
+  first_well_error = 100*abs(first_well_true - first_well_depth)/first_well_true
+  second_well_error = 100*abs(second_well_true - second_well_depth)/second_well_true
+  delta_E_error = 100*abs(delta_E_true - delta_E)/delta_E_true
+  return first_well_error, second_well_error, delta_E_error
+
+
 def landscape_diff(ls_1, ls_2):
   # TODO depending on the form might need to change which index to take
   #assert(ls_1.shape == ls_2.shape)
