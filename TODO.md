@@ -7,8 +7,8 @@
 # Paper structure/ideas:
 
 ## A. JAX-MD can reproduce results that came before
-## B. Present 'new' way of quantifying landscape errors (sampling at multiple points) and show that it is better -> which loss should we use?
-## C. Iterative thing working
+## B. Present 'new' way of quantifying landscape errors (sampling at multiple points) and show that it is better -> what is the correct loss function to use?
+## C. Iterative thing working -> need to test on (a) highly asymmetric landscapes (b) landscapes with intermediates
 
 # Timeline:
 
