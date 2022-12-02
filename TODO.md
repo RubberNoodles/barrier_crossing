@@ -1,6 +1,5 @@
-# TO DO
+# TO DO -- Winter 2022
 
-## Winter 2022:
 ## Why can we not find the optimal protocol using JAX-MD optimization?
 ## step one: ensure JAX-MD is finding curves that minimimze the loss we give it
 ## step two: determine the form of the loss function needed to optimize the landscape
