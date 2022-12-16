@@ -1,7 +1,9 @@
 # TO DO -- Winter 2022
 
 ## Why can we not find the optimal protocol using JAX-MD optimization?
-## step one: ensure JAX-MD is finding curves that minimimze the loss we give it
+## step one: ensure JAX-MD is finding curves that minimimze the loss we give it CHECK - IT IS
+## step one.5: see if using the Geiger-dellago loss for a single free energy different (say between the wells) indeed finds the best estimate
+## step one.5.5: see if the optimized protocols using the 10 different samples are indeed leading to the lowest mean landscape discrepancy when only those ten points are taken into account
 ## step two: determine the form of the loss function needed to optimize the landscape
 ## landscape quality metric: align the folded well, measure discrepancies at every x, take the max, and that's your "bias"/"error"
 # Paper structure/ideas:
