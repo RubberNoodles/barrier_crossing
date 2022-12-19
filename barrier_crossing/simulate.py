@@ -77,7 +77,8 @@ def batch_simulate_harmonic(batch_size,
                             energy_fn,
                             simulate_fn,
                             simulation_steps,
-                            key): 
+                            key,
+                            memory_limit = None): 
   """Given trap and simulation functions, run code to simulate a brownian particle moved by trap
   in JAX optimized batches.
   Args:
@@ -108,7 +109,7 @@ def batch_simulate_harmonic(batch_size,
   total_works = []
 
   # To generate a bunch of samples, we 'map' across seeds.
-  mapped_sim = jax.soft_pmap(lambda keys : simulate_fn(energy_fn, keys))
+  mapped_sim = jax.vmap(lambda keys : simulate_fn(energy_fn, keys) ) # USING XMAP IS experimental and could explode the world.
   seeds = jax.random.split(split, batch_size)
   trajectories, log_probs, works = mapped_sim(seeds) #seed is array with diff seed for each run. I'm discarding the log prob data, here
 

@@ -64,7 +64,7 @@ if __name__ == "__main__":
   energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
 
   end_time_sc = 0.01
-  dt_sc = 5e-6
+  dt_sc = 5e-5
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   Neq = 500
@@ -90,13 +90,15 @@ if __name__ == "__main__":
     temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
     )
 
-  batch_size_sc = 5000 # Number of simulations ran. i.e. # of trajectories
+  batch_size_sc = 400 # Number of simulations ran. i.e. # of trajectories
 
   total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
     batch_size_sc, energy_sivak, simulate_sivak_fn_fwd, simulation_steps_sc, key)
-
   mean_traj = jnp.mean(batch_trajectories, axis = 0)
-  cross_barrier_time = jnp.where(mean_traj > 0.)[0][0] * dt_sc
+  if int(jnp.where(mean_traj > 0.)[0].shape[0]) == 0:
+    cross_barrier_time = int(simulation_steps_sc/2)
+  else:
+    cross_barrier_time = jnp.where(mean_traj > 0.) * dt_sc
 
   simulate_sivak_fn_rev = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
       energy_fn, 
@@ -113,7 +115,7 @@ if __name__ == "__main__":
   # Where do I want to sample the Jaryzynski error?
   grad_sampling_timesteps_sc = jnp.array([int(cross_barrier_time/dt_sc), int(2*simulation_steps_sc/3), simulation_steps_sc])
 
-  batch_size = 20 # Number of simulations/trajectories simulated. GPU optimized.
+  batch_size = 40 # Number of simulations/trajectories simulated. GPU optimized.
   opt_steps = 3 # Number of gradient descent steps to take.
 
   lr = jopt.exponential_decay(0.3, opt_steps, 0.01)
@@ -146,8 +148,8 @@ if __name__ == "__main__":
   with open("./coeffs_opt_diff_protocol.pkl", "wb") as f:
     pickle.dump(opt_coeffs, f)
 
-  bins = 2
-  batch_size_sc_rec = 1000
+  bins = 3
+  batch_size_sc_rec = 40
 
   _, ax = plt.subplots(1,2, figsize = (12,8))
 
