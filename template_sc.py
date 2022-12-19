@@ -105,5 +105,3 @@ if __name__ == "__main__":
   # Trap Functions. Reverse mode trap functions are for when we compute Jarzynski error with reverse protocol trajectories.
   trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
-  
-  

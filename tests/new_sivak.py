@@ -196,7 +196,7 @@ if __name__ == "__main__":
   ax[1].legend()#
   ax[1].set_title('Schedule evolution')
 
-  plt.savefig("./evolution.png")
+  plt.savefig("./results/evolution.png")
   
     
   batch_size_sc_rec = 1000
