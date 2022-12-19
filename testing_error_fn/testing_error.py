@@ -120,7 +120,7 @@ if __name__ == "__main__":
   ## Theoretical Optimal
   ### TODO ###
 
-  batch_size = 50 # Number of simulations/trajectories simulated. GPU optimized.
+  batch_size = 3000 # Number of simulations/trajectories simulated. GPU optimized.
   opt_steps = 3 # Number of gradient descent steps to take.
   lr = jopt.polynomial_decay(0.3, opt_steps, 0.001)
 
