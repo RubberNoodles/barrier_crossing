@@ -12,7 +12,7 @@ fonttools==4.34.4
 gast==0.5.3
 importlib-resources==5.8.0
 jax==0.3.23
-jax-md==0.2.1
+jax-md==0.2.0
 jaxlib==0.3.22
 jmp==0.0.2
 jraph==0.0.5.dev0
