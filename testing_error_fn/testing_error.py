@@ -121,7 +121,7 @@ if __name__ == "__main__":
   ### TODO ###
 
   batch_size = 3000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 3 # Number of gradient descent steps to take.
+  opt_steps = 500 # Number of gradient descent steps to take.
   lr = jopt.polynomial_decay(0.3, opt_steps, 0.001)
 
   ### Error
@@ -233,6 +233,8 @@ if __name__ == "__main__":
   with open("./efn_pkl/losses_work_sc.pkl", "wb") as f:
     pickle.dump(coeffs_work, f)
   
+  _, ax = plt.subplots(1, 2, figsize=[24, 12])
+  
   plot_with_stddev(jnp.array(losses_work).T, ax=ax[0])
 
   # ax[0].set_title(f'Jarzynski Error over Optimization; Short trap; STD error sampling; {batch_size}; {opt_steps}.')
@@ -291,7 +293,7 @@ if __name__ == "__main__":
   }
 
   test_batch_size = 1e4
-  num_samples = 3
+  num_samples = 300
 
   for pro_type in trap_fns["forward"].keys():
       simulate_sivak_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
