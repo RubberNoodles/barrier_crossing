@@ -143,6 +143,73 @@ def landscape_error(ls, true_ls, r0_init, r0_final, barrier_pos):
   return first_well_error, second_well_error, delta_E_error
 
 
+def find_max(landscape, init, final):
+  """
+  Find maximum energy value of a landscape
+  in the range (init,final).
+  Inputs:
+  landscape in the form of a tuple (midpoints, energies)
+  """
+  max = -1000
+  midpoints = landscape[0]
+  energies = landscape[1]
+  for i in range(len(landscape[0])):
+    if init < midpoints[i] < final and energies[i] > max:
+      max = energies[i]
+  return max
+
+
+def landscape_discrepancies(ls, true_ls, true_max, r_min, r_max):
+
+  """
+  Aligns landscape (ls) with true_ls and finds distance between
+  the landscape and true_ls at each midpoint specified for ls.
+
+  Inputs: landscape in the form (midpoints, energies) and 
+          true landscape in functional form,
+          true_max is the maximum energy on true landscape, 
+          r_min and r_max denote the range of extensions considered
+          for the discrepancy calculation.
+  
+  Outputs: list of landscape discrepancies at each midpoint 
+           in the range (r_min, r_max)
+  """
+
+  # Find difference at max point to align landscapes
+  ls_max = find_max(ls, r_min, r_max)
+  diff = true_max - ls_max
+ 
+  # only consider points in range (min, max)
+  midpoints = []
+  energies = []
+  for i in range(len(ls[0])):
+    if -10 <= ls[0][i] <= 10:
+      midpoints.append(ls[0][i])
+      energies.append(ls[1][i] + diff)
+  
+  discrepancies = []
+  x = 0
+  for energy in energies:
+    discrepancies.append(abs(true_ls([[midpoints[x]]]) -energy))
+    x += 1
+  
+  return discrepancies
+
+
+def landscape_discrepancies_samples(ls, true_ls, error_samples):
+  """
+  Finds the distance (discrepancy) between ls and true_ls at points
+  specified by error_samples.
+  Inputs: ls and true_ls in functional forms (already aligned), 
+          error_samples is a list of extensions
+  Outputs: list of discrepancies (corresponding to error samples)
+  """
+  discrepancies = []
+  for r in error_samples:
+    discrepancies.append(abs(true_ls([[r]]) - ls(r)))
+  return discrepancies
+
+
 def landscape_diff(ls_1, ls_2):
   # TODO depending on the form might need to change which index to take
   #assert(ls_1.shape == ls_2.shape)
