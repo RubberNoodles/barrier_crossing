@@ -146,7 +146,7 @@ def find_error_samples(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, ke
 
   midpoint_timestep = jnp.array(midpoint_timestep)
   return midpoint_timestep
-
+'''
 def single_estimate_acc_rev(energy_fn,
                         init_position, r0_init, r0_final,
                         Neq, shift,
@@ -199,8 +199,9 @@ def estimate_gradient_acc_rev(batch_size,
     (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
+''' 
 
-def estimate_gradient_acc_rev2(error_samples,batch_size,
+def estimate_gradient_acc_rev(error_samples,batch_size,
                           energy_fn,
                           init_position, r0_init, r0_final,
                           Neq, shift,
@@ -239,7 +240,7 @@ def estimate_gradient_acc_rev_extensions(error_samples,batch_size,
                           simulation_steps, dt,
                           temperature, mass, gamma, beta):
   """ 
-  New version of estimate_gradient_acc_rev2, which takes
+  New version of estimate_gradient_acc_rev, which takes
   samples of extensions instead of time steps in simulation.
   ToDo: change returns, so it's compatible with optimize_protocol
 
