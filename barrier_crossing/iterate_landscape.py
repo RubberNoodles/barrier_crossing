@@ -225,7 +225,8 @@ def optimize_landscape(ground_truth_energy_fn,
                       max_iter,
                       bins,
                       simulation_steps,
-                      batch_size,
+                      opt_batch_size,
+                      reconstruct_batch_size,
                       opt_steps,
                       optimizer,
                       r0_init,
@@ -274,14 +275,14 @@ def optimize_landscape(ground_truth_energy_fn,
     if new_landscape:
       old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1])) # TODO
 
-    _, (trajectories, works, log_probs) = batch_simulate_harmonic(batch_size,
+    _, (trajectories, works, log_probs) = batch_simulate_harmonic(reconstruct_batch_size,
                             ground_truth_energy_fn,
                             simulate_fn,
                             simulation_steps,
                             key)
     
     logging.info("Creating landscape.")
-    new_landscape = energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, batch_size, k_s, beta) # TODO: 
+    new_landscape = energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
     landscapes.append(new_landscape[1])
 
     positions, energies = new_landscape
@@ -294,7 +295,7 @@ def optimize_landscape(ground_truth_energy_fn,
     
     grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)
     lin_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
-    coeffs_, _, losses = optimize_protocol(lin_trap_coeffs, grad_fxn, optimizer, batch_size, opt_steps)
+    coeffs_, _, losses = optimize_protocol(lin_trap_coeffs, grad_fxn, optimizer, opt_batch_size, opt_steps)
     
     final_coeff = coeffs_[-1][1]
     coeffs.append(final_coeff)
