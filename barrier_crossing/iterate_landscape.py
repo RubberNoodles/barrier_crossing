@@ -231,8 +231,7 @@ def optimize_landscape(ground_truth_energy_fn,
                       r0_init,
                       r0_final,
                       k_s,
-                      beta,
-                      error_samples):
+                      beta):
   """Iteratively reconstruct a black box energy landscape from simulated trajectories. Optimize a protocol
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
   to create a protocol that will allow for more accurate reconstructions.
@@ -293,7 +292,7 @@ def optimize_landscape(ground_truth_energy_fn,
     logging.info("Optimiziing protocol from linear using reconstructed landscape.")
     # error_samples = find_error_samples(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
     
-    grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess, error_samples)
+    grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)
     lin_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
     coeffs_, _, losses = optimize_protocol(lin_trap_coeffs, grad_fxn, optimizer, batch_size, opt_steps)
     
