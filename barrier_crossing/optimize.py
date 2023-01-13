@@ -11,6 +11,8 @@ import jax
 import jax_md
 
 import jax.numpy as jnp
+import numpy as onp
+
 from jax import random
 import jax.example_libraries.optimizers as jopt
 
@@ -243,7 +245,6 @@ def estimate_gradient_acc_rev_extensions(error_samples,batch_size,
   New version of estimate_gradient_acc_rev, which takes
   samples of extensions instead of time steps in simulation.
   ToDo: change returns, so it's compatible with optimize_protocol
-
   """
   def _estimate_grad(coeffs, seed):
     grad_total = jnp.zeros(len(coeffs))
@@ -263,6 +264,42 @@ def estimate_gradient_acc_rev_extensions(error_samples,batch_size,
       summary_total.append(summary)
       loss += summary[2]
     return grad_total, loss, gradient_estimator_total, summary_total
+  return _estimate_grad
+
+def estimate_gradient_acc_rev_extensions_scale(error_samples,batch_size,
+                          energy_fn,
+                          init_position, r0_init, r0_final,
+                          Neq, shift,
+                          simulation_steps, dt,
+                          temperature, mass, gamma, beta):
+  """ 
+  New version of estimate_gradient_acc_rev, which takes
+  samples of extensions instead of time steps in simulation.
+  ToDo: change returns, so it's compatible with optimize_protocol
+
+  """
+  def _estimate_grad(coeffs, seed):
+    grad_total = jnp.zeros(len(coeffs))
+    gradient_estimator_total = []
+    summary_total = []
+    loss = 0.0
+    for r in error_samples:
+      scale = (r0_final - r) / (r0_final - r0_init)
+      coeffs_r = onp.array(coeffs) * scale
+      coeffs_r[0] += r - r0_init
+      coeffs_r = jnp.array(coeffs_r) # TODO: Test if this works.
+      grad_func = estimate_gradient_rev(batch_size,
+                          energy_fn,
+                          init_position, r, r0_final,
+                          Neq, shift,
+                          simulation_steps, dt,
+                          temperature, mass, gamma, beta)
+      grad, (gradient_estimator, summary) = grad_func(coeffs_r, seed)
+      grad_total += grad
+      gradient_estimator_total.append(gradient_estimator)
+      summary_total.append(summary)
+      loss += summary[2]
+    return grad_total, ((loss, gradient_estimator_total), (0,0,loss))
   return _estimate_grad
 
 def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_steps, save_path = None):
