@@ -14,8 +14,7 @@ pip install "jax[cuda11_cudnn82]" -f https://storage.googleapis.com/jax-releases
 
 num_extension=6
 
-if [${SLURM_ARRAY_TASK_ID}==1 ]
-then
+if [${SLURM_ARRAY_TASK_ID}==1 ]; then
   if [ -d "./data" ]
   then 
     rm -rf "./data"
