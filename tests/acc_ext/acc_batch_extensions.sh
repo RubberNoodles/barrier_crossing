@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:8
 #SBATCH -t 0-04:00          # Runtime in D-HH:MM, minimum of 10 minutes
 #SBATCH -p seas_gpu         # Partition to submit to
 #SBATCH --mem-per-cpu=64000           # Memory pool for all cores (see also --mem-per-cpu)
@@ -14,9 +14,12 @@ pip install "jax[cuda11_cudnn82]" -f https://storage.googleapis.com/jax-releases
 
 num_extension=6
 
-if [ -d "./data" ]
-then 
-  rm -rf "./data"
+if ${SLURM_ARRAY_TASK_ID}==1 ]
+then
+  if [ -d "./data" ]
+  then 
+    rm -rf "./data"
+  fi
 fi
 
 mkdir "data"
