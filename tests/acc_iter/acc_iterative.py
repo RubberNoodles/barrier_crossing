@@ -118,11 +118,11 @@ if __name__ == "__main__":
       temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
       )
   
-  max_iter = 2
-  opt_steps_landscape = 2
+  max_iter = 4
+  opt_steps_landscape = 100
   bins = 50
-  opt_batch_size = 1000
-  rec_batch_size = 500
+  opt_batch_size = 2000
+  rec_batch_size = 1000
 
   _, shift = space.free()
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
       simulation_steps_sc, dt_sc, 
       temperature_sc, mass_sc, gamma_sc, beta_sc)
 
-  lr = jopt.polynomial_decay(0.3, opt_steps_landscape, 0.001)
+  lr = jopt.polynomial_decay(0.3, opt_steps_landscape, 0.01)
   optimizer = jopt.adam(lr)
 
 

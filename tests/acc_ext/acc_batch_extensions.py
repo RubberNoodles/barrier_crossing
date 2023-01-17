@@ -94,7 +94,7 @@ if __name__ == "__main__":
   end_time_sc = 0.01
   # dt_sc = 2e-8 this might be exceeding floating point precision or something..
   end_time_sc = 0.01
-  dt_sc = 1e-6
+  dt_sc = 5e-6
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   end_time_custom = 1.
@@ -136,8 +136,8 @@ if __name__ == "__main__":
     gamma_sc,
     beta_sc)
 
-  batch_size = 2000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 400 # Number of gradient descent steps to take.
+  batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 10 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(1., opt_steps, 0.001)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
   ax[1].plot(jnp.arange(simulation_steps_sc), init_sched, label='Initial guess')
 
   for i, (_, coeff) in enumerate(coeffs):
-    if i%166 == 0 and i!=0:
+    if i%2 == 0 and i!=0:
       trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc),coeff,r0_init_sc,r0_final_sc)
       full_sched = trap_fn(jnp.arange(simulation_steps_sc))
       ax[1].plot(jnp.arange(simulation_steps_sc), full_sched, '-', label=f'Step {i}')
