@@ -183,7 +183,7 @@ def landscape_discrepancies(ls, true_ls, true_max, r_min, r_max):
   midpoints = []
   energies = []
   for i in range(len(ls[0])):
-    if -10 <= ls[0][i] <= 10:
+    if r_min <= ls[0][i] <= r_max:
       midpoints.append(ls[0][i])
       energies.append(ls[1][i] + diff)
   

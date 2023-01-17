@@ -186,59 +186,106 @@ if __name__ == "__main__":
   batch_size_sc_rec = 500
   bins = 40
 
-
   lin_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   opt_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs[-1][1], r0_init_sc, r0_final_sc)
+  
+  # Optimized for k_s = 0.7 (looks like cubic):
+  coeffs_cubic = jnp.array([-2.4699204e-01,  6.1058893e+00, -1.7807318e-02,
+                9.9026270e+00,  1.4435360e+00,  1.7319231e+01,
+                1.5868250e+00,  2.0173792e+01, -5.1318378e+00,
+                2.1637058e+00, -1.6113165e+01, -2.8187643e+01])
+  cubic_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs_cubic, r0_init_sc, r0_final_sc)
 
-  simulate_sivak_fn_lin_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
-    energy_fn, 
-    init_position_fwd_sc, 
-    lin_trap_fn_sc,
-    simulation_steps_sc, 
-    Neq, 
-    shift, 
-    keys, 
-    dt_sc,
-    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
-    )
 
-  total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
-      batch_size_sc_rec, energy_sivak, simulate_sivak_fn_lin_fwd, simulation_steps_sc, key)
+  # Another really good protocol optimized with wrong grad for k_s = 0.1
+  coeffs_old = jnp.array([ 0.92226017,  2.342257  ,  1.9017681 ,  6.224875  ,  5.144628  ,
+        16.374546  ,  9.336435  , 23.34578   , 12.500979  , 23.827835  ,
+        18.840345  , 31.785065  , 15.344111  ])
+  old_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs_old, r0_init_sc, r0_final_sc)
 
-  midpoints_lin, energies_lin = bc_landscape.energy_reconstruction(batch_works, batch_trajectories, bins, lin_trap_fn_sc, simulation_steps_sc, batch_size_sc_rec, k_s_sc, beta_sc)
-    
-  simulate_sivak_opt_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
-    energy_fn, 
-    init_position_fwd_sc, 
-    opt_trap_fn_sc,
-    simulation_steps_sc, 
-    Neq, 
-    shift, 
-    keys, 
-    dt_sc,
-    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
-    )
-
-  total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
-      batch_size_sc_rec, 
-      energy_sivak, 
-      simulate_sivak_opt_fwd, 
+  traps = {
+    "Linear Protocol": lin_trap_fn_sc, 
+    "Acc Optimized Protocol": opt_trap_fn_sc,
+    "Cubic Protocol": cubic_trap_fn_sc,
+    "Old Optimal Protocol": old_trap_fn_sc
+    }
+  
+  plot_data = {}
+  
+  for (trap_name, trap_fn) in traps.items():
+    simulate_sivak_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
+      energy_fn, 
+      init_position_fwd_sc, 
+      trap_fn,
       simulation_steps_sc, 
-      key)
+      Neq, 
+      shift, 
+      keys, 
+      dt_sc,
+      temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
+      )
 
-  midpoints_opt, energies_opt = bc_landscape.energy_reconstruction(
-      batch_works, 
-      batch_trajectories, 
-      bins, 
-      opt_trap_fn_sc, 
-      simulation_steps_sc,
-      batch_size_sc_rec, 
-      k_s_sc, 
-      beta_sc)
+
+    total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
+        batch_size_sc_rec, energy_sivak, simulate_sivak_fwd, simulation_steps_sc, key)
+    
+    mean_work = batch_works.mean()
+    tail = total_work.mean() - total_work.min()
+    
+    midpoints, energies = bc_landscape.energy_reconstruction(
+        batch_works, 
+        batch_trajectories, 
+        bins, 
+        trap_fn, 
+        simulation_steps_sc, 
+        batch_size_sc_rec, 
+        k_s_sc, 
+        beta_sc)
+  
+    landscape = (midpoints, energies)
+    no_trap_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, 0, beta_sc)
+    
+    disc = bc_landscape.landscape_discrepancies(landscape, no_trap_sivak, no_trap_sivak([[0.]]), -10., 10.)
+    bias = max(disc)
+    
+    max_rec = bc_energy.find_max(landscape, -10., 10.)
+    difference = energy_sivak_plot([[0.]]) - max_rec
+    energies_aligned = []
+    for energy in energies: 
+      energies_aligned.append(energy + difference)
+    
+    no_trap_rec_fn = bc_energy.V_biomolecule_reconstructed(0, midpoints, energies_aligned)
+    
+    disc_samples = bc_landscape.landscape_discrepancies_samples(no_trap_rec_fn, no_trap_sivak, extensions)
+    disc_samples = jnp.array(disc_samples)
+    mean_disc_samples = disc_samples.mean()
+    bias_samples = disc_samples.max()
+    
+    plot_data[trap_name] = {
+      "trap": trap_fn,
+      "work": total_work,
+      "midpoints": midpoints,
+      "energies": energies_aligned,
+      "bias": bias,
+      "mean_work": mean_work,
+      "discrepancy": disc,
+      "tail": tail,
+      "samples": {
+        "mean_discrepancy": mean_disc_samples,
+        "bias": bias_samples,
+        "discrepancy": disc_samples
+        }
+      }
+    
+  
+  #### PLOTTING CODE #####
+  
+  ## Reconstructions 
   
   plt.figure(figsize = (8,8))
-  plt.plot(midpoints_lin, energies_lin, label = "Linear Protocol")
-  plt.plot(midpoints_opt, energies_opt, label = "Error-Optimized Protocol")
+  for p_name in plot_data:
+    data = plot_data[p_name]
+    plt.plot(data["midpoints"], data["energies"], label = p_name)
   plt.title("Reconstructing Sivak Landscape with Different Protocols")
   plt.xlabel("Particle Position")
   plt.ylabel("Free Energy")
@@ -247,7 +294,97 @@ if __name__ == "__main__":
   sivak_E = []
   positions = jnp.linspace(r0_init_sc-10, r0_final_sc+10, num = 100)
   for i in positions:
-    sivak_E.append(energy_sivak_plot([[i]], r0=0.)-38)
-  plt.plot(positions, sivak_E, label = "Ground Truth", color = "green")
+    sivak_E.append(energy_sivak_plot([[i]], r0=0.))
+  plt.plot(positions, sivak_E, label = "Ground Truth", color = "b")
   plt.legend()
-  plt.savefig(path+"reconstruction.png", transparent = False)
+  plt.savefig(path+"reconstruction_all.png", transparent = False)
+  
+  
+  plt.figure(figsize = (8,8))
+  data = plot_data["Acc Optimized Protocol"]
+  plt.plot(data["midpoints"], data["energies"], label = "Acc Optimized Protocol")
+  plt.title("Reconstructing Sivak Landscape with Optimized Protocol")
+  plt.xlabel("Particle Position")
+  plt.ylabel("Free Energy")
+
+  energy_sivak_plot = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, 0, beta_sc)
+  sivak_E = []
+  positions = jnp.linspace(r0_init_sc-10, r0_final_sc+10, num = 100)
+  for i in positions:
+    sivak_E.append(energy_sivak_plot([[i]], r0=0.))
+  plt.plot(positions, sivak_E, label = "Ground Truth", color = "b")
+  plt.legend()
+  plt.savefig(path+"reconstruction_opt_vs_true.png", transparent = False)
+  
+  ## Landscape Discrepancies
+  plt.figure(figsize = (8,8))
+  for p_name in plot_data:
+    data = plot_data[p_name]["samples"]
+    plt.plot(extensions, data["discrepancy"], '-o', label = p_name)
+  plt.xlabel('Protocol/Trap Position')
+  plt.ylabel('Landscape Discrepancy')
+  plt.title("Discrepancy at each Extension")
+  plt.legend()
+  
+  ## 
+  
+  plt.figure(figsize=[8,8])
+  for p_name in plot_data:
+    data = plot_data[p_name]
+    plt.hist(jnp.array(data["work"])*beta_sc,20,alpha=1.0, label = f'{p_name}, mean = {data["mean_work"]}, tail length = {data["tail"]}')
+  plt.xlabel("Work (kbT)")
+  plt.ylabel("Counts")
+  plt.legend()
+  plt.title("Work Distribution for Different Protocols")
+  
+  plt.savefig(path + "histogram_all.png", transparent = False)
+
+
+  plt.figure(figsize=[8,8])
+  for p_name in ["Linear Protocol", "Acc Optimized Protocol"]:
+    data = plot_data[p_name]
+    plt.hist(jnp.array(data["work"])*beta_sc,20,alpha=1.0, label = f'{p_name}, mean = {data["mean_work"]}, tail length = {data["tail"]}')
+  plt.xlabel("Work (kbT)")
+  plt.ylabel("Counts")
+  plt.legend()
+  plt.title("Work Distribution for Optimized vs Linear Protocol")
+  
+  plt.savefig(path + "histogram_linear_vs_opt.png", transparent = False)
+  
+
+  # Table comparison of protocols --> Important graph to have! --> Adjust for different protocols etc
+
+  # Table comparison (+ reconstruction info)
+  _, (ax0, ax1) = plt.subplots(1, 2, figsize=[24, 12])
+  step = jnp.arange(simulation_steps_sc)
+  for p_name in plot_data:
+    data = plot_data[p_name]
+    ax0.plot(step, data["trap"](step), label = f'{p_name}')
+  ax0.legend()
+  ax0.set_title("Different Protocol Trajectories")
+  columns = ('Bias', 'Mean discrepancy', 'Average total work', 'Tail length')
+  rows = []
+  table_data = []
+  for p_name in plot_data:
+    data = plot_data[p_name]
+    rows.append(p_name)
+    mean_disc = float(jnp.array(data["discrepancy"]).mean())
+    table_data.append([data["bias"], mean_disc, data["mean_work"], data["tail"]])
+
+  n_rows = len(data)
+  cell_text = []
+  #colors = plt.cm.BuPu(jnp.linspace(0, 0.5, len(rows)))
+
+  for row in range(n_rows):
+    y_offset = table_data[row]
+    cell_text.append([x for x in y_offset])
+
+  ax1.axis('off')
+
+
+  table = plt.table(cellText=cell_text,
+                        rowLabels=rows,
+                        colLabels=columns,loc = 'center')
+  table.scale(1, 5)
+  
+  plt.savefig(path+"protocol_info.png")
