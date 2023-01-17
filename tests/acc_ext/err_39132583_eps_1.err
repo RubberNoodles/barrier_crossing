@@ -1,0 +1,57 @@
+  Running command git fetch -q
+  Running command git reset --hard -q 89fe268fee9416f49e2d5361857f051c8a8e940f
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+ERROR: Could not find a version that satisfies the requirement barrier-crossing==0.1.6.0 (from versions: none)
+ERROR: No matching distribution found for barrier-crossing==0.1.6.0
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+/var/slurmd/spool/slurmd/job39132584/slurm_script: line 17: [1==1: command not found
+mkdir: cannot create directory ‘data’: File exists
+mkdir: cannot create directory ‘data/ext_1’: File exists
+mkdir: cannot create directory ‘data/ext_2’: File exists
+mkdir: cannot create directory ‘data/ext_3’: File exists
+mkdir: cannot create directory ‘data/ext_4’: File exists
+mkdir: cannot create directory ‘data/ext_5’: File exists
+mkdir: cannot create directory ‘data/ext_6’: File exists
+/n/home07/ocheng/.local/lib/python3.8/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
+  PyTreeDef = type(jax.tree_structure(None))
+
+Optimize Protocol:   0%|          | 0/2 [00:00<?, ?it/s][A
+Optimize Protocol:  50%|█████     | 1/2 [00:28<00:28, 28.16s/it][A
+Optimize Protocol: 100%|██████████| 2/2 [00:53<00:00, 26.29s/it][AOptimize Protocol: 100%|██████████| 2/2 [00:53<00:00, 26.57s/it]
+Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:   2%|▎         | 1/40 [00:03<02:23,  3.68s/it]Reconstruct Landscape Bins:   8%|▊         | 3/40 [00:03<00:36,  1.00it/s]Reconstruct Landscape Bins:  12%|█▎        | 5/40 [00:03<00:18,  1.94it/s]Reconstruct Landscape Bins:  18%|█▊        | 7/40 [00:04<00:10,  3.04it/s]Reconstruct Landscape Bins:  22%|██▎       | 9/40 [00:04<00:07,  4.41it/s]Reconstruct Landscape Bins:  28%|██▊       | 11/40 [00:04<00:04,  5.98it/s]Reconstruct Landscape Bins:  32%|███▎      | 13/40 [00:04<00:03,  7.42it/s]Reconstruct Landscape Bins:  38%|███▊      | 15/40 [00:04<00:02,  9.05it/s]Reconstruct Landscape Bins:  42%|████▎     | 17/40 [00:04<00:02, 10.52it/s]Reconstruct Landscape Bins:  48%|████▊     | 19/40 [00:04<00:01, 11.00it/s]Reconstruct Landscape Bins:  52%|█████▎    | 21/40 [00:04<00:01, 12.13it/s]Reconstruct Landscape Bins:  57%|█████▊    | 23/40 [00:05<00:01, 13.36it/s]Reconstruct Landscape Bins:  62%|██████▎   | 25/40 [00:05<00:01, 14.37it/s]Reconstruct Landscape Bins:  68%|██████▊   | 27/40 [00:05<00:00, 15.39it/s]Reconstruct Landscape Bins:  72%|███████▎  | 29/40 [00:05<00:00, 16.19it/s]Reconstruct Landscape Bins:  78%|███████▊  | 31/40 [00:05<00:00, 16.68it/s]Reconstruct Landscape Bins:  82%|████████▎ | 33/40 [00:05<00:00, 15.84it/s]Reconstruct Landscape Bins:  88%|████████▊ | 35/40 [00:05<00:00, 16.35it/s]Reconstruct Landscape Bins:  92%|█████████▎| 37/40 [00:05<00:00, 16.87it/s]Reconstruct Landscape Bins:  98%|█████████▊| 39/40 [00:05<00:00, 17.36it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:06<00:00,  6.60it/s]
+Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:   5%|▌         | 2/40 [00:00<00:02, 18.04it/s]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:00<00:02, 17.59it/s]Reconstruct Landscape Bins:  15%|█▌        | 6/40 [00:00<00:01, 17.74it/s]Reconstruct Landscape Bins:  20%|██        | 8/40 [00:00<00:01, 17.64it/s]Reconstruct Landscape Bins:  25%|██▌       | 10/40 [00:00<00:01, 17.52it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:00<00:01, 17.13it/s]Reconstruct Landscape Bins:  35%|███▌      | 14/40 [00:00<00:01, 16.50it/s]Reconstruct Landscape Bins:  40%|████      | 16/40 [00:00<00:01, 16.51it/s]Reconstruct Landscape Bins:  45%|████▌     | 18/40 [00:01<00:01, 16.80it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:01<00:01, 17.01it/s]Reconstruct Landscape Bins:  55%|█████▌    | 22/40 [00:01<00:01, 17.17it/s]Reconstruct Landscape Bins:  60%|██████    | 24/40 [00:01<00:00, 17.35it/s]Reconstruct Landscape Bins:  65%|██████▌   | 26/40 [00:01<00:00, 16.89it/s]Reconstruct Landscape Bins:  70%|███████   | 28/40 [00:01<00:00, 17.15it/s]Reconstruct Landscape Bins:  75%|███████▌  | 30/40 [00:01<00:00, 17.21it/s]Reconstruct Landscape Bins:  80%|████████  | 32/40 [00:01<00:00, 17.45it/s]Reconstruct Landscape Bins:  85%|████████▌ | 34/40 [00:01<00:00, 17.38it/s]Reconstruct Landscape Bins:  90%|█████████ | 36/40 [00:02<00:00, 17.39it/s]Reconstruct Landscape Bins:  95%|█████████▌| 38/40 [00:02<00:00, 17.27it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:02<00:00, 17.78it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:02<00:00, 17.26it/s]
+warning: You ran 'git add' with neither '-A (--all)' or '--ignore-removal',
+whose behaviour will change in Git 2.0 with respect to paths you removed.
+Paths like 'tests/acc_ext/err_39132575_eps_1.err' that are
+removed from your working tree are ignored with this version of Git.
+
+* 'git add --ignore-removal <pathspec>', which is the current default,
+  ignores paths you removed from your working tree.
+
+* 'git add --all <pathspec>' will let you also record the removals.
+
+Run 'git status' to check the paths you removed from your working tree.
+
+warning: push.default is unset; its implicit value is changing in
+Git 2.0 from 'matching' to 'simple'. To squelch this message
+and maintain the current behavior after the default changes, use:
+
+  git config --global push.default matching
+
+To squelch this message and adopt the new behavior now, use:
+
+  git config --global push.default simple
+
+See 'git help config' and search for 'push.default' for further information.
+(the 'simple' mode was introduced in Git 1.7.11. Use the similar mode
+'current' instead of 'simple' if you sometimes use older versions of Git)
+
+To git@github.com:RubberNoodles/barrier_crossing.git
+   89fe268..fd465da  main -> main

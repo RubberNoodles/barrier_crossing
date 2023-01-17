@@ -1,0 +1,41 @@
+  Running command git fetch -q
+  Running command git reset --hard -q fd465da56b50fc0845b9c34e93199a97bb005210
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+ERROR: Could not find a version that satisfies the requirement barrier-crossing==0.1.6.0 (from versions: none)
+ERROR: No matching distribution found for barrier-crossing==0.1.6.0
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+/var/slurmd/spool/slurmd/job39132585/slurm_script: line 17: [2==1: command not found
+mkdir: cannot create directory ‘data’: File exists
+mkdir: cannot create directory ‘data/ext_1’: File exists
+mkdir: cannot create directory ‘data/ext_2’: File exists
+mkdir: cannot create directory ‘data/ext_3’: File exists
+mkdir: cannot create directory ‘data/ext_4’: File exists
+mkdir: cannot create directory ‘data/ext_5’: File exists
+mkdir: cannot create directory ‘data/ext_6’: File exists
+/n/home07/ocheng/.local/lib/python3.8/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
+  PyTreeDef = type(jax.tree_structure(None))
+
+Optimize Protocol:   0%|          | 0/2 [00:00<?, ?it/s][A
+Optimize Protocol:  50%|█████     | 1/2 [00:27<00:27, 27.69s/it][A
+Optimize Protocol: 100%|██████████| 2/2 [00:52<00:00, 26.03s/it][AOptimize Protocol: 100%|██████████| 2/2 [00:52<00:00, 26.28s/it]
+Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:   2%|▎         | 1/40 [00:03<02:27,  3.78s/it]Reconstruct Landscape Bins:   8%|▊         | 3/40 [00:03<00:38,  1.03s/it]Reconstruct Landscape Bins:  12%|█▎        | 5/40 [00:04<00:18,  1.89it/s]Reconstruct Landscape Bins:  18%|█▊        | 7/40 [00:04<00:10,  3.05it/s]Reconstruct Landscape Bins:  22%|██▎       | 9/40 [00:04<00:06,  4.46it/s]Reconstruct Landscape Bins:  28%|██▊       | 11/40 [00:04<00:04,  6.10it/s]Reconstruct Landscape Bins:  32%|███▎      | 13/40 [00:04<00:03,  7.86it/s]Reconstruct Landscape Bins:  38%|███▊      | 15/40 [00:04<00:02,  9.29it/s]Reconstruct Landscape Bins:  42%|████▎     | 17/40 [00:04<00:02, 10.64it/s]Reconstruct Landscape Bins:  48%|████▊     | 19/40 [00:04<00:01, 11.76it/s]Reconstruct Landscape Bins:  52%|█████▎    | 21/40 [00:04<00:01, 12.53it/s]Reconstruct Landscape Bins:  57%|█████▊    | 23/40 [00:05<00:01, 13.72it/s]Reconstruct Landscape Bins:  62%|██████▎   | 25/40 [00:05<00:01, 14.80it/s]Reconstruct Landscape Bins:  68%|██████▊   | 27/40 [00:05<00:00, 15.90it/s]Reconstruct Landscape Bins:  72%|███████▎  | 29/40 [00:05<00:00, 16.80it/s]Reconstruct Landscape Bins:  78%|███████▊  | 31/40 [00:05<00:00, 17.43it/s]Reconstruct Landscape Bins:  82%|████████▎ | 33/40 [00:05<00:00, 15.79it/s]Reconstruct Landscape Bins:  88%|████████▊ | 35/40 [00:05<00:00, 16.20it/s]Reconstruct Landscape Bins:  92%|█████████▎| 37/40 [00:05<00:00, 16.56it/s]Reconstruct Landscape Bins:  98%|█████████▊| 39/40 [00:06<00:00, 17.26it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:06<00:00,  6.60it/s]
+Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:   5%|▌         | 2/40 [00:00<00:02, 18.85it/s]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:00<00:01, 18.93it/s]Reconstruct Landscape Bins:  15%|█▌        | 6/40 [00:00<00:01, 18.95it/s]Reconstruct Landscape Bins:  20%|██        | 8/40 [00:00<00:01, 18.92it/s]Reconstruct Landscape Bins:  25%|██▌       | 10/40 [00:00<00:01, 18.90it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:00<00:01, 18.89it/s]Reconstruct Landscape Bins:  35%|███▌      | 14/40 [00:00<00:01, 18.94it/s]Reconstruct Landscape Bins:  40%|████      | 16/40 [00:00<00:01, 18.93it/s]Reconstruct Landscape Bins:  45%|████▌     | 18/40 [00:00<00:01, 18.96it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:01<00:01, 18.08it/s]Reconstruct Landscape Bins:  55%|█████▌    | 22/40 [00:01<00:01, 17.68it/s]Reconstruct Landscape Bins:  60%|██████    | 24/40 [00:01<00:00, 17.42it/s]Reconstruct Landscape Bins:  65%|██████▌   | 26/40 [00:01<00:00, 16.51it/s]Reconstruct Landscape Bins:  70%|███████   | 28/40 [00:01<00:00, 16.12it/s]Reconstruct Landscape Bins:  75%|███████▌  | 30/40 [00:01<00:00, 15.79it/s]Reconstruct Landscape Bins:  80%|████████  | 32/40 [00:01<00:00, 16.26it/s]Reconstruct Landscape Bins:  85%|████████▌ | 34/40 [00:01<00:00, 16.57it/s]Reconstruct Landscape Bins:  90%|█████████ | 36/40 [00:02<00:00, 16.77it/s]Reconstruct Landscape Bins:  95%|█████████▌| 38/40 [00:02<00:00, 17.39it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:02<00:00, 17.86it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:02<00:00, 17.66it/s]
+warning: You ran 'git add' with neither '-A (--all)' or '--ignore-removal',
+whose behaviour will change in Git 2.0 with respect to paths you removed.
+Paths like 'tests/acc_ext/err_39132575_eps_1.err' that are
+removed from your working tree are ignored with this version of Git.
+
+* 'git add --ignore-removal <pathspec>', which is the current default,
+  ignores paths you removed from your working tree.
+
+* 'git add --all <pathspec>' will let you also record the removals.
+
+Run 'git status' to check the paths you removed from your working tree.
+
