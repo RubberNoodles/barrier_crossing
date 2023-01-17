@@ -206,7 +206,7 @@ def landscape_discrepancies_samples(ls, true_ls, error_samples):
   """
   discrepancies = []
   for r in error_samples:
-    discrepancies.append(abs(true_ls([[r]]) - ls(r)))
+    discrepancies.append(abs(true_ls([[r]]) - ls([[r]])))
   return discrepancies
 
 
