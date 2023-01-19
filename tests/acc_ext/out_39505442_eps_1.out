@@ -94,3 +94,27 @@ Requirement already satisfied: etils[epath] in /n/home07/ocheng/.local/lib/pytho
 Requirement already satisfied: jaxlib==0.3.22+cuda11.cudnn82 in /n/home07/ocheng/.local/lib/python3.8/site-packages (from jax[cuda11_cudnn82]) (0.3.22+cuda11.cudnn82)
 Requirement already satisfied: importlib_resources in /n/home07/ocheng/.local/lib/python3.8/site-packages (from etils[epath]->jax[cuda11_cudnn82]) (5.8.0)
 Requirement already satisfied: zipp in /n/home07/ocheng/.local/lib/python3.8/site-packages (from etils[epath]->jax[cuda11_cudnn82]) (3.8.1)
+[main 2c5cdfd] Auto-commit.
+ Committer: Oliver Cheng <ocheng@holygpu2c1125.rc.fas.harvard.edu>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 14 files changed, 245 insertions(+), 6 deletions(-)
+ create mode 100644 tests/acc_ext/data/ext_1/histogram_all.png
+ create mode 100644 tests/acc_ext/data/ext_1/histogram_linear_vs_opt.png
+ rewrite tests/acc_ext/data/ext_1/opt_coeffs.pkl (95%)
+ rewrite tests/acc_ext/data/ext_1/opt_losses.pkl (89%)
+ rewrite tests/acc_ext/data/ext_1/optimization.png (98%)
+ create mode 100644 tests/acc_ext/data/ext_1/protocol_info.png
+ create mode 100644 tests/acc_ext/data/ext_1/reconstruction_all.png
+ create mode 100644 tests/acc_ext/data/ext_1/reconstruction_opt_vs_true.png
+ create mode 100644 tests/acc_ext/err_39505442_eps_1.err
+ create mode 100644 tests/acc_ext/out_39505442_eps_1.out

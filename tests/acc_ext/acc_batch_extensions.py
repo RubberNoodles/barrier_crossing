@@ -137,7 +137,7 @@ if __name__ == "__main__":
     beta_sc)
 
   batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 20 # Number of gradient descent steps to take.
+  opt_steps = 500 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
   ax[1].plot(jnp.arange(simulation_steps_sc), init_sched, label='Initial guess')
 
   for i, (_, coeff) in enumerate(coeffs):
-    if i%5 == 0 and i!=0:
+    if i%100 == 0 and i!=0:
       trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc),coeff,r0_init_sc,r0_final_sc)
       full_sched = trap_fn(jnp.arange(simulation_steps_sc))
       ax[1].plot(jnp.arange(simulation_steps_sc), full_sched, '-', label=f'Step {i}')
