@@ -12,7 +12,7 @@ pip3 install -e "git+https://github.com/RubberNoodles/barrier_crossing#egg=barri
 pip3 install -r ./../../requirements.txt
 pip install "jax[cuda11_cudnn82]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 
-num_extension=6
+num_extension=$1
 
 if [ ${SLURM_ARRAY_TASK_ID} -eq 1 ]; then
   if [ -d "./data" ]
@@ -30,13 +30,8 @@ done
 
 python3 acc_batch_extensions.py ${SLURM_ARRAY_TASK_ID}
 
-if [ ${SLURM_ARRAY_TASK_ID} -eq 6 ]; then
+if [ ${SLURM_ARRAY_TASK_ID} -eq $num_extension ]; then
 	git add .
 	git commit -m "Auto-commit."
 	git push
 fi
-
-
-
-
-

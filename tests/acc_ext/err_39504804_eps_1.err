@@ -1,0 +1,29 @@
+  Running command git fetch -q
+  Running command git reset --hard -q 156a978d0afa33cce0d715b36a77c0dfdeb45afa
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+/n/home07/ocheng/.local/lib/python3.8/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
+  PyTreeDef = type(jax.tree_structure(None))
+Traceback (most recent call last):
+  File "acc_batch_extensions.py", line 115, in <module>
+    with open("extensions.csv", 'r') as f:
+FileNotFoundError: [Errno 2] No such file or directory: 'extensions.csv'
+warning: You ran 'git add' with neither '-A (--all)' or '--ignore-removal',
+whose behaviour will change in Git 2.0 with respect to paths you removed.
+Paths like 'tests/acc_ext/data/ext_1/opt_coeffs.pkl' that are
+removed from your working tree are ignored with this version of Git.
+
+* 'git add --ignore-removal <pathspec>', which is the current default,
+  ignores paths you removed from your working tree.
+
+* 'git add --all <pathspec>' will let you also record the removals.
+
+Run 'git status' to check the paths you removed from your working tree.
+

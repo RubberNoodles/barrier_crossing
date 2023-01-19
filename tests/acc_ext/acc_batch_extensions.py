@@ -137,10 +137,10 @@ if __name__ == "__main__":
     beta_sc)
 
   batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 10 # Number of gradient descent steps to take.
+  opt_steps = 20 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
-  lr = jopt.polynomial_decay(1., opt_steps, 0.001)
+  lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
   optimizer = jopt.adam(lr)
 
   coeffs, summaries, losses = bc_optimize.optimize_protocol(lin_coeffs_sc, grad_acc_rev, optimizer, batch_size, opt_steps)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
   ax[1].plot(jnp.arange(simulation_steps_sc), init_sched, label='Initial guess')
 
   for i, (_, coeff) in enumerate(coeffs):
-    if i%2 == 0 and i!=0:
+    if i%5 == 0 and i!=0:
       trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc),coeff,r0_init_sc,r0_final_sc)
       full_sched = trap_fn(jnp.arange(simulation_steps_sc))
       ax[1].plot(jnp.arange(simulation_steps_sc), full_sched, '-', label=f'Step {i}')
@@ -183,7 +183,7 @@ if __name__ == "__main__":
   ### Reconstruction
   
     
-  batch_size_sc_rec = 500
+  batch_size_sc_rec = 1000
   bins = 40
 
   lin_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
@@ -248,8 +248,8 @@ if __name__ == "__main__":
     disc = bc_landscape.landscape_discrepancies(landscape, no_trap_sivak, no_trap_sivak([[0.]]), -10., 10.)
     bias = max(disc)
     
-    max_rec = bc_energy.find_max(landscape, -10., 10.)
-    difference = energy_sivak_plot([[0.]]) - max_rec
+    max_rec = bc_landscape.find_max(landscape, -10., 10.)
+    difference = no_trap_sivak([[0.]]) - max_rec
     energies_aligned = []
     for energy in energies: 
       energies_aligned.append(energy + difference)
@@ -331,7 +331,7 @@ if __name__ == "__main__":
   plt.figure(figsize=[8,8])
   for p_name in plot_data:
     data = plot_data[p_name]
-    plt.hist(jnp.array(data["work"])*beta_sc,20,alpha=1.0, label = f'{p_name}, mean = {data["mean_work"]}, tail length = {data["tail"]}')
+    plt.hist(jnp.array(data["work"])*beta_sc,20,alpha=1.0, label = f'{p_name}, mean = {data["mean_work"]:.2f}, tail length = {data["tail"]:.2f}')
   plt.xlabel("Work (kbT)")
   plt.ylabel("Counts")
   plt.legend()
@@ -343,7 +343,7 @@ if __name__ == "__main__":
   plt.figure(figsize=[8,8])
   for p_name in ["Linear Protocol", "Acc Optimized Protocol"]:
     data = plot_data[p_name]
-    plt.hist(jnp.array(data["work"])*beta_sc,20,alpha=1.0, label = f'{p_name}, mean = {data["mean_work"]}, tail length = {data["tail"]}')
+    plt.hist(jnp.array(data["work"])*beta_sc,20,alpha=1.0, label = f'{p_name}, mean = {data["mean_work"]:.2f}, tail length = {data["tail"]:.2f}')
   plt.xlabel("Work (kbT)")
   plt.ylabel("Counts")
   plt.legend()
@@ -371,7 +371,7 @@ if __name__ == "__main__":
     mean_disc = float(jnp.array(data["discrepancy"]).mean())
     table_data.append([data["bias"], mean_disc, data["mean_work"], data["tail"]])
 
-  n_rows = len(data)
+  n_rows = len(table_data)
   cell_text = []
   #colors = plt.cm.BuPu(jnp.linspace(0, 0.5, len(rows)))
 
