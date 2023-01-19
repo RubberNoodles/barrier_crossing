@@ -1,0 +1,51 @@
+  Running command git fetch -q
+  Running command git reset --hard -q f70bd40df9e134fb36769b9293aa5aefea959a0c
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+
+[notice] A new release of pip available: 22.2.2 -> 22.3.1
+[notice] To update, run: pip install --upgrade pip
+/n/home07/ocheng/.local/lib/python3.8/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
+  PyTreeDef = type(jax.tree_structure(None))
+
+Optimize Protocol:   0%|          | 0/20 [00:00<?, ?it/s][A
+Optimize Protocol:   5%|▌         | 1/20 [00:12<03:50, 12.16s/it][A
+Optimize Protocol:  10%|█         | 2/20 [00:20<02:54,  9.68s/it][A
+Optimize Protocol:  15%|█▌        | 3/20 [00:28<02:30,  8.87s/it][A
+Optimize Protocol:  20%|██        | 4/20 [00:35<02:16,  8.52s/it][A
+Optimize Protocol:  25%|██▌       | 5/20 [00:43<02:04,  8.31s/it][A
+Optimize Protocol:  30%|███       | 6/20 [00:52<01:55,  8.25s/it][A
+Optimize Protocol:  35%|███▌      | 7/20 [01:00<01:47,  8.24s/it][A
+Optimize Protocol:  40%|████      | 8/20 [01:08<01:38,  8.20s/it][A
+Optimize Protocol:  45%|████▌     | 9/20 [01:16<01:29,  8.13s/it][A
+Optimize Protocol:  50%|█████     | 10/20 [01:24<01:20,  8.09s/it][A
+Optimize Protocol:  55%|█████▌    | 11/20 [01:32<01:12,  8.08s/it][A
+Optimize Protocol:  60%|██████    | 12/20 [01:40<01:04,  8.07s/it][A
+Optimize Protocol:  65%|██████▌   | 13/20 [01:48<00:56,  8.13s/it][A
+Optimize Protocol:  70%|███████   | 14/20 [01:56<00:48,  8.07s/it][A
+Optimize Protocol:  75%|███████▌  | 15/20 [02:04<00:40,  8.05s/it][A
+Optimize Protocol:  80%|████████  | 16/20 [02:12<00:32,  8.07s/it][A
+Optimize Protocol:  85%|████████▌ | 17/20 [02:20<00:24,  8.04s/it][A
+Optimize Protocol:  90%|█████████ | 18/20 [02:28<00:16,  8.04s/it][A
+Optimize Protocol:  95%|█████████▌| 19/20 [02:36<00:08,  8.07s/it][A
+Optimize Protocol: 100%|██████████| 20/20 [02:45<00:00,  8.10s/it][AOptimize Protocol: 100%|██████████| 20/20 [02:45<00:00,  8.25s/it]
+Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:   2%|▎         | 1/40 [00:04<03:00,  4.63s/it]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:04<00:32,  1.10it/s]Reconstruct Landscape Bins:  18%|█▊        | 7/40 [00:04<00:14,  2.27it/s]Reconstruct Landscape Bins:  28%|██▊       | 11/40 [00:04<00:06,  4.28it/s]Reconstruct Landscape Bins:  35%|███▌      | 14/40 [00:05<00:04,  6.11it/s]Reconstruct Landscape Bins:  42%|████▎     | 17/40 [00:05<00:02,  8.13it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:05<00:01, 10.28it/s]Reconstruct Landscape Bins:  57%|█████▊    | 23/40 [00:05<00:01, 12.96it/s]Reconstruct Landscape Bins:  68%|██████▊   | 27/40 [00:05<00:00, 16.51it/s]Reconstruct Landscape Bins:  75%|███████▌  | 30/40 [00:05<00:00, 18.41it/s]Reconstruct Landscape Bins:  82%|████████▎ | 33/40 [00:05<00:00, 20.56it/s]Reconstruct Landscape Bins:  90%|█████████ | 36/40 [00:05<00:00, 21.81it/s]Reconstruct Landscape Bins:  98%|█████████▊| 39/40 [00:06<00:00, 23.70it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:06<00:00,  6.61it/s]
+Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:00<00:01, 31.07it/s]Reconstruct Landscape Bins:  20%|██        | 8/40 [00:00<00:01, 31.33it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:00<00:01, 27.73it/s]Reconstruct Landscape Bins:  38%|███▊      | 15/40 [00:00<00:00, 27.82it/s]Reconstruct Landscape Bins:  48%|████▊     | 19/40 [00:00<00:00, 28.87it/s]Reconstruct Landscape Bins:  57%|█████▊    | 23/40 [00:00<00:00, 29.67it/s]Reconstruct Landscape Bins:  68%|██████▊   | 27/40 [00:00<00:00, 30.14it/s]Reconstruct Landscape Bins:  78%|███████▊  | 31/40 [00:01<00:00, 30.48it/s]Reconstruct Landscape Bins:  88%|████████▊ | 35/40 [00:01<00:00, 30.67it/s]Reconstruct Landscape Bins:  98%|█████████▊| 39/40 [00:01<00:00, 30.85it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 30.06it/s]
+Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:00<00:01, 31.09it/s]Reconstruct Landscape Bins:  20%|██        | 8/40 [00:00<00:01, 31.10it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:00<00:00, 30.98it/s]Reconstruct Landscape Bins:  40%|████      | 16/40 [00:00<00:00, 30.93it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:00<00:00, 30.96it/s]Reconstruct Landscape Bins:  60%|██████    | 24/40 [00:00<00:00, 30.97it/s]Reconstruct Landscape Bins:  70%|███████   | 28/40 [00:00<00:00, 30.91it/s]Reconstruct Landscape Bins:  80%|████████  | 32/40 [00:01<00:00, 30.95it/s]Reconstruct Landscape Bins:  90%|█████████ | 36/40 [00:01<00:00, 29.17it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 29.52it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 30.30it/s]
+Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:   8%|▊         | 3/40 [00:00<00:01, 29.29it/s]Reconstruct Landscape Bins:  15%|█▌        | 6/40 [00:00<00:01, 28.47it/s]Reconstruct Landscape Bins:  25%|██▌       | 10/40 [00:00<00:01, 29.49it/s]Reconstruct Landscape Bins:  35%|███▌      | 14/40 [00:00<00:00, 30.16it/s]Reconstruct Landscape Bins:  45%|████▌     | 18/40 [00:00<00:00, 29.91it/s]Reconstruct Landscape Bins:  52%|█████▎    | 21/40 [00:00<00:00, 29.46it/s]Reconstruct Landscape Bins:  60%|██████    | 24/40 [00:00<00:00, 28.47it/s]Reconstruct Landscape Bins:  70%|███████   | 28/40 [00:00<00:00, 28.92it/s]Reconstruct Landscape Bins:  78%|███████▊  | 31/40 [00:01<00:00, 28.36it/s]Reconstruct Landscape Bins:  88%|████████▊ | 35/40 [00:01<00:00, 29.15it/s]Reconstruct Landscape Bins:  98%|█████████▊| 39/40 [00:01<00:00, 29.51it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 29.26it/s]
+warning: You ran 'git add' with neither '-A (--all)' or '--ignore-removal',
+whose behaviour will change in Git 2.0 with respect to paths you removed.
+Paths like 'tests/acc_ext/data/ext_1/reconstruction.png' that are
+removed from your working tree are ignored with this version of Git.
+
+* 'git add --ignore-removal <pathspec>', which is the current default,
+  ignores paths you removed from your working tree.
+
+* 'git add --all <pathspec>' will let you also record the removals.
+
+Run 'git status' to check the paths you removed from your working tree.
+
