@@ -1,27 +1,0 @@
-  Running command git fetch -q
-  Running command git reset --hard -q de7ff1c12bbbdb6b924d13fba42ab8e0cbbe3af7
-
-[notice] A new release of pip available: 22.2.2 -> 22.3.1
-[notice] To update, run: pip install --upgrade pip
-
-[notice] A new release of pip available: 22.2.2 -> 22.3.1
-[notice] To update, run: pip install --upgrade pip
-
-[notice] A new release of pip available: 22.2.2 -> 22.3.1
-[notice] To update, run: pip install --upgrade pip
-/n/home07/ocheng/.local/lib/python3.8/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
-  PyTreeDef = type(jax.tree_structure(None))
-
-Optimize Protocol:   0%|          | 0/10 [00:00<?, ?it/s][A
-Optimize Protocol:  10%|█         | 1/10 [00:21<03:15, 21.70s/it][A
-Optimize Protocol:  20%|██        | 2/10 [00:39<02:35, 19.49s/it][A
-Optimize Protocol:  30%|███       | 3/10 [00:57<02:11, 18.81s/it][A
-Optimize Protocol:  40%|████      | 4/10 [01:15<01:50, 18.36s/it][A
-Optimize Protocol:  50%|█████     | 5/10 [01:33<01:30, 18.16s/it][A
-Optimize Protocol:  60%|██████    | 6/10 [01:50<01:12, 18.03s/it][A
-Optimize Protocol:  70%|███████   | 7/10 [02:09<00:54, 18.05s/it][A
-Optimize Protocol:  80%|████████  | 8/10 [02:27<00:36, 18.11s/it][A
-Optimize Protocol:  90%|█████████ | 9/10 [02:45<00:18, 18.12s/it][A
-Optimize Protocol: 100%|██████████| 10/10 [03:03<00:00, 18.09s/it][AOptimize Protocol: 100%|██████████| 10/10 [03:03<00:00, 18.34s/it]
-Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:   2%|▎         | 1/40 [00:02<01:55,  2.95s/it]Reconstruct Landscape Bins:  12%|█▎        | 5/40 [00:03<00:16,  2.16it/s]Reconstruct Landscape Bins:  25%|██▌       | 10/40 [00:03<00:05,  5.08it/s]Reconstruct Landscape Bins:  38%|███▊      | 15/40 [00:03<00:02,  8.67it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:03<00:01, 12.88it/s]Reconstruct Landscape Bins:  62%|██████▎   | 25/40 [00:03<00:00, 17.49it/s]Reconstruct Landscape Bins:  75%|███████▌  | 30/40 [00:03<00:00, 22.15it/s]Reconstruct Landscape Bins:  88%|████████▊ | 35/40 [00:03<00:00, 26.95it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:03<00:00, 31.46it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:03<00:00, 10.53it/s]
-Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:  15%|█▌        | 6/40 [00:00<00:00, 53.31it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:00<00:00, 43.20it/s]Reconstruct Landscape Bins:  42%|████▎     | 17/40 [00:00<00:00, 43.59it/s]Reconstruct Landscape Bins:  57%|█████▊    | 23/40 [00:00<00:00, 47.40it/s]Reconstruct Landscape Bins:  72%|███████▎  | 29/40 [00:00<00:00, 49.56it/s]Reconstruct Landscape Bins:  88%|████████▊ | 35/40 [00:00<00:00, 44.47it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:00<00:00, 41.73it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:00<00:00, 44.22it/s]
