@@ -79,9 +79,9 @@ if __name__ == "__main__":
   # S&C Energy landscape params:
   x_m=10. #nm
   delta_E=7.0 #pN nm
-  kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
-  #kappa_l=6.38629/(beta*x_m**2) #pN/nm #for Ebarrier = 2.5kT and delta_E=0, as C&S use
-  #kappa_l=2.6258/(beta*x_m**2)#barrier 0.625kT
+  #kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
+  #kappa_l=6.38629/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 2.5kT and delta_E=0, as C&S use
+  kappa_l=2.6258/(beta_sc*x_m**2)#barrier 0.625kT
   kappa_r=20*kappa_l #pN/nm; Symmetric wells.
 
   energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
   end_time_sc = 0.01
   # dt_sc = 2e-8 this might be exceeding floating point precision or something..
   end_time_sc = 0.01
-  dt_sc = 5e-6
+  dt_sc = 1e-6
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   end_time_custom = 1.
@@ -136,8 +136,8 @@ if __name__ == "__main__":
     gamma_sc,
     beta_sc)
 
-  batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 20 # Number of gradient descent steps to take.
+  batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 10 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
@@ -292,7 +292,7 @@ if __name__ == "__main__":
 
   energy_sivak_plot = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, 0, beta_sc)
   sivak_E = []
-  positions = jnp.linspace(r0_init_sc-30, r0_final_sc+10, num = 100)
+  positions = jnp.linspace(r0_init_sc-10, r0_final_sc+10, num = 100)
   for i in positions:
     sivak_E.append(energy_sivak_plot([[i]], r0=0.))
   plt.plot(positions, sivak_E, label = "Ground Truth", color = "b")
@@ -309,7 +309,7 @@ if __name__ == "__main__":
 
   energy_sivak_plot = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, 0, beta_sc)
   sivak_E = []
-  positions = jnp.linspace(r0_init_sc-30, r0_final_sc+10, num = 100)
+  positions = jnp.linspace(r0_init_sc-10, r0_final_sc+10, num = 100)
   for i in positions:
     sivak_E.append(energy_sivak_plot([[i]], r0=0.))
   plt.plot(positions, sivak_E, label = "Ground Truth", color = "b")
