@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
   # Harmonic Trap Parameters S&C
   #k_s_sc = 0.4 # stiffness; 
-  k_s_sc = 0.6 # stiffness; 
+  k_s_sc = 0.1 # stiffness; 
   r0_init_sc = -10. #nm; initial trap position
   r0_final_sc = 10. #nm; final trap position
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     extensions,
     num_batches,
     energy_sivak,
-    init_position_rev_sc,
+    init_position_fwd_sc,
     r0_init_sc,
     r0_final_sc,
     Neq,
