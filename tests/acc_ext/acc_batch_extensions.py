@@ -136,8 +136,8 @@ if __name__ == "__main__":
     gamma_sc,
     beta_sc)
 
-  batch_size = 2500 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 5 # Number of gradient descent steps to take.
+  batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 400 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
