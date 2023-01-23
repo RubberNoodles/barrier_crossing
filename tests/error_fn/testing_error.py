@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
   # Harmonic Trap Parameters S&C
   #k_s_sc = 0.4 # stiffness; 
-  k_s_sc = 0.6 # stiffness; 
+  k_s_sc = 10*0.6 # stiffness; 
   r0_init_sc = -10. #nm; initial trap position
   r0_final_sc = 10. #nm; final trap position
 
@@ -67,10 +67,10 @@ if __name__ == "__main__":
   # S&C Energy landscape params:
   x_m=10. #nm
   delta_E=7.0 #pN nm
-  kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
+  #kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
   #kappa_l=6.38629/(beta*x_m**2) #pN/nm #for Ebarrier = 2.5kT and delta_E=0, as C&S use
-  #kappa_l=2.6258/(beta*x_m**2)#barrier 0.625kT
-  kappa_r=kappa_l #pN/nm; Symmetric wells.
+  kappa_l=2.6258/(beta_sc*x_m**2)#barrier 0.625kT
+  kappa_r=20*kappa_l #pN/nm; Symmetric wells.
 
   energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
   
@@ -120,8 +120,8 @@ if __name__ == "__main__":
   ## Theoretical Optimal
   ### TODO ###
 
-  batch_size = 3000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 500 # Number of gradient descent steps to take.
+  batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 200 # Number of gradient descent steps to take.
   lr = jopt.polynomial_decay(0.3, opt_steps, 0.001)
 
   ### Error

@@ -79,10 +79,10 @@ if __name__ == "__main__":
   # S&C Energy landscape params:
   x_m=10. #nm
   delta_E=7.0 #pN nm
-  #kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
+  kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
   #kappa_l=6.38629/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 2.5kT and delta_E=0, as C&S use
-  kappa_l=2.6258/(beta_sc*x_m**2)#barrier 0.625kT
-  kappa_r=20*kappa_l #pN/nm; Symmetric wells.
+  #kappa_l=2.6258/(beta_sc*x_m**2)#barrier 0.625kT
+  kappa_r=kappa_l #pN/nm; Symmetric wells.
 
   energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
   
@@ -94,7 +94,7 @@ if __name__ == "__main__":
   end_time_sc = 0.01
   # dt_sc = 2e-8 this might be exceeding floating point precision or something..
   end_time_sc = 0.01
-  dt_sc = 1e-6
+  dt_sc = 5e-6
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   end_time_custom = 1.
