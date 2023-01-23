@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
   # Harmonic Trap Parameters S&C
   #k_s_sc = 0.4 # stiffness; 
-  k_s_sc = 3. # stiffness; 
+  k_s_sc = 6. # stiffness; 
   r0_init_sc = -10. #nm; initial trap position
   r0_final_sc = 10. #nm; final trap position
 
