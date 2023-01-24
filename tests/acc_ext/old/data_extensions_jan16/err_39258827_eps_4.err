@@ -1,625 +1,0 @@
-  Running command git fetch -q
-  Running command git reset --hard -q 156a978d0afa33cce0d715b36a77c0dfdeb45afa
-
-[notice] A new release of pip available: 22.2.2 -> 22.3.1
-[notice] To update, run: pip install --upgrade pip
-
-[notice] A new release of pip available: 22.2.2 -> 22.3.1
-[notice] To update, run: pip install --upgrade pip
-
-[notice] A new release of pip available: 22.2.2 -> 22.3.1
-[notice] To update, run: pip install --upgrade pip
-mkdir: cannot create directory ‘data’: File exists
-mkdir: cannot create directory ‘data/ext_1’: File exists
-mkdir: cannot create directory ‘data/ext_2’: File exists
-mkdir: cannot create directory ‘data/ext_3’: File exists
-mkdir: cannot create directory ‘data/ext_4’: File exists
-mkdir: cannot create directory ‘data/ext_5’: File exists
-/n/home07/ocheng/.local/lib/python3.8/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
-  PyTreeDef = type(jax.tree_structure(None))
-
-Optimize Protocol:   0%|          | 0/600 [00:00<?, ?it/s][A
-Optimize Protocol:   0%|          | 1/600 [00:13<2:12:38, 13.29s/it][A
-Optimize Protocol:   0%|          | 2/600 [00:21<1:41:09, 10.15s/it][A
-Optimize Protocol:   0%|          | 3/600 [00:29<1:31:05,  9.16s/it][A
-Optimize Protocol:   1%|          | 4/600 [00:37<1:26:55,  8.75s/it][A
-Optimize Protocol:   1%|          | 5/600 [00:45<1:24:42,  8.54s/it][A
-Optimize Protocol:   1%|          | 6/600 [00:53<1:22:54,  8.38s/it][A
-Optimize Protocol:   1%|          | 7/600 [01:01<1:21:33,  8.25s/it][A
-Optimize Protocol:   1%|▏         | 8/600 [01:09<1:21:13,  8.23s/it][A
-Optimize Protocol:   2%|▏         | 9/600 [01:18<1:21:09,  8.24s/it][A
-Optimize Protocol:   2%|▏         | 10/600 [01:25<1:20:03,  8.14s/it][A
-Optimize Protocol:   2%|▏         | 11/600 [01:33<1:19:04,  8.06s/it][A
-Optimize Protocol:   2%|▏         | 12/600 [01:41<1:18:54,  8.05s/it][A
-Optimize Protocol:   2%|▏         | 13/600 [01:50<1:19:48,  8.16s/it][A
-Optimize Protocol:   2%|▏         | 14/600 [01:58<1:20:08,  8.21s/it][A
-Optimize Protocol:   2%|▎         | 15/600 [02:06<1:19:43,  8.18s/it][A
-Optimize Protocol:   3%|▎         | 16/600 [02:14<1:18:47,  8.10s/it][A
-Optimize Protocol:   3%|▎         | 17/600 [02:22<1:18:06,  8.04s/it][A
-Optimize Protocol:   3%|▎         | 18/600 [02:30<1:17:39,  8.01s/it][A
-Optimize Protocol:   3%|▎         | 19/600 [02:38<1:17:12,  7.97s/it][A
-Optimize Protocol:   3%|▎         | 20/600 [02:46<1:16:49,  7.95s/it][A
-Optimize Protocol:   4%|▎         | 21/600 [02:54<1:16:21,  7.91s/it][A
-Optimize Protocol:   4%|▎         | 22/600 [03:02<1:16:48,  7.97s/it][A
-Optimize Protocol:   4%|▍         | 23/600 [03:10<1:17:33,  8.06s/it][A
-Optimize Protocol:   4%|▍         | 24/600 [03:18<1:16:57,  8.02s/it][A
-Optimize Protocol:   4%|▍         | 25/600 [03:26<1:16:35,  7.99s/it][A
-Optimize Protocol:   4%|▍         | 26/600 [03:34<1:16:29,  8.00s/it][A
-Optimize Protocol:   4%|▍         | 27/600 [03:42<1:16:10,  7.98s/it][A
-Optimize Protocol:   5%|▍         | 28/600 [03:50<1:15:49,  7.95s/it][A
-Optimize Protocol:   5%|▍         | 29/600 [03:58<1:15:38,  7.95s/it][A
-Optimize Protocol:   5%|▌         | 30/600 [04:05<1:15:19,  7.93s/it][A
-Optimize Protocol:   5%|▌         | 31/600 [04:13<1:15:17,  7.94s/it][A
-Optimize Protocol:   5%|▌         | 32/600 [04:21<1:14:48,  7.90s/it][A
-Optimize Protocol:   6%|▌         | 33/600 [04:29<1:14:29,  7.88s/it][A
-Optimize Protocol:   6%|▌         | 34/600 [04:37<1:14:57,  7.95s/it][A
-Optimize Protocol:   6%|▌         | 35/600 [04:46<1:16:16,  8.10s/it][A
-Optimize Protocol:   6%|▌         | 36/600 [04:53<1:15:25,  8.02s/it][A
-Optimize Protocol:   6%|▌         | 37/600 [05:01<1:14:57,  7.99s/it][A
-Optimize Protocol:   6%|▋         | 38/600 [05:09<1:14:36,  7.97s/it][A
-Optimize Protocol:   6%|▋         | 39/600 [05:17<1:14:31,  7.97s/it][A
-Optimize Protocol:   7%|▋         | 40/600 [05:25<1:13:35,  7.89s/it][A
-Optimize Protocol:   7%|▋         | 41/600 [05:33<1:13:38,  7.91s/it][A
-Optimize Protocol:   7%|▋         | 42/600 [05:41<1:13:12,  7.87s/it][A
-Optimize Protocol:   7%|▋         | 43/600 [05:49<1:14:05,  7.98s/it][A
-Optimize Protocol:   7%|▋         | 44/600 [05:57<1:15:00,  8.09s/it][A
-Optimize Protocol:   8%|▊         | 45/600 [06:06<1:15:29,  8.16s/it][A
-Optimize Protocol:   8%|▊         | 46/600 [06:14<1:15:45,  8.20s/it][A
-Optimize Protocol:   8%|▊         | 47/600 [06:22<1:16:05,  8.26s/it][A
-Optimize Protocol:   8%|▊         | 48/600 [06:30<1:15:41,  8.23s/it][A
-Optimize Protocol:   8%|▊         | 49/600 [06:39<1:15:37,  8.24s/it][A
-Optimize Protocol:   8%|▊         | 50/600 [06:47<1:15:24,  8.23s/it][A
-Optimize Protocol:   8%|▊         | 51/600 [06:55<1:15:04,  8.20s/it][A
-Optimize Protocol:   9%|▊         | 52/600 [07:03<1:14:51,  8.20s/it][A
-Optimize Protocol:   9%|▉         | 53/600 [07:11<1:14:52,  8.21s/it][A
-Optimize Protocol:   9%|▉         | 54/600 [07:20<1:14:50,  8.22s/it][A
-Optimize Protocol:   9%|▉         | 55/600 [07:28<1:14:46,  8.23s/it][A
-Optimize Protocol:   9%|▉         | 56/600 [07:36<1:14:24,  8.21s/it][A
-Optimize Protocol:  10%|▉         | 57/600 [07:44<1:14:17,  8.21s/it][A
-Optimize Protocol:  10%|▉         | 58/600 [07:53<1:14:28,  8.24s/it][A
-Optimize Protocol:  10%|▉         | 59/600 [08:01<1:13:57,  8.20s/it][A
-Optimize Protocol:  10%|█         | 60/600 [08:09<1:13:27,  8.16s/it][A
-Optimize Protocol:  10%|█         | 61/600 [08:17<1:12:53,  8.11s/it][A
-Optimize Protocol:  10%|█         | 62/600 [08:25<1:12:35,  8.10s/it][A
-Optimize Protocol:  10%|█         | 63/600 [08:33<1:12:53,  8.14s/it][A
-Optimize Protocol:  11%|█         | 64/600 [08:41<1:12:47,  8.15s/it][A
-Optimize Protocol:  11%|█         | 65/600 [08:50<1:12:57,  8.18s/it][A
-Optimize Protocol:  11%|█         | 66/600 [08:58<1:13:16,  8.23s/it][A
-Optimize Protocol:  11%|█         | 67/600 [09:06<1:13:18,  8.25s/it][A
-Optimize Protocol:  11%|█▏        | 68/600 [09:15<1:13:25,  8.28s/it][A
-Optimize Protocol:  12%|█▏        | 69/600 [09:23<1:13:28,  8.30s/it][A
-Optimize Protocol:  12%|█▏        | 70/600 [09:31<1:13:21,  8.31s/it][A
-Optimize Protocol:  12%|█▏        | 71/600 [09:40<1:13:14,  8.31s/it][A
-Optimize Protocol:  12%|█▏        | 72/600 [09:48<1:12:29,  8.24s/it][A
-Optimize Protocol:  12%|█▏        | 73/600 [09:56<1:11:53,  8.19s/it][A
-Optimize Protocol:  12%|█▏        | 74/600 [10:04<1:11:05,  8.11s/it][A
-Optimize Protocol:  12%|█▎        | 75/600 [10:12<1:10:35,  8.07s/it][A
-Optimize Protocol:  13%|█▎        | 76/600 [10:20<1:10:16,  8.05s/it][A
-Optimize Protocol:  13%|█▎        | 77/600 [10:27<1:09:41,  7.99s/it][A
-Optimize Protocol:  13%|█▎        | 78/600 [10:35<1:09:18,  7.97s/it][A
-Optimize Protocol:  13%|█▎        | 79/600 [10:43<1:09:17,  7.98s/it][A
-Optimize Protocol:  13%|█▎        | 80/600 [10:51<1:09:23,  8.01s/it][A
-Optimize Protocol:  14%|█▎        | 81/600 [10:59<1:08:59,  7.98s/it][A
-Optimize Protocol:  14%|█▎        | 82/600 [11:07<1:08:37,  7.95s/it][A
-Optimize Protocol:  14%|█▍        | 83/600 [11:15<1:08:21,  7.93s/it][A
-Optimize Protocol:  14%|█▍        | 84/600 [11:23<1:08:13,  7.93s/it][A
-Optimize Protocol:  14%|█▍        | 85/600 [11:31<1:07:54,  7.91s/it][A
-Optimize Protocol:  14%|█▍        | 86/600 [11:39<1:08:05,  7.95s/it][A
-Optimize Protocol:  14%|█▍        | 87/600 [11:47<1:07:52,  7.94s/it][A
-Optimize Protocol:  15%|█▍        | 88/600 [11:55<1:07:53,  7.96s/it][A
-Optimize Protocol:  15%|█▍        | 89/600 [12:03<1:07:40,  7.95s/it][A
-Optimize Protocol:  15%|█▌        | 90/600 [12:11<1:07:31,  7.94s/it][A
-Optimize Protocol:  15%|█▌        | 91/600 [12:19<1:07:32,  7.96s/it][A
-Optimize Protocol:  15%|█▌        | 92/600 [12:27<1:07:18,  7.95s/it][A
-Optimize Protocol:  16%|█▌        | 93/600 [12:35<1:07:02,  7.93s/it][A
-Optimize Protocol:  16%|█▌        | 94/600 [12:42<1:06:54,  7.93s/it][A
-Optimize Protocol:  16%|█▌        | 95/600 [12:50<1:06:59,  7.96s/it][A
-Optimize Protocol:  16%|█▌        | 96/600 [12:59<1:07:05,  7.99s/it][A
-Optimize Protocol:  16%|█▌        | 97/600 [13:07<1:06:56,  7.98s/it][A
-Optimize Protocol:  16%|█▋        | 98/600 [13:15<1:07:34,  8.08s/it][A
-Optimize Protocol:  16%|█▋        | 99/600 [13:23<1:07:12,  8.05s/it][A
-Optimize Protocol:  17%|█▋        | 100/600 [13:31<1:08:15,  8.19s/it][A
-Optimize Protocol:  17%|█▋        | 101/600 [13:40<1:08:27,  8.23s/it][A
-Optimize Protocol:  17%|█▋        | 102/600 [13:48<1:08:41,  8.28s/it][A
-Optimize Protocol:  17%|█▋        | 103/600 [13:56<1:08:41,  8.29s/it][A
-Optimize Protocol:  17%|█▋        | 104/600 [14:05<1:08:49,  8.33s/it][A
-Optimize Protocol:  18%|█▊        | 105/600 [14:13<1:08:57,  8.36s/it][A
-Optimize Protocol:  18%|█▊        | 106/600 [14:22<1:09:00,  8.38s/it][A
-Optimize Protocol:  18%|█▊        | 107/600 [14:30<1:08:51,  8.38s/it][A
-Optimize Protocol:  18%|█▊        | 108/600 [14:38<1:08:40,  8.38s/it][A
-Optimize Protocol:  18%|█▊        | 109/600 [14:47<1:08:43,  8.40s/it][A
-Optimize Protocol:  18%|█▊        | 110/600 [14:55<1:08:40,  8.41s/it][A
-Optimize Protocol:  18%|█▊        | 111/600 [15:04<1:08:25,  8.40s/it][A
-Optimize Protocol:  19%|█▊        | 112/600 [15:12<1:08:14,  8.39s/it][A
-Optimize Protocol:  19%|█▉        | 113/600 [15:20<1:08:04,  8.39s/it][A
-Optimize Protocol:  19%|█▉        | 114/600 [15:29<1:07:58,  8.39s/it][A
-Optimize Protocol:  19%|█▉        | 115/600 [15:37<1:07:54,  8.40s/it][A
-Optimize Protocol:  19%|█▉        | 116/600 [15:45<1:06:56,  8.30s/it][A
-Optimize Protocol:  20%|█▉        | 117/600 [15:53<1:06:31,  8.26s/it][A
-Optimize Protocol:  20%|█▉        | 118/600 [16:02<1:06:24,  8.27s/it][A
-Optimize Protocol:  20%|█▉        | 119/600 [16:10<1:05:49,  8.21s/it][A
-Optimize Protocol:  20%|██        | 120/600 [16:18<1:05:11,  8.15s/it][A
-Optimize Protocol:  20%|██        | 121/600 [16:26<1:05:00,  8.14s/it][A
-Optimize Protocol:  20%|██        | 122/600 [16:34<1:04:28,  8.09s/it][A
-Optimize Protocol:  20%|██        | 123/600 [16:42<1:04:00,  8.05s/it][A
-Optimize Protocol:  21%|██        | 124/600 [16:50<1:04:16,  8.10s/it][A
-Optimize Protocol:  21%|██        | 125/600 [16:58<1:04:11,  8.11s/it][A
-Optimize Protocol:  21%|██        | 126/600 [17:06<1:03:38,  8.06s/it][A
-Optimize Protocol:  21%|██        | 127/600 [17:14<1:03:22,  8.04s/it][A
-Optimize Protocol:  21%|██▏       | 128/600 [17:22<1:03:19,  8.05s/it][A
-Optimize Protocol:  22%|██▏       | 129/600 [17:30<1:03:05,  8.04s/it][A
-Optimize Protocol:  22%|██▏       | 130/600 [17:38<1:02:49,  8.02s/it][A
-Optimize Protocol:  22%|██▏       | 131/600 [17:46<1:02:44,  8.03s/it][A
-Optimize Protocol:  22%|██▏       | 132/600 [17:54<1:02:31,  8.02s/it][A
-Optimize Protocol:  22%|██▏       | 133/600 [18:02<1:02:25,  8.02s/it][A
-Optimize Protocol:  22%|██▏       | 134/600 [18:10<1:02:09,  8.00s/it][A
-Optimize Protocol:  22%|██▎       | 135/600 [18:18<1:02:14,  8.03s/it][A
-Optimize Protocol:  23%|██▎       | 136/600 [18:26<1:01:49,  7.99s/it][A
-Optimize Protocol:  23%|██▎       | 137/600 [18:34<1:01:44,  8.00s/it][A
-Optimize Protocol:  23%|██▎       | 138/600 [18:42<1:01:42,  8.01s/it][A
-Optimize Protocol:  23%|██▎       | 139/600 [18:50<1:01:27,  8.00s/it][A
-Optimize Protocol:  23%|██▎       | 140/600 [18:58<1:01:18,  8.00s/it][A
-Optimize Protocol:  24%|██▎       | 141/600 [19:06<1:01:02,  7.98s/it][A
-Optimize Protocol:  24%|██▎       | 142/600 [19:14<1:00:53,  7.98s/it][A
-Optimize Protocol:  24%|██▍       | 143/600 [19:22<1:01:01,  8.01s/it][A
-Optimize Protocol:  24%|██▍       | 144/600 [19:31<1:02:01,  8.16s/it][A
-Optimize Protocol:  24%|██▍       | 145/600 [19:39<1:02:17,  8.22s/it][A
-Optimize Protocol:  24%|██▍       | 146/600 [19:47<1:02:18,  8.23s/it][A
-Optimize Protocol:  24%|██▍       | 147/600 [19:56<1:01:57,  8.21s/it][A
-Optimize Protocol:  25%|██▍       | 148/600 [20:04<1:01:44,  8.19s/it][A
-Optimize Protocol:  25%|██▍       | 149/600 [20:12<1:01:20,  8.16s/it][A
-Optimize Protocol:  25%|██▌       | 150/600 [20:20<1:00:54,  8.12s/it][A
-Optimize Protocol:  25%|██▌       | 151/600 [20:28<1:00:55,  8.14s/it][A
-Optimize Protocol:  25%|██▌       | 152/600 [20:36<1:00:53,  8.16s/it][A
-Optimize Protocol:  26%|██▌       | 153/600 [20:44<1:00:48,  8.16s/it][A
-Optimize Protocol:  26%|██▌       | 154/600 [20:52<1:00:35,  8.15s/it][A
-Optimize Protocol:  26%|██▌       | 155/600 [21:01<1:00:25,  8.15s/it][A
-Optimize Protocol:  26%|██▌       | 156/600 [21:09<1:00:06,  8.12s/it][A
-Optimize Protocol:  26%|██▌       | 157/600 [21:17<1:00:14,  8.16s/it][A
-Optimize Protocol:  26%|██▋       | 158/600 [21:25<59:58,  8.14s/it]  [A
-Optimize Protocol:  26%|██▋       | 159/600 [21:33<59:35,  8.11s/it][A
-Optimize Protocol:  27%|██▋       | 160/600 [21:41<59:35,  8.13s/it][A
-Optimize Protocol:  27%|██▋       | 161/600 [21:49<59:36,  8.15s/it][A
-Optimize Protocol:  27%|██▋       | 162/600 [21:58<1:00:06,  8.23s/it][A
-Optimize Protocol:  27%|██▋       | 163/600 [22:06<1:00:30,  8.31s/it][A
-Optimize Protocol:  27%|██▋       | 164/600 [22:15<1:00:32,  8.33s/it][A
-Optimize Protocol:  28%|██▊       | 165/600 [22:23<1:00:28,  8.34s/it][A
-Optimize Protocol:  28%|██▊       | 166/600 [22:31<1:00:16,  8.33s/it][A
-Optimize Protocol:  28%|██▊       | 167/600 [22:40<1:00:08,  8.33s/it][A
-Optimize Protocol:  28%|██▊       | 168/600 [22:48<59:48,  8.31s/it]  [A
-Optimize Protocol:  28%|██▊       | 169/600 [22:56<59:18,  8.26s/it][A
-Optimize Protocol:  28%|██▊       | 170/600 [23:04<58:40,  8.19s/it][A
-Optimize Protocol:  28%|██▊       | 171/600 [23:12<57:58,  8.11s/it][A
-Optimize Protocol:  29%|██▊       | 172/600 [23:20<57:41,  8.09s/it][A
-Optimize Protocol:  29%|██▉       | 173/600 [23:28<57:27,  8.07s/it][A
-Optimize Protocol:  29%|██▉       | 174/600 [23:36<57:21,  8.08s/it][A
-Optimize Protocol:  29%|██▉       | 175/600 [23:44<57:19,  8.09s/it][A
-Optimize Protocol:  29%|██▉       | 176/600 [23:52<57:07,  8.08s/it][A
-Optimize Protocol:  30%|██▉       | 177/600 [24:01<57:02,  8.09s/it][A
-Optimize Protocol:  30%|██▉       | 178/600 [24:09<56:46,  8.07s/it][A
-Optimize Protocol:  30%|██▉       | 179/600 [24:16<56:13,  8.01s/it][A
-Optimize Protocol:  30%|███       | 180/600 [24:25<56:37,  8.09s/it][A
-Optimize Protocol:  30%|███       | 181/600 [24:33<56:27,  8.08s/it][A
-Optimize Protocol:  30%|███       | 182/600 [24:41<56:14,  8.07s/it][A
-Optimize Protocol:  30%|███       | 183/600 [24:49<55:46,  8.03s/it][A
-Optimize Protocol:  31%|███       | 184/600 [24:57<55:44,  8.04s/it][A
-Optimize Protocol:  31%|███       | 185/600 [25:05<55:21,  8.00s/it][A
-Optimize Protocol:  31%|███       | 186/600 [25:13<55:10,  8.00s/it][A
-Optimize Protocol:  31%|███       | 187/600 [25:21<55:03,  8.00s/it][A
-Optimize Protocol:  31%|███▏      | 188/600 [25:29<54:59,  8.01s/it][A
-Optimize Protocol:  32%|███▏      | 189/600 [25:37<55:07,  8.05s/it][A
-Optimize Protocol:  32%|███▏      | 190/600 [25:45<54:46,  8.02s/it][A
-Optimize Protocol:  32%|███▏      | 191/600 [25:53<54:38,  8.02s/it][A
-Optimize Protocol:  32%|███▏      | 192/600 [26:01<54:07,  7.96s/it][A
-Optimize Protocol:  32%|███▏      | 193/600 [26:09<54:04,  7.97s/it][A
-Optimize Protocol:  32%|███▏      | 194/600 [26:17<53:56,  7.97s/it][A
-Optimize Protocol:  32%|███▎      | 195/600 [26:25<53:50,  7.98s/it][A
-Optimize Protocol:  33%|███▎      | 196/600 [26:33<53:54,  8.01s/it][A
-Optimize Protocol:  33%|███▎      | 197/600 [26:41<53:52,  8.02s/it][A
-Optimize Protocol:  33%|███▎      | 198/600 [26:49<53:51,  8.04s/it][A
-Optimize Protocol:  33%|███▎      | 199/600 [26:57<53:37,  8.02s/it][A
-Optimize Protocol:  33%|███▎      | 200/600 [27:05<53:31,  8.03s/it][A
-Optimize Protocol:  34%|███▎      | 201/600 [27:13<53:11,  8.00s/it][A
-Optimize Protocol:  34%|███▎      | 202/600 [27:21<53:15,  8.03s/it][A
-Optimize Protocol:  34%|███▍      | 203/600 [27:29<53:12,  8.04s/it][A
-Optimize Protocol:  34%|███▍      | 204/600 [27:37<53:02,  8.04s/it][A
-Optimize Protocol:  34%|███▍      | 205/600 [27:45<52:58,  8.05s/it][A
-Optimize Protocol:  34%|███▍      | 206/600 [27:53<52:33,  8.00s/it][A
-Optimize Protocol:  34%|███▍      | 207/600 [28:01<52:35,  8.03s/it][A
-Optimize Protocol:  35%|███▍      | 208/600 [28:09<52:33,  8.05s/it][A
-Optimize Protocol:  35%|███▍      | 209/600 [28:17<52:20,  8.03s/it][A
-Optimize Protocol:  35%|███▌      | 210/600 [28:25<52:17,  8.04s/it][A
-Optimize Protocol:  35%|███▌      | 211/600 [28:33<52:07,  8.04s/it][A
-Optimize Protocol:  35%|███▌      | 212/600 [28:41<52:03,  8.05s/it][A
-Optimize Protocol:  36%|███▌      | 213/600 [28:49<52:04,  8.07s/it][A
-Optimize Protocol:  36%|███▌      | 214/600 [28:57<51:48,  8.05s/it][A
-Optimize Protocol:  36%|███▌      | 215/600 [29:06<51:44,  8.06s/it][A
-Optimize Protocol:  36%|███▌      | 216/600 [29:14<51:37,  8.07s/it][A
-Optimize Protocol:  36%|███▌      | 217/600 [29:22<51:27,  8.06s/it][A
-Optimize Protocol:  36%|███▋      | 218/600 [29:30<51:31,  8.09s/it][A
-Optimize Protocol:  36%|███▋      | 219/600 [29:38<51:19,  8.08s/it][A
-Optimize Protocol:  37%|███▋      | 220/600 [29:46<51:11,  8.08s/it][A
-Optimize Protocol:  37%|███▋      | 221/600 [29:54<50:55,  8.06s/it][A
-Optimize Protocol:  37%|███▋      | 222/600 [30:02<50:49,  8.07s/it][A
-Optimize Protocol:  37%|███▋      | 223/600 [30:10<50:31,  8.04s/it][A
-Optimize Protocol:  37%|███▋      | 224/600 [30:18<50:57,  8.13s/it][A
-Optimize Protocol:  38%|███▊      | 225/600 [30:27<51:46,  8.28s/it][A
-Optimize Protocol:  38%|███▊      | 226/600 [30:35<51:14,  8.22s/it][A
-Optimize Protocol:  38%|███▊      | 227/600 [30:43<50:56,  8.19s/it][A
-Optimize Protocol:  38%|███▊      | 228/600 [30:51<50:36,  8.16s/it][A
-Optimize Protocol:  38%|███▊      | 229/600 [30:59<50:22,  8.15s/it][A
-Optimize Protocol:  38%|███▊      | 230/600 [31:08<50:09,  8.14s/it][A
-Optimize Protocol:  38%|███▊      | 231/600 [31:16<50:01,  8.13s/it][A
-Optimize Protocol:  39%|███▊      | 232/600 [31:24<49:50,  8.13s/it][A
-Optimize Protocol:  39%|███▉      | 233/600 [31:32<49:14,  8.05s/it][A
-Optimize Protocol:  39%|███▉      | 234/600 [31:40<48:53,  8.01s/it][A
-Optimize Protocol:  39%|███▉      | 235/600 [31:48<48:53,  8.04s/it][A
-Optimize Protocol:  39%|███▉      | 236/600 [31:56<48:48,  8.05s/it][A
-Optimize Protocol:  40%|███▉      | 237/600 [32:04<48:40,  8.04s/it][A
-Optimize Protocol:  40%|███▉      | 238/600 [32:12<48:40,  8.07s/it][A
-Optimize Protocol:  40%|███▉      | 239/600 [32:20<48:30,  8.06s/it][A
-Optimize Protocol:  40%|████      | 240/600 [32:28<48:09,  8.03s/it][A
-Optimize Protocol:  40%|████      | 241/600 [32:36<48:00,  8.02s/it][A
-Optimize Protocol:  40%|████      | 242/600 [32:45<49:01,  8.22s/it][A
-Optimize Protocol:  40%|████      | 243/600 [32:53<48:44,  8.19s/it][A
-Optimize Protocol:  41%|████      | 244/600 [33:01<48:14,  8.13s/it][A
-Optimize Protocol:  41%|████      | 245/600 [33:09<47:44,  8.07s/it][A
-Optimize Protocol:  41%|████      | 246/600 [33:16<47:14,  8.01s/it][A
-Optimize Protocol:  41%|████      | 247/600 [33:24<47:05,  8.00s/it][A
-Optimize Protocol:  41%|████▏     | 248/600 [33:33<47:01,  8.02s/it][A
-Optimize Protocol:  42%|████▏     | 249/600 [33:41<46:56,  8.02s/it][A
-Optimize Protocol:  42%|████▏     | 250/600 [33:48<46:38,  8.00s/it][A
-Optimize Protocol:  42%|████▏     | 251/600 [33:57<46:33,  8.00s/it][A
-Optimize Protocol:  42%|████▏     | 252/600 [34:05<46:29,  8.02s/it][A
-Optimize Protocol:  42%|████▏     | 253/600 [34:13<46:31,  8.04s/it][A
-Optimize Protocol:  42%|████▏     | 254/600 [34:21<46:20,  8.04s/it][A
-Optimize Protocol:  42%|████▎     | 255/600 [34:29<46:01,  8.00s/it][A
-Optimize Protocol:  43%|████▎     | 256/600 [34:37<45:43,  7.97s/it][A
-Optimize Protocol:  43%|████▎     | 257/600 [34:44<45:31,  7.96s/it][A
-Optimize Protocol:  43%|████▎     | 258/600 [34:52<45:25,  7.97s/it][A
-Optimize Protocol:  43%|████▎     | 259/600 [35:00<45:25,  7.99s/it][A
-Optimize Protocol:  43%|████▎     | 260/600 [35:09<45:21,  8.00s/it][A
-Optimize Protocol:  44%|████▎     | 261/600 [35:16<45:09,  7.99s/it][A
-Optimize Protocol:  44%|████▎     | 262/600 [35:25<45:10,  8.02s/it][A
-Optimize Protocol:  44%|████▍     | 263/600 [35:33<45:00,  8.01s/it][A
-Optimize Protocol:  44%|████▍     | 264/600 [35:41<44:49,  8.00s/it][A
-Optimize Protocol:  44%|████▍     | 265/600 [35:48<44:34,  7.98s/it][A
-Optimize Protocol:  44%|████▍     | 266/600 [35:56<44:24,  7.98s/it][A
-Optimize Protocol:  44%|████▍     | 267/600 [36:04<44:16,  7.98s/it][A
-Optimize Protocol:  45%|████▍     | 268/600 [36:13<44:25,  8.03s/it][A
-Optimize Protocol:  45%|████▍     | 269/600 [36:21<45:15,  8.20s/it][A
-Optimize Protocol:  45%|████▌     | 270/600 [36:30<45:52,  8.34s/it][A
-Optimize Protocol:  45%|████▌     | 271/600 [36:38<45:43,  8.34s/it][A
-Optimize Protocol:  45%|████▌     | 272/600 [36:46<45:04,  8.24s/it][A
-Optimize Protocol:  46%|████▌     | 273/600 [36:54<44:27,  8.16s/it][A
-Optimize Protocol:  46%|████▌     | 274/600 [37:02<44:04,  8.11s/it][A
-Optimize Protocol:  46%|████▌     | 275/600 [37:10<43:47,  8.08s/it][A
-Optimize Protocol:  46%|████▌     | 276/600 [37:18<43:41,  8.09s/it][A
-Optimize Protocol:  46%|████▌     | 277/600 [37:26<43:32,  8.09s/it][A
-Optimize Protocol:  46%|████▋     | 278/600 [37:34<43:23,  8.08s/it][A
-Optimize Protocol:  46%|████▋     | 279/600 [37:42<43:11,  8.07s/it][A
-Optimize Protocol:  47%|████▋     | 280/600 [37:51<42:56,  8.05s/it][A
-Optimize Protocol:  47%|████▋     | 281/600 [37:59<42:55,  8.07s/it][A
-Optimize Protocol:  47%|████▋     | 282/600 [38:07<42:46,  8.07s/it][A
-Optimize Protocol:  47%|████▋     | 283/600 [38:15<42:27,  8.04s/it][A
-Optimize Protocol:  47%|████▋     | 284/600 [38:23<42:14,  8.02s/it][A
-Optimize Protocol:  48%|████▊     | 285/600 [38:31<42:08,  8.03s/it][A
-Optimize Protocol:  48%|████▊     | 286/600 [38:39<41:54,  8.01s/it][A
-Optimize Protocol:  48%|████▊     | 287/600 [38:47<41:46,  8.01s/it][A
-Optimize Protocol:  48%|████▊     | 288/600 [38:55<41:43,  8.02s/it][A
-Optimize Protocol:  48%|████▊     | 289/600 [39:03<41:39,  8.04s/it][A
-Optimize Protocol:  48%|████▊     | 290/600 [39:11<41:38,  8.06s/it][A
-Optimize Protocol:  48%|████▊     | 291/600 [39:19<41:31,  8.06s/it][A
-Optimize Protocol:  49%|████▊     | 292/600 [39:27<41:12,  8.03s/it][A
-Optimize Protocol:  49%|████▉     | 293/600 [39:35<41:05,  8.03s/it][A
-Optimize Protocol:  49%|████▉     | 294/600 [39:43<41:03,  8.05s/it][A
-Optimize Protocol:  49%|████▉     | 295/600 [39:51<40:52,  8.04s/it][A
-Optimize Protocol:  49%|████▉     | 296/600 [39:59<40:36,  8.02s/it][A
-Optimize Protocol:  50%|████▉     | 297/600 [40:07<40:34,  8.03s/it][A
-Optimize Protocol:  50%|████▉     | 298/600 [40:15<40:12,  7.99s/it][A
-Optimize Protocol:  50%|████▉     | 299/600 [40:23<40:08,  8.00s/it][A
-Optimize Protocol:  50%|█████     | 300/600 [40:31<40:13,  8.04s/it][A
-Optimize Protocol:  50%|█████     | 301/600 [40:39<40:03,  8.04s/it][A
-Optimize Protocol:  50%|█████     | 302/600 [40:47<40:10,  8.09s/it][A
-Optimize Protocol:  50%|█████     | 303/600 [40:55<39:59,  8.08s/it][A
-Optimize Protocol:  51%|█████     | 304/600 [41:04<39:54,  8.09s/it][A
-Optimize Protocol:  51%|█████     | 305/600 [41:12<39:44,  8.08s/it][A
-Optimize Protocol:  51%|█████     | 306/600 [41:20<39:28,  8.06s/it][A
-Optimize Protocol:  51%|█████     | 307/600 [41:28<39:23,  8.07s/it][A
-Optimize Protocol:  51%|█████▏    | 308/600 [41:36<39:05,  8.03s/it][A
-Optimize Protocol:  52%|█████▏    | 309/600 [41:44<38:53,  8.02s/it][A
-Optimize Protocol:  52%|█████▏    | 310/600 [41:52<38:45,  8.02s/it][A
-Optimize Protocol:  52%|█████▏    | 311/600 [42:00<38:41,  8.03s/it][A
-Optimize Protocol:  52%|█████▏    | 312/600 [42:08<38:39,  8.06s/it][A
-Optimize Protocol:  52%|█████▏    | 313/600 [42:16<38:24,  8.03s/it][A
-Optimize Protocol:  52%|█████▏    | 314/600 [42:24<38:20,  8.04s/it][A
-Optimize Protocol:  52%|█████▎    | 315/600 [42:32<38:09,  8.03s/it][A
-Optimize Protocol:  53%|█████▎    | 316/600 [42:40<38:08,  8.06s/it][A
-Optimize Protocol:  53%|█████▎    | 317/600 [42:48<38:02,  8.07s/it][A
-Optimize Protocol:  53%|█████▎    | 318/600 [42:56<37:45,  8.03s/it][A
-Optimize Protocol:  53%|█████▎    | 319/600 [43:04<37:24,  7.99s/it][A
-Optimize Protocol:  53%|█████▎    | 320/600 [43:12<37:19,  8.00s/it][A
-Optimize Protocol:  54%|█████▎    | 321/600 [43:20<37:14,  8.01s/it][A
-Optimize Protocol:  54%|█████▎    | 322/600 [43:28<37:13,  8.03s/it][A
-Optimize Protocol:  54%|█████▍    | 323/600 [43:36<36:57,  8.01s/it][A
-Optimize Protocol:  54%|█████▍    | 324/600 [43:44<36:59,  8.04s/it][A
-Optimize Protocol:  54%|█████▍    | 325/600 [43:52<36:47,  8.03s/it][A
-Optimize Protocol:  54%|█████▍    | 326/600 [44:00<36:42,  8.04s/it][A
-Optimize Protocol:  55%|█████▍    | 327/600 [44:08<36:28,  8.02s/it][A
-Optimize Protocol:  55%|█████▍    | 328/600 [44:16<36:14,  7.99s/it][A
-Optimize Protocol:  55%|█████▍    | 329/600 [44:24<36:11,  8.01s/it][A
-Optimize Protocol:  55%|█████▌    | 330/600 [44:32<36:03,  8.01s/it][A
-Optimize Protocol:  55%|█████▌    | 331/600 [44:40<35:54,  8.01s/it][A
-Optimize Protocol:  55%|█████▌    | 332/600 [44:48<35:41,  7.99s/it][A
-Optimize Protocol:  56%|█████▌    | 333/600 [44:56<35:27,  7.97s/it][A
-Optimize Protocol:  56%|█████▌    | 334/600 [45:04<35:21,  7.98s/it][A
-Optimize Protocol:  56%|█████▌    | 335/600 [45:12<35:18,  7.99s/it][A
-Optimize Protocol:  56%|█████▌    | 336/600 [45:20<35:12,  8.00s/it][A
-Optimize Protocol:  56%|█████▌    | 337/600 [45:28<35:09,  8.02s/it][A
-Optimize Protocol:  56%|█████▋    | 338/600 [45:36<35:01,  8.02s/it][A
-Optimize Protocol:  56%|█████▋    | 339/600 [45:44<34:45,  7.99s/it][A
-Optimize Protocol:  57%|█████▋    | 340/600 [45:52<34:27,  7.95s/it][A
-Optimize Protocol:  57%|█████▋    | 341/600 [46:00<34:22,  7.96s/it][A
-Optimize Protocol:  57%|█████▋    | 342/600 [46:08<34:21,  7.99s/it][A
-Optimize Protocol:  57%|█████▋    | 343/600 [46:16<34:19,  8.01s/it][A
-Optimize Protocol:  57%|█████▋    | 344/600 [46:24<34:16,  8.03s/it][A
-Optimize Protocol:  57%|█████▊    | 345/600 [46:32<34:11,  8.04s/it][A
-Optimize Protocol:  58%|█████▊    | 346/600 [46:40<34:01,  8.04s/it][A
-Optimize Protocol:  58%|█████▊    | 347/600 [46:48<33:51,  8.03s/it][A
-Optimize Protocol:  58%|█████▊    | 348/600 [46:56<33:43,  8.03s/it][A
-Optimize Protocol:  58%|█████▊    | 349/600 [47:04<33:40,  8.05s/it][A
-Optimize Protocol:  58%|█████▊    | 350/600 [47:12<33:33,  8.05s/it][A
-Optimize Protocol:  58%|█████▊    | 351/600 [47:20<33:20,  8.03s/it][A
-Optimize Protocol:  59%|█████▊    | 352/600 [47:29<33:16,  8.05s/it][A
-Optimize Protocol:  59%|█████▉    | 353/600 [47:37<33:04,  8.03s/it][A
-Optimize Protocol:  59%|█████▉    | 354/600 [47:44<32:47,  8.00s/it][A
-Optimize Protocol:  59%|█████▉    | 355/600 [47:52<32:40,  8.00s/it][A
-Optimize Protocol:  59%|█████▉    | 356/600 [48:00<32:29,  7.99s/it][A
-Optimize Protocol:  60%|█████▉    | 357/600 [48:08<32:20,  7.99s/it][A
-Optimize Protocol:  60%|█████▉    | 358/600 [48:16<32:17,  8.01s/it][A
-Optimize Protocol:  60%|█████▉    | 359/600 [48:24<32:09,  8.01s/it][A
-Optimize Protocol:  60%|██████    | 360/600 [48:33<32:07,  8.03s/it][A
-Optimize Protocol:  60%|██████    | 361/600 [48:41<32:21,  8.12s/it][A
-Optimize Protocol:  60%|██████    | 362/600 [48:49<32:12,  8.12s/it][A
-Optimize Protocol:  60%|██████    | 363/600 [48:57<32:04,  8.12s/it][A
-Optimize Protocol:  61%|██████    | 364/600 [49:05<31:51,  8.10s/it][A
-Optimize Protocol:  61%|██████    | 365/600 [49:13<31:51,  8.13s/it][A
-Optimize Protocol:  61%|██████    | 366/600 [49:21<31:36,  8.10s/it][A
-Optimize Protocol:  61%|██████    | 367/600 [49:29<31:25,  8.09s/it][A
-Optimize Protocol:  61%|██████▏   | 368/600 [49:38<31:13,  8.08s/it][A
-Optimize Protocol:  62%|██████▏   | 369/600 [49:45<30:55,  8.03s/it][A
-Optimize Protocol:  62%|██████▏   | 370/600 [49:53<30:41,  8.00s/it][A
-Optimize Protocol:  62%|██████▏   | 371/600 [50:02<30:43,  8.05s/it][A
-Optimize Protocol:  62%|██████▏   | 372/600 [50:10<30:34,  8.05s/it][A
-Optimize Protocol:  62%|██████▏   | 373/600 [50:18<30:29,  8.06s/it][A
-Optimize Protocol:  62%|██████▏   | 374/600 [50:26<30:13,  8.03s/it][A
-Optimize Protocol:  62%|██████▎   | 375/600 [50:34<30:00,  8.00s/it][A
-Optimize Protocol:  63%|██████▎   | 376/600 [50:42<30:00,  8.04s/it][A
-Optimize Protocol:  63%|██████▎   | 377/600 [50:50<29:55,  8.05s/it][A
-Optimize Protocol:  63%|██████▎   | 378/600 [50:58<29:47,  8.05s/it][A
-Optimize Protocol:  63%|██████▎   | 379/600 [51:06<29:44,  8.08s/it][A
-Optimize Protocol:  63%|██████▎   | 380/600 [51:14<29:33,  8.06s/it][A
-Optimize Protocol:  64%|██████▎   | 381/600 [51:22<29:19,  8.04s/it][A
-Optimize Protocol:  64%|██████▎   | 382/600 [51:30<29:13,  8.04s/it][A
-Optimize Protocol:  64%|██████▍   | 383/600 [51:38<29:08,  8.06s/it][A
-Optimize Protocol:  64%|██████▍   | 384/600 [51:46<28:57,  8.05s/it][A
-Optimize Protocol:  64%|██████▍   | 385/600 [51:54<28:45,  8.03s/it][A
-Optimize Protocol:  64%|██████▍   | 386/600 [52:02<28:41,  8.05s/it][A
-Optimize Protocol:  64%|██████▍   | 387/600 [52:10<28:26,  8.01s/it][A
-Optimize Protocol:  65%|██████▍   | 388/600 [52:18<28:28,  8.06s/it][A
-Optimize Protocol:  65%|██████▍   | 389/600 [52:27<28:56,  8.23s/it][A
-Optimize Protocol:  65%|██████▌   | 390/600 [52:36<29:16,  8.37s/it][A
-Optimize Protocol:  65%|██████▌   | 391/600 [52:44<29:22,  8.43s/it][A
-Optimize Protocol:  65%|██████▌   | 392/600 [52:53<29:21,  8.47s/it][A
-Optimize Protocol:  66%|██████▌   | 393/600 [53:01<28:52,  8.37s/it][A
-Optimize Protocol:  66%|██████▌   | 394/600 [53:09<28:33,  8.32s/it][A
-Optimize Protocol:  66%|██████▌   | 395/600 [53:17<28:28,  8.33s/it][A
-Optimize Protocol:  66%|██████▌   | 396/600 [53:26<28:15,  8.31s/it][A
-Optimize Protocol:  66%|██████▌   | 397/600 [53:34<28:13,  8.34s/it][A
-Optimize Protocol:  66%|██████▋   | 398/600 [53:43<28:16,  8.40s/it][A
-Optimize Protocol:  66%|██████▋   | 399/600 [53:51<28:05,  8.38s/it][A
-Optimize Protocol:  67%|██████▋   | 400/600 [53:59<27:58,  8.39s/it][A
-Optimize Protocol:  67%|██████▋   | 401/600 [54:08<27:52,  8.41s/it][A
-Optimize Protocol:  67%|██████▋   | 402/600 [54:16<27:44,  8.41s/it][A
-Optimize Protocol:  67%|██████▋   | 403/600 [54:25<27:29,  8.37s/it][A
-Optimize Protocol:  67%|██████▋   | 404/600 [54:33<27:22,  8.38s/it][A
-Optimize Protocol:  68%|██████▊   | 405/600 [54:42<27:24,  8.43s/it][A
-Optimize Protocol:  68%|██████▊   | 406/600 [54:50<27:28,  8.50s/it][A
-Optimize Protocol:  68%|██████▊   | 407/600 [54:59<27:22,  8.51s/it][A
-Optimize Protocol:  68%|██████▊   | 408/600 [55:07<27:25,  8.57s/it][A
-Optimize Protocol:  68%|██████▊   | 409/600 [55:16<27:20,  8.59s/it][A
-Optimize Protocol:  68%|██████▊   | 410/600 [55:25<27:05,  8.55s/it][A
-Optimize Protocol:  68%|██████▊   | 411/600 [55:33<26:55,  8.55s/it][A
-Optimize Protocol:  69%|██████▊   | 412/600 [55:42<26:42,  8.52s/it][A
-Optimize Protocol:  69%|██████▉   | 413/600 [55:50<26:27,  8.49s/it][A
-Optimize Protocol:  69%|██████▉   | 414/600 [55:58<26:21,  8.50s/it][A
-Optimize Protocol:  69%|██████▉   | 415/600 [56:07<26:09,  8.49s/it][A
-Optimize Protocol:  69%|██████▉   | 416/600 [56:15<26:03,  8.50s/it][A
-Optimize Protocol:  70%|██████▉   | 417/600 [56:24<25:57,  8.51s/it][A
-Optimize Protocol:  70%|██████▉   | 418/600 [56:32<25:47,  8.50s/it][A
-Optimize Protocol:  70%|██████▉   | 419/600 [56:41<25:37,  8.49s/it][A
-Optimize Protocol:  70%|███████   | 420/600 [56:50<25:35,  8.53s/it][A
-Optimize Protocol:  70%|███████   | 421/600 [56:58<25:26,  8.53s/it][A
-Optimize Protocol:  70%|███████   | 422/600 [57:07<25:17,  8.52s/it][A
-Optimize Protocol:  70%|███████   | 423/600 [57:15<25:00,  8.48s/it][A
-Optimize Protocol:  71%|███████   | 424/600 [57:24<24:58,  8.52s/it][A
-Optimize Protocol:  71%|███████   | 425/600 [57:32<24:44,  8.48s/it][A
-Optimize Protocol:  71%|███████   | 426/600 [57:40<24:38,  8.50s/it][A
-Optimize Protocol:  71%|███████   | 427/600 [57:49<24:32,  8.51s/it][A
-Optimize Protocol:  71%|███████▏  | 428/600 [57:58<24:28,  8.54s/it][A
-Optimize Protocol:  72%|███████▏  | 429/600 [58:06<24:20,  8.54s/it][A
-Optimize Protocol:  72%|███████▏  | 430/600 [58:14<23:56,  8.45s/it][A
-Optimize Protocol:  72%|███████▏  | 431/600 [58:23<23:41,  8.41s/it][A
-Optimize Protocol:  72%|███████▏  | 432/600 [58:31<23:38,  8.44s/it][A
-Optimize Protocol:  72%|███████▏  | 433/600 [58:40<23:41,  8.51s/it][A
-Optimize Protocol:  72%|███████▏  | 434/600 [58:49<23:38,  8.54s/it][A
-Optimize Protocol:  72%|███████▎  | 435/600 [58:57<23:31,  8.55s/it][A
-Optimize Protocol:  73%|███████▎  | 436/600 [59:06<23:19,  8.53s/it][A
-Optimize Protocol:  73%|███████▎  | 437/600 [59:13<22:38,  8.34s/it][A
-Optimize Protocol:  73%|███████▎  | 438/600 [59:22<22:19,  8.27s/it][A
-Optimize Protocol:  73%|███████▎  | 439/600 [59:30<22:02,  8.22s/it][A
-Optimize Protocol:  73%|███████▎  | 440/600 [59:38<21:51,  8.20s/it][A
-Optimize Protocol:  74%|███████▎  | 441/600 [59:46<21:49,  8.23s/it][A
-Optimize Protocol:  74%|███████▎  | 442/600 [59:54<21:39,  8.23s/it][A
-Optimize Protocol:  74%|███████▍  | 443/600 [1:00:03<21:27,  8.20s/it][A
-Optimize Protocol:  74%|███████▍  | 444/600 [1:00:11<21:14,  8.17s/it][A
-Optimize Protocol:  74%|███████▍  | 445/600 [1:00:19<21:10,  8.20s/it][A
-Optimize Protocol:  74%|███████▍  | 446/600 [1:00:27<20:54,  8.14s/it][A
-Optimize Protocol:  74%|███████▍  | 447/600 [1:00:35<20:46,  8.15s/it][A
-Optimize Protocol:  75%|███████▍  | 448/600 [1:00:43<20:42,  8.17s/it][A
-Optimize Protocol:  75%|███████▍  | 449/600 [1:00:51<20:30,  8.15s/it][A
-Optimize Protocol:  75%|███████▌  | 450/600 [1:00:59<20:21,  8.14s/it][A
-Optimize Protocol:  75%|███████▌  | 451/600 [1:01:08<20:10,  8.13s/it][A
-Optimize Protocol:  75%|███████▌  | 452/600 [1:01:15<19:49,  8.04s/it][A
-Optimize Protocol:  76%|███████▌  | 453/600 [1:01:24<19:44,  8.06s/it][A
-Optimize Protocol:  76%|███████▌  | 454/600 [1:01:32<19:41,  8.09s/it][A
-Optimize Protocol:  76%|███████▌  | 455/600 [1:01:40<19:30,  8.08s/it][A
-Optimize Protocol:  76%|███████▌  | 456/600 [1:01:48<19:20,  8.06s/it][A
-Optimize Protocol:  76%|███████▌  | 457/600 [1:01:56<19:19,  8.11s/it][A
-Optimize Protocol:  76%|███████▋  | 458/600 [1:02:04<19:12,  8.11s/it][A
-Optimize Protocol:  76%|███████▋  | 459/600 [1:02:12<19:03,  8.11s/it][A
-Optimize Protocol:  77%|███████▋  | 460/600 [1:02:21<19:07,  8.20s/it][A
-Optimize Protocol:  77%|███████▋  | 461/600 [1:02:29<18:58,  8.19s/it][A
-Optimize Protocol:  77%|███████▋  | 462/600 [1:02:37<18:40,  8.12s/it][A
-Optimize Protocol:  77%|███████▋  | 463/600 [1:02:45<18:37,  8.16s/it][A
-Optimize Protocol:  77%|███████▋  | 464/600 [1:02:53<18:30,  8.17s/it][A
-Optimize Protocol:  78%|███████▊  | 465/600 [1:03:01<18:19,  8.15s/it][A
-Optimize Protocol:  78%|███████▊  | 466/600 [1:03:09<18:07,  8.11s/it][A
-Optimize Protocol:  78%|███████▊  | 467/600 [1:03:18<18:04,  8.15s/it][A
-Optimize Protocol:  78%|███████▊  | 468/600 [1:03:26<18:04,  8.22s/it][A
-Optimize Protocol:  78%|███████▊  | 469/600 [1:03:34<17:47,  8.15s/it][A
-Optimize Protocol:  78%|███████▊  | 470/600 [1:03:42<17:48,  8.22s/it][A
-Optimize Protocol:  78%|███████▊  | 471/600 [1:03:51<17:58,  8.36s/it][A
-Optimize Protocol:  79%|███████▊  | 472/600 [1:04:00<17:56,  8.41s/it][A
-Optimize Protocol:  79%|███████▉  | 473/600 [1:04:08<17:37,  8.33s/it][A
-Optimize Protocol:  79%|███████▉  | 474/600 [1:04:16<17:40,  8.42s/it][A
-Optimize Protocol:  79%|███████▉  | 475/600 [1:04:25<17:35,  8.44s/it][A
-Optimize Protocol:  79%|███████▉  | 476/600 [1:04:33<17:17,  8.37s/it][A
-Optimize Protocol:  80%|███████▉  | 477/600 [1:04:41<16:57,  8.28s/it][A
-Optimize Protocol:  80%|███████▉  | 478/600 [1:04:49<16:37,  8.18s/it][A
-Optimize Protocol:  80%|███████▉  | 479/600 [1:04:57<16:26,  8.15s/it][A
-Optimize Protocol:  80%|████████  | 480/600 [1:05:05<16:14,  8.12s/it][A
-Optimize Protocol:  80%|████████  | 481/600 [1:05:13<16:06,  8.12s/it][A
-Optimize Protocol:  80%|████████  | 482/600 [1:05:21<15:57,  8.11s/it][A
-Optimize Protocol:  80%|████████  | 483/600 [1:05:29<15:45,  8.08s/it][A
-Optimize Protocol:  81%|████████  | 484/600 [1:05:37<15:32,  8.04s/it][A
-Optimize Protocol:  81%|████████  | 485/600 [1:05:45<15:22,  8.02s/it][A
-Optimize Protocol:  81%|████████  | 486/600 [1:05:53<15:15,  8.03s/it][A
-Optimize Protocol:  81%|████████  | 487/600 [1:06:01<15:09,  8.05s/it][A
-Optimize Protocol:  81%|████████▏ | 488/600 [1:06:09<15:00,  8.04s/it][A
-Optimize Protocol:  82%|████████▏ | 489/600 [1:06:17<14:48,  8.01s/it][A
-Optimize Protocol:  82%|████████▏ | 490/600 [1:06:25<14:43,  8.04s/it][A
-Optimize Protocol:  82%|████████▏ | 491/600 [1:06:33<14:33,  8.02s/it][A
-Optimize Protocol:  82%|████████▏ | 492/600 [1:06:41<14:27,  8.03s/it][A
-Optimize Protocol:  82%|████████▏ | 493/600 [1:06:50<14:24,  8.08s/it][A
-Optimize Protocol:  82%|████████▏ | 494/600 [1:06:58<14:12,  8.04s/it][A
-Optimize Protocol:  82%|████████▎ | 495/600 [1:07:06<14:04,  8.04s/it][A
-Optimize Protocol:  83%|████████▎ | 496/600 [1:07:14<13:58,  8.06s/it][A
-Optimize Protocol:  83%|████████▎ | 497/600 [1:07:22<13:51,  8.07s/it][A
-Optimize Protocol:  83%|████████▎ | 498/600 [1:07:30<13:46,  8.11s/it][A
-Optimize Protocol:  83%|████████▎ | 499/600 [1:07:38<13:38,  8.10s/it][A
-Optimize Protocol:  83%|████████▎ | 500/600 [1:07:46<13:29,  8.10s/it][A
-Optimize Protocol:  84%|████████▎ | 501/600 [1:07:54<13:20,  8.09s/it][A
-Optimize Protocol:  84%|████████▎ | 502/600 [1:08:02<13:11,  8.08s/it][A
-Optimize Protocol:  84%|████████▍ | 503/600 [1:08:10<13:03,  8.08s/it][A
-Optimize Protocol:  84%|████████▍ | 504/600 [1:08:18<12:54,  8.06s/it][A
-Optimize Protocol:  84%|████████▍ | 505/600 [1:08:26<12:42,  8.02s/it][A
-Optimize Protocol:  84%|████████▍ | 506/600 [1:08:34<12:34,  8.03s/it][A
-Optimize Protocol:  84%|████████▍ | 507/600 [1:08:43<12:28,  8.05s/it][A
-Optimize Protocol:  85%|████████▍ | 508/600 [1:08:51<12:22,  8.07s/it][A
-Optimize Protocol:  85%|████████▍ | 509/600 [1:08:59<12:15,  8.08s/it][A
-Optimize Protocol:  85%|████████▌ | 510/600 [1:09:07<12:06,  8.07s/it][A
-Optimize Protocol:  85%|████████▌ | 511/600 [1:09:15<11:57,  8.07s/it][A
-Optimize Protocol:  85%|████████▌ | 512/600 [1:09:23<11:50,  8.07s/it][A
-Optimize Protocol:  86%|████████▌ | 513/600 [1:09:31<11:42,  8.07s/it][A
-Optimize Protocol:  86%|████████▌ | 514/600 [1:09:39<11:31,  8.04s/it][A
-Optimize Protocol:  86%|████████▌ | 515/600 [1:09:47<11:21,  8.02s/it][A
-Optimize Protocol:  86%|████████▌ | 516/600 [1:09:55<11:13,  8.02s/it][A
-Optimize Protocol:  86%|████████▌ | 517/600 [1:10:03<11:07,  8.04s/it][A
-Optimize Protocol:  86%|████████▋ | 518/600 [1:10:11<10:57,  8.02s/it][A
-Optimize Protocol:  86%|████████▋ | 519/600 [1:10:19<10:52,  8.05s/it][A
-Optimize Protocol:  87%|████████▋ | 520/600 [1:10:27<10:44,  8.05s/it][A
-Optimize Protocol:  87%|████████▋ | 521/600 [1:10:35<10:35,  8.04s/it][A
-Optimize Protocol:  87%|████████▋ | 522/600 [1:10:43<10:26,  8.04s/it][A
-Optimize Protocol:  87%|████████▋ | 523/600 [1:10:51<10:21,  8.07s/it][A
-Optimize Protocol:  87%|████████▋ | 524/600 [1:11:00<10:28,  8.27s/it][A
-Optimize Protocol:  88%|████████▊ | 525/600 [1:11:08<10:15,  8.21s/it][A
-Optimize Protocol:  88%|████████▊ | 526/600 [1:11:16<10:01,  8.12s/it][A
-Optimize Protocol:  88%|████████▊ | 527/600 [1:11:24<09:56,  8.17s/it][A
-Optimize Protocol:  88%|████████▊ | 528/600 [1:11:33<09:57,  8.30s/it][A
-Optimize Protocol:  88%|████████▊ | 529/600 [1:11:41<09:52,  8.35s/it][A
-Optimize Protocol:  88%|████████▊ | 530/600 [1:11:50<09:49,  8.42s/it][A
-Optimize Protocol:  88%|████████▊ | 531/600 [1:11:59<09:42,  8.44s/it][A
-Optimize Protocol:  89%|████████▊ | 532/600 [1:12:07<09:34,  8.44s/it][A
-Optimize Protocol:  89%|████████▉ | 533/600 [1:12:16<09:27,  8.46s/it][A
-Optimize Protocol:  89%|████████▉ | 534/600 [1:12:24<09:18,  8.46s/it][A
-Optimize Protocol:  89%|████████▉ | 535/600 [1:12:32<09:10,  8.46s/it][A
-Optimize Protocol:  89%|████████▉ | 536/600 [1:12:41<08:59,  8.44s/it][A
-Optimize Protocol:  90%|████████▉ | 537/600 [1:12:49<08:53,  8.47s/it][A
-Optimize Protocol:  90%|████████▉ | 538/600 [1:12:58<08:45,  8.48s/it][A
-Optimize Protocol:  90%|████████▉ | 539/600 [1:13:06<08:37,  8.48s/it][A
-Optimize Protocol:  90%|█████████ | 540/600 [1:13:14<08:22,  8.37s/it][A
-Optimize Protocol:  90%|█████████ | 541/600 [1:13:23<08:11,  8.33s/it][A
-Optimize Protocol:  90%|█████████ | 542/600 [1:13:31<07:59,  8.27s/it][A
-Optimize Protocol:  90%|█████████ | 543/600 [1:13:39<07:46,  8.18s/it][A
-Optimize Protocol:  91%|█████████ | 544/600 [1:13:47<07:37,  8.17s/it][A
-Optimize Protocol:  91%|█████████ | 545/600 [1:13:55<07:34,  8.26s/it][A
-Optimize Protocol:  91%|█████████ | 546/600 [1:14:03<07:22,  8.19s/it][A
-Optimize Protocol:  91%|█████████ | 547/600 [1:14:12<07:11,  8.15s/it][A
-Optimize Protocol:  91%|█████████▏| 548/600 [1:14:20<07:03,  8.14s/it][A
-Optimize Protocol:  92%|█████████▏| 549/600 [1:14:28<06:54,  8.12s/it][A
-Optimize Protocol:  92%|█████████▏| 550/600 [1:14:36<06:43,  8.06s/it][A
-Optimize Protocol:  92%|█████████▏| 551/600 [1:14:44<06:40,  8.17s/it][A
-Optimize Protocol:  92%|█████████▏| 552/600 [1:14:52<06:30,  8.15s/it][A
-Optimize Protocol:  92%|█████████▏| 553/600 [1:15:01<06:26,  8.21s/it][A
-Optimize Protocol:  92%|█████████▏| 554/600 [1:15:09<06:16,  8.19s/it][A
-Optimize Protocol:  92%|█████████▎| 555/600 [1:15:17<06:06,  8.14s/it][A
-Optimize Protocol:  93%|█████████▎| 556/600 [1:15:25<06:04,  8.29s/it][A
-Optimize Protocol:  93%|█████████▎| 557/600 [1:15:34<05:58,  8.33s/it][A
-Optimize Protocol:  93%|█████████▎| 558/600 [1:15:42<05:50,  8.34s/it][A
-Optimize Protocol:  93%|█████████▎| 559/600 [1:15:50<05:39,  8.28s/it][A
-Optimize Protocol:  93%|█████████▎| 560/600 [1:15:58<05:28,  8.22s/it][A
-Optimize Protocol:  94%|█████████▎| 561/600 [1:16:06<05:19,  8.19s/it][A
-Optimize Protocol:  94%|█████████▎| 562/600 [1:16:14<05:09,  8.14s/it][A
-Optimize Protocol:  94%|█████████▍| 563/600 [1:16:23<05:01,  8.15s/it][A
-Optimize Protocol:  94%|█████████▍| 564/600 [1:16:31<04:54,  8.17s/it][A
-Optimize Protocol:  94%|█████████▍| 565/600 [1:16:39<04:44,  8.12s/it][A
-Optimize Protocol:  94%|█████████▍| 566/600 [1:16:47<04:36,  8.12s/it][A
-Optimize Protocol:  94%|█████████▍| 567/600 [1:16:55<04:28,  8.12s/it][A
-Optimize Protocol:  95%|█████████▍| 568/600 [1:17:03<04:20,  8.15s/it][A
-Optimize Protocol:  95%|█████████▍| 569/600 [1:17:12<04:16,  8.26s/it][A
-Optimize Protocol:  95%|█████████▌| 570/600 [1:17:20<04:08,  8.30s/it][A
-Optimize Protocol:  95%|█████████▌| 571/600 [1:17:29<04:00,  8.29s/it][A
-Optimize Protocol:  95%|█████████▌| 572/600 [1:17:37<03:53,  8.35s/it][A
-Optimize Protocol:  96%|█████████▌| 573/600 [1:17:46<03:46,  8.40s/it][A
-Optimize Protocol:  96%|█████████▌| 574/600 [1:17:54<03:38,  8.42s/it][A
-Optimize Protocol:  96%|█████████▌| 575/600 [1:18:02<03:28,  8.33s/it][A
-Optimize Protocol:  96%|█████████▌| 576/600 [1:18:10<03:19,  8.30s/it][A
-Optimize Protocol:  96%|█████████▌| 577/600 [1:18:19<03:11,  8.34s/it][A
-Optimize Protocol:  96%|█████████▋| 578/600 [1:18:27<03:04,  8.38s/it][A
-Optimize Protocol:  96%|█████████▋| 579/600 [1:18:36<02:56,  8.38s/it][A
-Optimize Protocol:  97%|█████████▋| 580/600 [1:18:44<02:48,  8.41s/it][A
-Optimize Protocol:  97%|█████████▋| 581/600 [1:18:53<02:40,  8.43s/it][A
-Optimize Protocol:  97%|█████████▋| 582/600 [1:19:01<02:31,  8.44s/it][A
-Optimize Protocol:  97%|█████████▋| 583/600 [1:19:09<02:23,  8.44s/it][A
-Optimize Protocol:  97%|█████████▋| 584/600 [1:19:18<02:15,  8.45s/it][A
-Optimize Protocol:  98%|█████████▊| 585/600 [1:19:26<02:06,  8.40s/it][A
-Optimize Protocol:  98%|█████████▊| 586/600 [1:19:35<01:57,  8.42s/it][A
-Optimize Protocol:  98%|█████████▊| 587/600 [1:19:43<01:49,  8.43s/it][A
-Optimize Protocol:  98%|█████████▊| 588/600 [1:19:51<01:40,  8.37s/it][A
-Optimize Protocol:  98%|█████████▊| 589/600 [1:20:00<01:31,  8.36s/it][A
-Optimize Protocol:  98%|█████████▊| 590/600 [1:20:08<01:24,  8.40s/it][A
-Optimize Protocol:  98%|█████████▊| 591/600 [1:20:16<01:15,  8.33s/it][A
-Optimize Protocol:  99%|█████████▊| 592/600 [1:20:25<01:07,  8.43s/it][A
-Optimize Protocol:  99%|█████████▉| 593/600 [1:20:34<00:59,  8.49s/it][A
-Optimize Protocol:  99%|█████████▉| 594/600 [1:20:42<00:51,  8.53s/it][A
-Optimize Protocol:  99%|█████████▉| 595/600 [1:20:51<00:42,  8.50s/it][A
-Optimize Protocol:  99%|█████████▉| 596/600 [1:20:59<00:33,  8.42s/it][A
-Optimize Protocol: 100%|█████████▉| 597/600 [1:21:07<00:24,  8.32s/it][A
-Optimize Protocol: 100%|█████████▉| 598/600 [1:21:15<00:16,  8.24s/it][A
-Optimize Protocol: 100%|█████████▉| 599/600 [1:21:23<00:08,  8.16s/it][A
-Optimize Protocol: 100%|██████████| 600/600 [1:21:31<00:00,  8.11s/it][AOptimize Protocol: 100%|██████████| 600/600 [1:21:31<00:00,  8.15s/it]
-Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:   2%|▎         | 1/40 [00:05<03:23,  5.21s/it]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:05<00:36,  1.02s/it]Reconstruct Landscape Bins:  20%|██        | 8/40 [00:05<00:13,  2.38it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:05<00:06,  4.17it/s]Reconstruct Landscape Bins:  40%|████      | 16/40 [00:05<00:03,  6.36it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:05<00:02,  8.93it/s]Reconstruct Landscape Bins:  60%|██████    | 24/40 [00:05<00:01, 11.79it/s]Reconstruct Landscape Bins:  68%|██████▊   | 27/40 [00:06<00:00, 14.06it/s]Reconstruct Landscape Bins:  78%|███████▊  | 31/40 [00:06<00:00, 17.20it/s]Reconstruct Landscape Bins:  85%|████████▌ | 34/40 [00:06<00:00, 18.62it/s]Reconstruct Landscape Bins:  92%|█████████▎| 37/40 [00:06<00:00, 19.62it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:06<00:00, 21.60it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:06<00:00,  6.09it/s]
-Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:00<00:01, 30.39it/s]Reconstruct Landscape Bins:  20%|██        | 8/40 [00:00<00:01, 30.61it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:00<00:00, 30.75it/s]Reconstruct Landscape Bins:  40%|████      | 16/40 [00:00<00:00, 30.77it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:00<00:00, 30.76it/s]Reconstruct Landscape Bins:  60%|██████    | 24/40 [00:00<00:00, 30.72it/s]Reconstruct Landscape Bins:  70%|███████   | 28/40 [00:00<00:00, 30.77it/s]Reconstruct Landscape Bins:  80%|████████  | 32/40 [00:01<00:00, 30.81it/s]Reconstruct Landscape Bins:  90%|█████████ | 36/40 [00:01<00:00, 30.84it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 30.85it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 30.77it/s]
-Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:00<00:01, 31.05it/s]Reconstruct Landscape Bins:  20%|██        | 8/40 [00:00<00:01, 30.90it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:00<00:00, 31.00it/s]Reconstruct Landscape Bins:  40%|████      | 16/40 [00:00<00:00, 31.04it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:00<00:00, 31.13it/s]Reconstruct Landscape Bins:  60%|██████    | 24/40 [00:00<00:00, 31.11it/s]Reconstruct Landscape Bins:  70%|███████   | 28/40 [00:00<00:00, 31.12it/s]Reconstruct Landscape Bins:  80%|████████  | 32/40 [00:01<00:00, 31.10it/s]Reconstruct Landscape Bins:  90%|█████████ | 36/40 [00:01<00:00, 31.08it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 31.08it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 31.07it/s]
-Reconstruct Landscape Bins:   0%|          | 0/40 [00:00<?, ?it/s]Reconstruct Landscape Bins:  10%|█         | 4/40 [00:00<00:01, 30.86it/s]Reconstruct Landscape Bins:  20%|██        | 8/40 [00:00<00:01, 31.00it/s]Reconstruct Landscape Bins:  30%|███       | 12/40 [00:00<00:00, 31.05it/s]Reconstruct Landscape Bins:  40%|████      | 16/40 [00:00<00:00, 30.87it/s]Reconstruct Landscape Bins:  50%|█████     | 20/40 [00:00<00:00, 30.87it/s]Reconstruct Landscape Bins:  60%|██████    | 24/40 [00:00<00:00, 30.73it/s]Reconstruct Landscape Bins:  70%|███████   | 28/40 [00:00<00:00, 30.70it/s]Reconstruct Landscape Bins:  80%|████████  | 32/40 [00:01<00:00, 30.61it/s]Reconstruct Landscape Bins:  90%|█████████ | 36/40 [00:01<00:00, 30.74it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 30.79it/s]Reconstruct Landscape Bins: 100%|██████████| 40/40 [00:01<00:00, 30.79it/s]

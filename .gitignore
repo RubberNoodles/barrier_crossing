@@ -12,3 +12,4 @@ logs
 geiger_output
 *.out
 *.err
+src
