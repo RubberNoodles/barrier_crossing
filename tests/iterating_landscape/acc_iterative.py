@@ -172,7 +172,7 @@ if __name__ == "__main__":
   plt.xlabel("Position (x)")
   plt.ylabel("Free Energy (G)")
   plt.title("Iteratively Reconstructing Landscape")
-  plt.savefig("./ac_plots/reconstruct_landscapes.png")
+  plt.savefig("./data/ac_plots/reconstruct_landscapes.png")
   
-  with open("./ac_pkl/coeffs.pkl", "wb") as f:
+  with open("./data/ac_pkl/coeffs.pkl", "wb") as f:
     pickle.dump(coeffs, f)

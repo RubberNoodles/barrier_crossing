@@ -158,9 +158,9 @@ if __name__ == "__main__":
 
   coeffs_err, summaries_err, losses_err = bc_optimize.optimize_protocol(lin_coeffs_sc, grad_rev, optimizer, batch_size, opt_steps)
 
-  with open("./efn_pkl/coeffs_err_sc.pkl", "wb") as f:
+  with open("./data/efn_pkl/coeffs_err_sc.pkl", "wb") as f:
     pickle.dump(coeffs_err, f)
-  with open("./efn_pkl/losses_err_sc.pkl", "wb") as f:
+  with open("./data/efn_pkl/losses_err_sc.pkl", "wb") as f:
     pickle.dump(coeffs_err, f)
 
   _, ax = plt.subplots(1, 2, figsize=[24, 12])
@@ -192,7 +192,7 @@ if __name__ == "__main__":
   ax[1].legend()#
   ax[1].set_title('Schedule evolution')
 
-  plt.savefig("./efn_plots/error_opt.png")
+  plt.savefig("./data/efn_plots/error_opt.png")
 
   error_trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), coeffs_err[-1][1],r0_init_sc,r0_final_sc)
 
@@ -228,9 +228,9 @@ if __name__ == "__main__":
 
   coeffs_work, summaries_work, losses_work = bc_optimize.optimize_protocol(lin_coeffs_sc, grad_work, optimizer, batch_size, opt_steps)
 
-  with open("./efn_pkl/coeffs_work_sc.pkl", "wb") as f:
+  with open("./data/efn_pkl/coeffs_work_sc.pkl", "wb") as f:
     pickle.dump(coeffs_work, f)
-  with open("./efn_pkl/losses_work_sc.pkl", "wb") as f:
+  with open("./data/efn_pkl/losses_work_sc.pkl", "wb") as f:
     pickle.dump(coeffs_work, f)
   
   _, ax = plt.subplots(1, 2, figsize=[24, 12])
@@ -262,7 +262,7 @@ if __name__ == "__main__":
   ax[1].legend()#
   ax[1].set_title('Schedule evolution')
 
-  plt.savefig("./efn_plots/work_opt.png")
+  plt.savefig("./data/efn_plots/work_opt.png")
 
   work_trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), coeffs_work[-1][1],r0_init_sc,r0_final_sc)
 
@@ -366,7 +366,7 @@ if __name__ == "__main__":
   ax_1.set_ylabel('Number')
   ax_1.set_xlabel('Std')
 
-  plt.savefig("./efn_plots/df_estimate_hist.png")
+  plt.savefig("./data/efn_plots/df_estimate_hist.png")
 
 
   _, (ax_0, ax_1) = plt.subplots(1,2, figsize=(12,6))
@@ -383,7 +383,7 @@ if __name__ == "__main__":
   ax_1.set_ylabel('Number')
   ax_1.set_xlabel('Std')
 
-  plt.savefig("./efn_plots/work_loss_hist.png")
+  plt.savefig("./data/efn_plots/work_loss_hist.png")
 
 
   _, (ax_0, ax_1) = plt.subplots(1,2, figsize=(12,6))
@@ -400,9 +400,9 @@ if __name__ == "__main__":
   ax_1.set_ylabel('Number')
   ax_1.set_xlabel('Log Std')
 
-  plt.savefig("./efn_plots/jc_loss_hist.png")
+  plt.savefig("./data/efn_plots/jc_loss_hist.png")
   
-  with open("./efn_pkl/err_stds.pkl", "wb") as f:
+  with open("./data/efn_pkl/err_stds.pkl", "wb") as f:
     pickle.dump(err_stds, f)
   
   
