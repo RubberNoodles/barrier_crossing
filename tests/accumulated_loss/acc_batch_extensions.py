@@ -362,14 +362,14 @@ if __name__ == "__main__":
     ax0.plot(step, data["trap"](step), label = f'{p_name}')
   ax0.legend()
   ax0.set_title("Different Protocol Trajectories")
-  columns = ('Bias', 'Mean discrepancy', 'Average total work', 'Tail length')
+  columns = ('Bias', 'Mean discrepancy',"Discrepancies Samples", 'Average total work', 'Tail length')
   rows = []
   table_data = []
   for p_name in plot_data:
     data = plot_data[p_name]
     rows.append(p_name)
     mean_disc = float(jnp.array(data["discrepancy"]).mean())
-    table_data.append([data["bias"], mean_disc, data["mean_work"], data["tail"]])
+    table_data.append([data["bias"], mean_disc, jnp.array(data["discrepancy"]), data["mean_work"], data["tail"]])
 
   n_rows = len(table_data)
   cell_text = []
@@ -385,6 +385,6 @@ if __name__ == "__main__":
   table = plt.table(cellText=cell_text,
                         rowLabels=rows,
                         colLabels=columns,loc = 'center')
-  table.scale(1, 5)
+  table.scale(1, 6)
   
   plt.savefig(path+"protocol_info.png")
