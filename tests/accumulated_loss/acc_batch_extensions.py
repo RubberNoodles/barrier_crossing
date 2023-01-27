@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
   # Harmonic Trap Parameters S&C
   #k_s_sc = 0.4 # stiffness; 
-  k_s_sc = 6. # stiffness; 
+  k_s_sc = 0.1 # stiffness; 
   r0_init_sc = -10. #nm; initial trap position
   r0_final_sc = 10. #nm; final trap position
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     beta_sc)
 
   batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 10 # Number of gradient descent steps to take.
+  opt_steps = 2 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
