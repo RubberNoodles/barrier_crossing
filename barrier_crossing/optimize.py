@@ -215,7 +215,7 @@ def estimate_gradient_acc_rev_extensions_scale(error_samples,batch_size,
       gradient_estimator_total.append(gradient_estimator)
       summary_total[0].append(summary[0])
       summary_total[1].append(summary[1])
-      summary_total += summary[2]
+      summary_total[2] += summary[2]
     return grad_total, (gradient_estimator_total, summary_total)
   return _estimate_grad
 
