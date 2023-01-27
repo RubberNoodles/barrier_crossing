@@ -94,7 +94,7 @@ if __name__ == "__main__":
   end_time_sc = 0.01
   # dt_sc = 2e-8 this might be exceeding floating point precision or something..
   end_time_sc = 0.01
-  dt_sc = 5e-6
+  dt_sc = 8e-6
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   end_time_custom = 1.
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     beta_sc)
 
   batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 2 # Number of gradient descent steps to take.
+  opt_steps = 300 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
@@ -369,8 +369,8 @@ if __name__ == "__main__":
     data = plot_data[p_name]
     rows.append(p_name)
     mean_disc = float(jnp.array(data["discrepancy"]).mean())
-    table_data.append([data["bias"], mean_disc, jnp.array(data["discrepancy"]), data["mean_work"], data["tail"]])
-
+    table_data.append([data["bias"], mean_disc, data["mean_work"], data["tail"]])
+  print(jnp.array(data["discrepancy"]))
   n_rows = len(table_data)
   cell_text = []
   #colors = plt.cm.BuPu(jnp.linspace(0, 0.5, len(rows)))
