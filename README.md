@@ -27,7 +27,7 @@ Install the [JAX library with GPU](https://github.com/google/jax#installation), 
 
 **NOTE:** For users without a GPU, install JAX with CPU instead.
 
-## Overview
+## Package Overview
 
 This sections describes the individual files that are a part of this package contained in the `barrier_crossing` folder.
 
@@ -42,7 +42,13 @@ Functions to create a protocol/schedule described by Chebyshev polynomials.
 Contains `simulate_brownian_harmonic` and `batch_simulate_harmonic` functions in order to simulate a Brownian particle moving over a given free energy landscape dragged by a harmonic trap with schedule specified by Chebyshev polynomials. Use `batch_simulate_harmonic` in order to run a simulating functing such as `simulate_brownian_harmonic` in large batches to replicate running large batches of experiments to find different trajectories.
 
 ### `optimize.py`
+Several different loss functions that one could choose from. The main ones coming from 
+
 Training loop using Jarzynski equality error for a single energy difference or multiple energy differences across the landscape (Geiger & Dellago 2010, Engel 2022, Jarzynski 1997), or work used to drag the particle over the landscape as a loss function.
 
 ### `iterate_landscape.py`
 Iteratively attempt to reconstruct a black box landscape by looping over two tasks: based on a protocol for pulling the molecule, take a large number of simulations to reconstruct an energy landscape. Using this energy landscape, optimize a protocol to use to once again simulate and reconstruct.
+
+## Testing
+
+There is a variety of tests that can be found in `tests`.

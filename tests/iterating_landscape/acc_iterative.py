@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
   # Harmonic Trap Parameters S&C
   #k_s_sc = 0.4 # stiffness; 
-  k_s_sc = 0.6 # stiffness; 
+  k_s_sc = 0.1 # stiffness; 
   r0_init_sc = -10. #nm; initial trap position
   r0_final_sc = 10. #nm; final trap position
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
   end_time_sc = 0.01
   # dt_sc = 2e-8 this might be exceeding floating point precision or something..
   end_time_sc = 0.01
-  dt_sc = 1e-6
+  dt_sc = 5e-6
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   end_time_custom = 1.
@@ -119,9 +119,9 @@ if __name__ == "__main__":
       )
   
   max_iter = 4
-  opt_steps_landscape = 100
+  opt_steps_landscape = 200
   bins = 50
-  opt_batch_size = 2000
+  opt_batch_size = 5000
   rec_batch_size = 1000
 
   _, shift = space.free()
@@ -158,10 +158,12 @@ if __name__ == "__main__":
   positions = jnp.array(positions)
 
   plt.figure(figsize = (10,10))
+  
+  energy_sivak_plot = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, 0., beta_sc)
   true_E = []
   pos_vec = jnp.reshape(positions, (positions.shape[0], 1, 1))
   for j in range(positions.shape[0]):
-    true_E.append(energy_sivak(pos_vec[j])-39)
+    true_E.append(energy_sivak_plot(pos_vec[j])-39)
   plt.plot(positions, true_E, label = "True Landscape")
 
   for num, energies in enumerate(landscapes):
