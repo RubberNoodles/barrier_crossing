@@ -310,6 +310,5 @@ def optimize_landscape(ground_truth_energy_fn,
   
   positions = new_landscape[0]
   return landscapes, coeffs, positions
-# TODO: Some plotting code for the ladnscape
     
     

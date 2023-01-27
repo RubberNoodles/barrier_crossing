@@ -20,7 +20,7 @@ from jax_md import quantity, space
 
 from barrier_crossing.energy import V_biomolecule_geiger
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
-from barrier_crossing.simulate import simulate_brownian_harmonic
+from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 
 def single_estimate_work(energy_fn,
                         init_position, r0_init, r0_final,
@@ -113,7 +113,7 @@ def estimate_gradient_rev(batch_size,
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
 
-def find_error_samples(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, key, bins):
+def find_error_samples(batch_size, energy_fn, simulate_fn, rev_trap_fn, simulation_steps, key, bins):
   """Given a (reversed) protocol and set of bins, return an array of the average time it takes for the particle to reach the midpoint
   of each of these bins.
   
@@ -148,92 +148,6 @@ def find_error_samples(energy_fn, simulate_fn, rev_trap_fn, simulation_steps, ke
 
   midpoint_timestep = jnp.array(midpoint_timestep)
   return midpoint_timestep
-'''
-def single_estimate_acc_rev(energy_fn,
-                        init_position, r0_init, r0_final,
-                        Neq, shift,
-                        simulation_steps, dt,
-                        temperature, mass, gamma, beta,
-                        error_samples):
-    @functools.partial(jax.value_and_grad, has_aux = True)
-    def _single_estimate(coeffs, seed):
-      dr = (r0_final - r0_init)/simulation_steps
-
-      gradient_estimator = 0.
-      summary = [[], [], []]
-      for time_slice in error_samples:
-        r0_i = r0_final - (dr*time_slice)
-        trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_i, r0_final)
-        positions, log_probs, works = simulate_brownian_harmonic(
-            energy_fn, 
-            init_position, trap_fn,
-            time_slice,
-            Neq, shift, seed, 
-            dt, temperature, mass, gamma
-            )
-        
-        log_prob = log_probs.sum()
-        work = works.sum()
-        gradient_estimator += log_prob * jax.lax.stop_gradient(jnp.exp(beta*work)) + \
-                jax.lax.stop_gradient(beta * jnp.exp(beta * work)) * work
-        summary[0].append(positions)
-        summary[1].append(log_prob)
-        summary[2].append(jnp.exp(beta*work))
-      return gradient_estimator, summary
-    return _single_estimate
-
-def estimate_gradient_acc_rev(batch_size,
-                          energy_fn,
-                          init_position, r0_init, r0_final,
-                          Neq, shift,
-                          simulation_steps, dt,
-                          temperature, mass, gamma, beta,
-                          error_samples):
-  """Estimate the error across an entire landscape based on the number of bins.
-  
-  Returns:
-    Callable(Array[], jax.random RNG key)
-  """
-  mapped_estimate = jax.vmap(single_estimate_acc_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, error_samples), [None, 0])
-  @jax.jit
-  def _estimate_gradient(coeffs, seed):
-    seeds = jax.random.split(seed, batch_size)
-    (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
-    return jnp.mean(grad, axis=0), (gradient_estimator, summary)
-  return _estimate_gradient
-''' 
-
-def estimate_gradient_acc_rev(error_samples,batch_size,
-                          energy_fn,
-                          init_position, r0_init, r0_final,
-                          Neq, shift,
-                          simulation_steps, dt,
-                          temperature, mass, gamma, beta):
-  """ 
-  New version of gradient, gives correct losses
-  ToDo: change returns, so it's compatible with optimize_protocol
-  """
-  def _estimate_grad(coeffs, seed):
-    grad_total = jnp.zeros(len(coeffs))
-    gradient_estimator_total = []
-    summary_total = []
-    loss = 0.0
-    for time_slice in error_samples:
-      dr = (r0_final - r0_init)/simulation_steps
-      r0_i = r0_final - (dr*time_slice)
-      grad_func = estimate_gradient_rev(batch_size,
-                          energy_fn,
-                          init_position, r0_i, r0_final,
-                          Neq, shift,
-                          simulation_steps, dt,
-                          temperature, mass, gamma, beta)
-      grad, (gradient_estimator, summary) = grad_func(coeffs, seed)
-      grad_total += grad
-      gradient_estimator_total.append(gradient_estimator)
-      summary_total.append(summary)
-      loss += summary[2]
-    return grad_total, loss, gradient_estimator_total, summary_total
-  return _estimate_grad
 
 def estimate_gradient_acc_rev_extensions(error_samples,batch_size,
                           energy_fn,
@@ -242,6 +156,8 @@ def estimate_gradient_acc_rev_extensions(error_samples,batch_size,
                           simulation_steps, dt,
                           temperature, mass, gamma, beta):
   """ 
+  DEPRECATED; DO NOT USE.
+  
   New version of estimate_gradient_acc_rev, which takes
   samples of extensions instead of time steps in simulation.
   ToDo: change returns, so it's compatible with optimize_protocol
@@ -297,9 +213,10 @@ def estimate_gradient_acc_rev_extensions_scale(error_samples,batch_size,
       grad, (gradient_estimator, summary) = grad_func(coeffs_r, seed)
       grad_total += grad
       gradient_estimator_total.append(gradient_estimator)
-      summary_total.append(summary)
-      loss += summary[2]
-    return grad_total, ((loss, gradient_estimator_total), (0,0,loss))
+      summary_total[0].append(summary[0])
+      summary_total[1].append(summary[1])
+      summary_total += summary[2]
+    return grad_total, (gradient_estimator_total, summary_total)
   return _estimate_grad
 
 def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_steps, save_path = None):
