@@ -197,7 +197,7 @@ def estimate_gradient_acc_rev_extensions_scale(error_samples,batch_size,
   def _estimate_grad(coeffs, seed):
     grad_total = jnp.zeros(len(coeffs))
     gradient_estimator_total = []
-    summary_total = ([], [], [])
+    summary_total = ([], [], 0.)
     loss = 0.0
     for r in error_samples:
       scale = (r0_final - r) / (r0_final - r0_init)

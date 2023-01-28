@@ -119,7 +119,7 @@ if __name__ == "__main__":
       )
   
   max_iter = 4
-  opt_steps_landscape = 200
+  opt_steps_landscape = 5
   bins = 50
   opt_batch_size = 5000
   rec_batch_size = 1000
