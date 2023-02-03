@@ -120,7 +120,7 @@ if __name__ == "__main__":
         extensions = [int(x) for x in line]
       count+=1
 
-  grad_acc_rev = lambda num_batches: bc_optimize.estimate_gradient_acc_rev_extensions_scale(
+  grad_acc_rev = lambda num_batches: bc_optimize.estimate_gradient_acc_rev_trunc(
     extensions,
     num_batches,
     energy_sivak,
@@ -136,8 +136,8 @@ if __name__ == "__main__":
     gamma_sc,
     beta_sc)
 
-  batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 300 # Number of gradient descent steps to take.
+  batch_size = 100 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 2 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
@@ -183,8 +183,8 @@ if __name__ == "__main__":
   ### Reconstruction
   
     
-  batch_size_sc_rec = 1000
-  bins = 40
+  batch_size_sc_rec = 10
+  bins = 4
 
   lin_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   opt_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs[-1][1], r0_init_sc, r0_final_sc)
