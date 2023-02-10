@@ -119,7 +119,7 @@ if __name__ == "__main__":
       )
   
   max_iter = 4
-  opt_steps_landscape = 5
+  opt_steps_landscape = 2
   bins = 50
   opt_batch_size = 5000
   rec_batch_size = 1000
@@ -175,6 +175,16 @@ if __name__ == "__main__":
   plt.ylabel("Free Energy (G)")
   plt.title("Iteratively Reconstructing Landscape")
   plt.savefig("./data/ac_plots/reconstruct_landscapes.png")
+  
+  plt.figure(figsize = (8,8))
+  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeff, r0_init_sc, r0_final_sc)
+  plt.plot(trap_fn(jnp.arange(simulation_steps_sc-1)), label = "Linear Protocol")
+  for i, coeff in enumerate(coeffs):
+      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeff, r0_init_sc, r0_final_sc)
+      plt.plot(trap_fn(jnp.arange(simulation_steps_sc-1)), label = f"Iteration {i}")
+  plt.xlabel("Simulation Step")
+  plt.ylabel("Position (x)")
+  plt.savefig("./data/ac_plots/opt_protocol_evolution.png")
   
   with open("./data/ac_pkl/coeffs.pkl", "wb") as f:
     pickle.dump(coeffs, f)

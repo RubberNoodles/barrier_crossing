@@ -274,3 +274,111 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
     bfile.close()
     
   return coeffs_, summaries, all_works
+
+
+
+#### TRUNCATED CODE
+
+
+def single_estimate_rev_trunc(energy_fn,
+                        init_position, r0_init, r0_final,
+                        Neq, shift,
+                        simulation_steps, dt,
+                        temperature, 
+                        mass, gamma, beta,
+                        truncated_steps):
+  @functools.partial(jax.value_and_grad, has_aux = True)
+  def _single_estimate(coeffs, seed):
+    trap_fn = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
+    positions, log_probs, works = bc_simulate.simulate_brownian_harmonic(
+        energy_fn, 
+        init_position, trap_fn,
+        truncated_steps,
+        Neq, shift, seed, 
+        dt, temperature, mass, gamma
+        )
+    total_work = works.sum()
+    tot_log_prob = log_probs.sum()
+    summary = (positions, tot_log_prob, jnp.exp(beta*total_work))
+
+    gradient_estimator = (tot_log_prob) * jax.lax.stop_gradient(jnp.exp(beta * total_work)) + jax.lax.stop_gradient(beta * jnp.exp(beta*total_work)) * total_work
+    return gradient_estimator, summary
+  return _single_estimate 
+
+def estimate_gradient_rev_trunc(batch_size,
+                          energy_fn,
+                          init_position, r0_init, r0_final,
+                          Neq, shift,
+                          simulation_steps, dt,
+                          temperature, mass, gamma, beta,
+                          truncated_steps):
+  """Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). 
+  Compute the total gradient with forward trajectories and loss based on work used.
+    Returns:
+      Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
+      ``seed`` to set rng."""
+  mapped_estimate = jax.vmap(single_estimate_rev_trunc(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta, truncated_steps), [None, 0])  
+  @jax.jit 
+  def _estimate_gradient(coeffs, seed):
+    seeds = jax.random.split(seed, batch_size)
+    (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
+    return jnp.mean(grad, axis=0), (gradient_estimator, summary)
+  return _estimate_gradient
+
+def estimate_gradient_acc_rev_trunc(error_samples,batch_size,
+                          energy_fn,
+                          init_position, r0_init, r0_final,
+                          Neq, shift,
+                          simulation_steps, dt,
+                          temperature, mass, gamma, beta):
+  """ 
+  New version of estimate_gradient_acc_rev, which takes
+  samples of extensions instead of time steps in simulation.
+  ToDo: change returns, so it's compatible with optimize_protocol
+
+  """
+  def _estimate_grad(coeffs, seed):
+    trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
+    simulate_fn = lambda energy_fn, key: simulate_brownian_harmonic(
+          energy_fn, 
+          r0_init*jnp.ones((N,dim)), trap_fn,
+          simulation_steps,
+          Neq, shift, seed, 
+          dt, temperature, mass, gamma
+          )
+    batch_size_ext = 1000
+    total_works, (batch_trajectories, batch_works, batch_log_probs) = batch_simulate_harmonic(
+          batch_size_ext, 
+          energy_fn, 
+          simulate_fn, 
+          simulation_steps, 
+          seed)
+    mean_trajectory = jnp.mean(batch_trajectories, axis = 0) 
+    
+    grad_total = jnp.zeros(len(coeffs))
+    
+    gradient_estimator_total = []
+    summary_total = [[], []]
+    loss = jnp.zeros(batch_size)
+    
+    for r in error_samples:
+      r_step = int(jnp.where(mean_trajectory > r)[0][0])
+      if r_step < 1:
+        r_step = simulation_steps
+      grad_func = estimate_gradient_rev_trunc(batch_size,
+                          energy_fn,
+                          init_position, r0_init, r0_final,
+                          Neq, shift,
+                          simulation_steps, dt,
+                          temperature, mass, gamma, beta,
+                          r_step)
+      grad, (gradient_estimator, summary) = grad_func(coeffs, seed)
+
+      grad_total += grad
+      gradient_estimator_total.append(gradient_estimator)
+      summary_total[0].append(summary[0])
+      summary_total[1].append(summary[1])
+      loss += summary[2]
+    summary_total.append(loss)
+    return grad_total, (gradient_estimator_total, summary_total)
+  return _estimate_grad

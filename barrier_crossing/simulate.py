@@ -84,10 +84,9 @@ def batch_simulate_harmonic(batch_size,
   Args:
     energy_fn: Callable(particle_position, r0) -> float. Gives the energy of a particle at a particular
       position + trap at position r0
-    simulate_fn: Callable(Energy_fn, trap_schedule) 
+    simulate_fn: Callable(Energy_fn, keys)
       -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
-      Function that simulates moving the particle along the given trap_schedule given a specified
-      energy function.
+      Function simulating particle moving.
     batch_size: Integer specifying how many different trajectories to simulate.
     key: rng, jax.random.
     simulation_steps: Integer specifying number of steps to run the simulation for.
@@ -109,9 +108,9 @@ def batch_simulate_harmonic(batch_size,
   total_works = []
 
   # To generate a bunch of samples, we 'map' across seeds.
-  mapped_sim = jax.vmap(lambda keys : simulate_fn(energy_fn, keys) ) # USING XMAP IS experimental and could explode the world.
+  mapped_sim = jax.vmap(lambda keys : simulate_fn(energy_fn, keys) ) 
   seeds = jax.random.split(split, batch_size)
-  trajectories, log_probs, works = mapped_sim(seeds) #seed is array with diff seed for each run. I'm discarding the log prob data, here
+  trajectories, log_probs, works = mapped_sim(seeds) #seed is array with diff seed for each run.
 
   total_works = jnp.sum(works, 1)
   
