@@ -383,6 +383,6 @@ if __name__ == "__main__":
   table = plt.table(cellText=cell_text,
                         rowLabels=rows,
                         colLabels=columns,loc = 'center')
-  table.scale(1, 5)
+  table.scale(1, 6)
   
   plt.savefig(path+"protocol_info.png")
