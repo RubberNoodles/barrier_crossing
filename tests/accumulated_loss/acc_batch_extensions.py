@@ -86,20 +86,11 @@ if __name__ == "__main__":
 
   energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
   
-  # Protcol + Simulation Parameters
-  end_time_gd = 1.
-  dt_gd = 0.002
-  simulation_steps_gd = int(end_time_gd / dt_gd)
-
   end_time_sc = 0.01
   # dt_sc = 2e-8 this might be exceeding floating point precision or something..
   end_time_sc = 0.01
   dt_sc = 8e-6
   simulation_steps_sc = int(end_time_sc / dt_sc)
-
-  end_time_custom = 1.
-  dt_custom = 0.001
-  simulation_steps_custom = int(end_time_custom / dt_custom)
 
   # Equilibration Steps; in order to correctly apply Jarzynski, the system has to 
   # be in equilibrium, which is defined by equal free energy in all degrees of freedom
@@ -136,8 +127,8 @@ if __name__ == "__main__":
     gamma_sc,
     beta_sc)
 
-  batch_size = 100 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 2 # Number of gradient descent steps to take.
+  batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 300 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
@@ -183,8 +174,8 @@ if __name__ == "__main__":
   ### Reconstruction
   
     
-  batch_size_sc_rec = 10
-  bins = 4
+  batch_size_sc_rec = 1000
+  bins = 40
 
   lin_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   opt_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs[-1][1], r0_init_sc, r0_final_sc)
