@@ -127,8 +127,8 @@ if __name__ == "__main__":
     gamma_sc,
     beta_sc)
 
-  batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 5 # Number of gradient descent steps to take.
+  batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 300 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
@@ -367,7 +367,10 @@ if __name__ == "__main__":
     data = plot_data[p_name]
     rows.append(p_name)
     mean_disc = float(jnp.array(data["discrepancy"]).mean())
-    table_data.append([data["bias"], mean_disc, data["samples"]["discrepancy"], data["mean_work"], data["tail"], data["loss"]])
+    disc_str = "\n"
+    for ch in str(data["samples"]["discrepancy"]).split(","):
+      disc_str += ch + ",\n"
+    table_data.append([data["bias"], mean_disc, disc_str, data["mean_work"], data["tail"], data["loss"]])
   n_rows = len(table_data)
   cell_text = []
   #colors = plt.cm.BuPu(jnp.linspace(0, 0.5, len(rows)))
@@ -381,9 +384,10 @@ if __name__ == "__main__":
   table = plt.table(cellText=cell_text,
                         rowLabels=rows,
                         colLabels=columns,loc = 'center')
-  table.scale(1, 6)
+  
 
   table.auto_set_font_size(False)
-  table.set_fontsize(18)
+  table.set_fontsize(12)
+  table.scale(1,10)
   
   plt.savefig(path+"protocol_info.png")
