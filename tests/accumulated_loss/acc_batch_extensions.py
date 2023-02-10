@@ -128,7 +128,7 @@ if __name__ == "__main__":
     beta_sc)
 
   batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 300 # Number of gradient descent steps to take.
+  opt_steps = 5 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
   lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
@@ -195,15 +195,16 @@ if __name__ == "__main__":
   old_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs_old, r0_init_sc, r0_final_sc)
 
   traps = {
-    "Linear Protocol": lin_trap_fn_sc, 
-    "Acc Optimized Protocol": opt_trap_fn_sc,
-    "Cubic Protocol": cubic_trap_fn_sc,
-    "Old Optimal Protocol": old_trap_fn_sc
+    "Linear Protocol": (lin_trap_fn_sc, lin_coeffs_sc), 
+    "Acc Optimized Protocol": (opt_trap_fn_sc, coeffs[-1][1]),
+    "Cubic Protocol": (cubic_trap_fn_sc, coeffs_cubic),
+    "Old Optimal Protocol": (old_trap_fn_sc, coeffs_old)
     }
   
   plot_data = {}
   
-  for (trap_name, trap_fn) in traps.items():
+  for trap_name, (trap_fn, coeffs) in traps.items():
+    key, split = random.split(key)
     simulate_sivak_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
       energy_fn, 
       init_position_fwd_sc, 
@@ -222,7 +223,12 @@ if __name__ == "__main__":
     
     mean_work = batch_works.mean()
     tail = total_work.mean() - total_work.min()
-    
+
+    grad, (_, summary) = grad_acc_rev(batch_size)(coeffs, split)
+    # for extension in extensions:
+    #   jnp.squeeze(summary[0][0]).mean(axis=0)
+    # Compute the position. Don't need this right now I think.
+
     midpoints, energies = bc_landscape.energy_reconstruction(
         batch_works, 
         batch_trajectories, 
@@ -261,6 +267,7 @@ if __name__ == "__main__":
       "mean_work": mean_work,
       "discrepancy": disc,
       "tail": tail,
+      "loss": summary[2].mean(),
       "samples": {
         "mean_discrepancy": mean_disc_samples,
         "bias": bias_samples,
@@ -353,14 +360,14 @@ if __name__ == "__main__":
     ax0.plot(step, data["trap"](step), label = f'{p_name}')
   ax0.legend()
   ax0.set_title(f"Different Protocol Trajectories; {extensions}")
-  columns = ('Bias', 'Mean discrepancy',"Discrepancies Samples", 'Average total work', 'Tail length')
+  columns = ('Bias', 'Mean discrepancy',"Discrepancies Samples", 'Average total work', 'Tail length', 'Loss')
   rows = []
   table_data = []
   for p_name in plot_data:
     data = plot_data[p_name]
     rows.append(p_name)
     mean_disc = float(jnp.array(data["discrepancy"]).mean())
-    table_data.append([data["bias"], mean_disc, data["mean_work"], data["tail"]])
+    table_data.append([data["bias"], mean_disc, data["mean_work"], data["tail"], data["loss"]])
   print(jnp.array(data["discrepancy"]))
   n_rows = len(table_data)
   cell_text = []
