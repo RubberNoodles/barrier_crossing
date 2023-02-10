@@ -341,7 +341,7 @@ def estimate_gradient_acc_rev_trunc(error_samples,batch_size,
     trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
     simulate_fn = lambda energy_fn, key: simulate_brownian_harmonic(
           energy_fn, 
-          r0_init*jnp.ones((N,dim)), trap_fn,
+          r0_init*jnp.ones(init_position.shape), trap_fn,
           simulation_steps,
           Neq, shift, seed, 
           dt, temperature, mass, gamma
