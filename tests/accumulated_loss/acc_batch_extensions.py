@@ -369,7 +369,10 @@ if __name__ == "__main__":
     mean_disc = float(jnp.array(data["discrepancy"]).mean())
     disc_str = "\n"
     for ch in str(data["samples"]["discrepancy"]).split(","):
-      disc_str += ch + ",\n"
+      disc_str += ch + "," + "\n"
+
+    print(disc_str)
+    disc_str = "N/A"
     table_data.append([data["bias"], mean_disc, disc_str, data["mean_work"], data["tail"], data["loss"]])
   n_rows = len(table_data)
   cell_text = []
