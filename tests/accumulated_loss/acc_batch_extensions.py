@@ -377,12 +377,13 @@ if __name__ == "__main__":
     cell_text.append([x for x in y_offset])
 
   ax1.axis('off')
-  table.auto_set_font_size(False)
-  table.set_fontsize(18)
 
   table = plt.table(cellText=cell_text,
                         rowLabels=rows,
                         colLabels=columns,loc = 'center')
   table.scale(1, 6)
+
+  table.auto_set_font_size(False)
+  table.set_fontsize(18)
   
   plt.savefig(path+"protocol_info.png")
