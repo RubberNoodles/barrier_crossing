@@ -367,8 +367,7 @@ if __name__ == "__main__":
     data = plot_data[p_name]
     rows.append(p_name)
     mean_disc = float(jnp.array(data["discrepancy"]).mean())
-    table_data.append([data["bias"], mean_disc, data["mean_work"], data["tail"], data["loss"]])
-  print(jnp.array(data["discrepancy"]))
+    table_data.append([data["bias"], mean_disc, data["samples"]["discrepancy"], data["mean_work"], data["tail"], data["loss"]])
   n_rows = len(table_data)
   cell_text = []
   #colors = plt.cm.BuPu(jnp.linspace(0, 0.5, len(rows)))
