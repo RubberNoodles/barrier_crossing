@@ -8,7 +8,7 @@
 module load python/3.8.5-fasrc01
 module load cuda/11.4.2-fasrc01
 module load cudnn/8.2.2.26_cuda11.4-fasrc01
-pip3 install -e ../../barrier_crossing
+pip3 install -e ../../
 pip3 install -r ./../../requirements.txt
 pip install "jax[cuda11_cudnn82]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 
