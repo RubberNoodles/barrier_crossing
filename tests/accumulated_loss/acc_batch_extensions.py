@@ -377,7 +377,8 @@ if __name__ == "__main__":
     cell_text.append([x for x in y_offset])
 
   ax1.axis('off')
-
+  table.auto_set_font_size(False)
+  table.set_fontsize(18)
 
   table = plt.table(cellText=cell_text,
                         rowLabels=rows,
