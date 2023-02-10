@@ -1,6 +1,6 @@
 ###################################################
 # This code is a TEMPLATE for Sivak & Crooks
-# testing. Last changed 12/18/2022. 
+# testing. Last changed 1/30/2023. 
 # WARNING: This code is NOT maintained.
 ###################################################
 
@@ -79,17 +79,17 @@ if __name__ == "__main__":
   # S&C Energy landscape params:
   x_m=10. #nm
   delta_E=7.0 #pN nm
-  kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
-  #kappa_l=6.38629/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 2.5kT and delta_E=0, as C&S use
+  #kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
+  kappa_l=6.38629/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 2.5kT and delta_E=0, as C&S use
   #kappa_l=2.6258/(beta_sc*x_m**2)#barrier 0.625kT
-  kappa_r=kappa_l #pN/nm; Symmetric wells.
+  kappa_r=5*kappa_l #pN/nm; Symmetric wells.
 
   energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
-  
+
   end_time_sc = 0.01
   # dt_sc = 2e-8 this might be exceeding floating point precision or something..
   end_time_sc = 0.01
-  dt_sc = 8e-6
+  dt_sc = 3e-6
   simulation_steps_sc = int(end_time_sc / dt_sc)
 
   # Equilibration Steps; in order to correctly apply Jarzynski, the system has to 
@@ -102,7 +102,24 @@ if __name__ == "__main__":
   # Trap Functions. Reverse mode trap functions are for when we compute Jarzynski error with reverse protocol trajectories.
   trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
+  
+  simulate_sivak_fn_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
+    energy_fn, 
+    init_position_fwd_sc, 
+    trap_fn_fwd_sc,
+    simulation_steps_sc, 
+    Neq, 
+    shift, 
+    keys, 
+    dt_sc,
+    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
+    )
 
+  total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
+    1000, energy_sivak, simulate_sivak_fn_fwd, simulation_steps_sc, key)
+
+  midpoints_lin, energies_lin = bc_landscape.energy_reconstruction(batch_works, batch_trajectories, 100, trap_fn_fwd_sc, simulation_steps_sc, 1000, k_s_sc, beta_sc)
+  energy_sivak = bc_energy.V_biomolecule_reconstructed(k_s_sc, midpoints_lin, energies_lin) # reconstructed 
   with open("extensions.csv", 'r') as f:
     reader = csv.reader(f)
     count = 1
@@ -110,12 +127,12 @@ if __name__ == "__main__":
       if count == int(sys.argv[1]):
         extensions = [int(x) for x in line]
       count+=1
-
+  
   grad_acc_rev = lambda num_batches: bc_optimize.estimate_gradient_acc_rev_trunc(
     extensions,
     num_batches,
     energy_sivak,
-    init_position_fwd_sc,
+    init_position_rev_sc,
     r0_init_sc,
     r0_final_sc,
     Neq,
@@ -127,14 +144,14 @@ if __name__ == "__main__":
     gamma_sc,
     beta_sc)
 
-  batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 300 # Number of gradient descent steps to take.
+  batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
+  opt_steps = 50 # Number of gradient descent steps to take.
 
   #lr = jopt.exponential_decay(0.3, opt_steps, 0.003)
-  lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
+  lr = jopt.polynomial_decay(1., opt_steps, 0.001)
   optimizer = jopt.adam(lr)
 
-  coeffs, summaries, losses = bc_optimize.optimize_protocol(lin_coeffs_sc, grad_acc_rev, optimizer, batch_size, opt_steps)
+  coeffs, summaries, losses = bc_optimize.optimize_protocol(lin_coeffs_sc, grad_acc_rev, optimizer, batch_size, opt_steps, print_log=True)
   
   #avg_loss = jnp.mean(jnp.array(losses), axis = 0)
   plot_with_stddev(losses.T, ax=ax[0])
@@ -149,7 +166,7 @@ if __name__ == "__main__":
   ax[1].plot(jnp.arange(simulation_steps_sc), init_sched, label='Initial guess')
 
   for i, (_, coeff) in enumerate(coeffs):
-    if i%100 == 0 and i!=0:
+    if i%10 == 0 and i!=0:
       trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc),coeff,r0_init_sc,r0_final_sc)
       full_sched = trap_fn(jnp.arange(simulation_steps_sc))
       ax[1].plot(jnp.arange(simulation_steps_sc), full_sched, '-', label=f'Step {i}')
@@ -195,15 +212,16 @@ if __name__ == "__main__":
   old_trap_fn_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs_old, r0_init_sc, r0_final_sc)
 
   traps = {
-    "Linear Protocol": lin_trap_fn_sc, 
-    "Acc Optimized Protocol": opt_trap_fn_sc,
-    "Cubic Protocol": cubic_trap_fn_sc,
-    "Old Optimal Protocol": old_trap_fn_sc
+    "Linear Protocol": (lin_trap_fn_sc, lin_coeffs_sc), 
+    "Acc Optimized Protocol": (opt_trap_fn_sc, coeffs[-1][1]),
+    "Cubic Protocol": (cubic_trap_fn_sc, coeffs_cubic),
+    "Old Optimal Protocol": (old_trap_fn_sc, coeffs_old)
     }
   
   plot_data = {}
   
-  for (trap_name, trap_fn) in traps.items():
+  for trap_name, (trap_fn, coeffs) in traps.items():
+    key, split = random.split(key)
     simulate_sivak_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
       energy_fn, 
       init_position_fwd_sc, 
@@ -222,7 +240,12 @@ if __name__ == "__main__":
     
     mean_work = batch_works.mean()
     tail = total_work.mean() - total_work.min()
-    
+
+    grad, (_, summary) = grad_acc_rev(batch_size)(coeffs, split)
+    # for extension in extensions:
+    #   jnp.squeeze(summary[0][0]).mean(axis=0)
+    # Compute the position. Don't need this right now I think.
+
     midpoints, energies = bc_landscape.energy_reconstruction(
         batch_works, 
         batch_trajectories, 
@@ -261,6 +284,7 @@ if __name__ == "__main__":
       "mean_work": mean_work,
       "discrepancy": disc,
       "tail": tail,
+      "loss": summary[2].mean(),
       "samples": {
         "mean_discrepancy": mean_disc_samples,
         "bias": bias_samples,
@@ -353,15 +377,20 @@ if __name__ == "__main__":
     ax0.plot(step, data["trap"](step), label = f'{p_name}')
   ax0.legend()
   ax0.set_title(f"Different Protocol Trajectories; {extensions}")
-  columns = ('Bias', 'Mean discrepancy',"Discrepancies Samples", 'Average total work', 'Tail length')
+  columns = ('Bias', 'Mean discrepancy',"Discrepancies Samples", 'Average total work', 'Tail length', 'Loss')
   rows = []
   table_data = []
   for p_name in plot_data:
     data = plot_data[p_name]
     rows.append(p_name)
     mean_disc = float(jnp.array(data["discrepancy"]).mean())
-    table_data.append([data["bias"], mean_disc, data["mean_work"], data["tail"]])
-  print(jnp.array(data["discrepancy"]))
+    disc_str = "\n"
+    for ch in str(data["samples"]["discrepancy"]).split(","):
+      disc_str += ch + "," + "\n"
+
+    print(disc_str)
+    disc_str = "N/A"
+    table_data.append([data["bias"], mean_disc, disc_str, data["mean_work"], data["tail"], data["loss"]])
   n_rows = len(table_data)
   cell_text = []
   #colors = plt.cm.BuPu(jnp.linspace(0, 0.5, len(rows)))
@@ -372,10 +401,13 @@ if __name__ == "__main__":
 
   ax1.axis('off')
 
-
   table = plt.table(cellText=cell_text,
                         rowLabels=rows,
                         colLabels=columns,loc = 'center')
-  table.scale(1, 5)
+  
+
+  table.auto_set_font_size(False)
+  table.set_fontsize(12)
+  table.scale(1,10)
   
   plt.savefig(path+"protocol_info.png")

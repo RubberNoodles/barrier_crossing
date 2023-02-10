@@ -219,7 +219,7 @@ def estimate_gradient_acc_rev_extensions_scale(error_samples,batch_size,
     return grad_total, (gradient_estimator_total, summary_total)
   return _estimate_grad
 
-def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_steps, save_path = None):
+def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_steps, save_path = None, print_log = False):
   """ Training loop to optimize the coefficients of a chebyshev polynomial that defines the 
   protocol of moving a harmonic trap over a free energy landscape.
   
@@ -233,7 +233,7 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
     # TODO: describe other self-explanatory args
   Returns:
     ``coeffs``: List of tuples of (``optimization_step``, ``protocol coefficients``)
-    ``summaries``: List of outputs from batch_harmonic_simulator
+    ``summaries``: List of outputs from batch_harmonic_simulator. Currently empty due to RAM constraints
     ``all_works``: List of lists of amount of work (ΔW) for each trajectory
   """
   summaries = []
@@ -252,7 +252,12 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
   for j in tqdm.trange(num_steps,position=1, desc="Optimize Protocol: ", leave = True):
     key, split = jax.random.split(key)
     grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state), split)
-
+    if print_log:
+      # Only works when using accumulated gradient.
+      print(f"\n Opt step {j} extension positions.")
+      for extension in range(len(summary[0])):
+        print(f"Number of steps: {jnp.squeeze(summary[0][extension]).shape[1]}")
+        print(jnp.squeeze(summary[0][extension]).mean(axis=0)[-1])
     opt_state = optimizer.update_fn(j, grad, opt_state)
     all_works.append(summary[2])
       
@@ -289,8 +294,8 @@ def single_estimate_rev_trunc(energy_fn,
                         truncated_steps):
   @functools.partial(jax.value_and_grad, has_aux = True)
   def _single_estimate(coeffs, seed):
-    trap_fn = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
-    positions, log_probs, works = bc_simulate.simulate_brownian_harmonic(
+    trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
+    positions, log_probs, works = simulate_brownian_harmonic(
         energy_fn, 
         init_position, trap_fn,
         truncated_steps,
@@ -338,15 +343,15 @@ def estimate_gradient_acc_rev_trunc(error_samples,batch_size,
 
   """
   def _estimate_grad(coeffs, seed):
-    trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
+    trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
     simulate_fn = lambda energy_fn, key: simulate_brownian_harmonic(
           energy_fn, 
-          r0_init*jnp.ones(init_position.shape), trap_fn,
+          init_position, trap_fn,
           simulation_steps,
-          Neq, shift, seed, 
+          Neq, shift, key, 
           dt, temperature, mass, gamma
           )
-    batch_size_ext = 1000
+    batch_size_ext = 5000
     total_works, (batch_trajectories, batch_works, batch_log_probs) = batch_simulate_harmonic(
           batch_size_ext, 
           energy_fn, 
@@ -354,7 +359,6 @@ def estimate_gradient_acc_rev_trunc(error_samples,batch_size,
           simulation_steps, 
           seed)
     mean_trajectory = jnp.mean(batch_trajectories, axis = 0) 
-    
     grad_total = jnp.zeros(len(coeffs))
     
     gradient_estimator_total = []
@@ -362,12 +366,17 @@ def estimate_gradient_acc_rev_trunc(error_samples,batch_size,
     loss = jnp.zeros(batch_size)
     
     for r in error_samples:
-      r_step = int(jnp.where(mean_trajectory > r)[0][0])
-      if r_step < 1:
+      key, seed = jax.random.split(seed)
+      extension_positions = jnp.where(mean_trajectory < r)[0]
+      if extension_positions.any():
+        r_step = int(extension_positions[0])
+      else:
+        r_step = simulation_steps
+      if r_step < 50: # Prevent Pathological examples.
         r_step = simulation_steps
       grad_func = estimate_gradient_rev_trunc(batch_size,
                           energy_fn,
-                          init_position, r0_init, r0_final,
+                          init_position, r, r0_final,
                           Neq, shift,
                           simulation_steps, dt,
                           temperature, mass, gamma, beta,

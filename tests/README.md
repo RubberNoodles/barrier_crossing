@@ -3,7 +3,13 @@
 
 _These codes were made for `barrier_crossing == 0.16.2`._
 
-This directory contains Python codes and FASRC .sh scripts that we used to produce each figure. Each directory is a separate test. They can be run through the cluster with the appropriate SLURM commands, or with native Python. The following is a description of each directory/file. All outputs can be found in the `/data` directory of each folder. `old` contains old outputs that are saved and may be helpful reference.
+This directory contains Python codes and FASRC `.sh` scripts that we used to produce each figure. 
+Each directory is a separate test. They can be run through the cluster with the appropriate SLURM 
+commands, or with native Python. The following is a description of each directory/file. All outputs 
+can be found in the `/data` directory of each folder. `old` contains old outputs that are saved and 
+may be helpful reference.
+
+All tests will take the parameters in `params.py` in order to maintain consistency. Change these values at your own peril.
 
 **Codes using Sivak & Crooks Landscape**
 

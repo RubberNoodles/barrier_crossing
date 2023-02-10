@@ -138,15 +138,10 @@ def V_biomolecule_reconstructed(k_s, positions, energies):
     x = particle_position[0][0]
     bin_num = (x-start)/dx
     bin_num = bin_num.astype(int)
-    
-    # if bin_num + 1 >= end:
-    #   raise ValueError
-    # else:
-    # Error checking will not work
-  
+
     # interpolate
     t = (x-(bin_num * dx + start))/dx
-    Em = jax.lax.stop_gradient(t * energies[bin_num+1] + (1-t) * energies[bin_num])
+    Em = t * energies[bin_num+1] + (1-t) * energies[bin_num]
   
     # moving harmonic potential
     Es = k_s/2 * (x-r0) ** 2
@@ -156,7 +151,6 @@ def V_biomolecule_reconstructed(k_s, positions, energies):
 # Currently unused
 def V_simple_spring(r0,k,box_size):
   def spring_energy(position, **unused_kwargs):
-    #dR = jnp.mod((position - r0) + box_size * f32(0.5), box_size) - f32(0.5) * box_size
     dR=(position[0][0]-r0)
     return k/2 * dR ** 2
   return spring_energy

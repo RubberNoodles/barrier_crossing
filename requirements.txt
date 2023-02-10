@@ -1,5 +1,4 @@
 absl-py==1.1.0
-barrier-crossing==0.1.6.2
 cloudpickle==2.1.0
 cycler==0.11.0
 dataclasses==0.6
@@ -35,3 +34,4 @@ tqdm==4.64.0
 typing==3.7.4.3
 typing_extensions==4.3.0
 zipp==3.8.1
+barrier-crossing==0.1.6.2

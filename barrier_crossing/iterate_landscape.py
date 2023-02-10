@@ -18,6 +18,17 @@ from barrier_crossing.protocol import make_trap_fxn, make_trap_fxn_rev, linear_c
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 from barrier_crossing.optimize import estimate_gradient_work, optimize_protocol, find_error_samples
 
+def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
+  stddev = jnp.std(x, axis)
+  mn = jnp.mean(x, axis)
+  xs = jnp.arange(mn.shape[0]) * dt
+
+  ax.fill_between(xs,
+                  mn + n * stddev, 
+                  mn - n * stddev, 
+                  alpha=.3)
+  ax.plot(xs, mn, label=label)
+  
 def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, batch_size, k_s, beta):
   """
   Outputs a (midpoints, free_energies) tuple for reconstructing 
@@ -81,7 +92,7 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
     free_energies.append(energy)
     midpoints.append((traj_min[0][0] + (k+0.5)*bin_width[0][0]))
   
-  return (midpoints, free_energies)
+  return (jnp.array(midpoints), jnp.array(free_energies))
 
 def find_max_pos(landscape, barrier_pos):
   """
@@ -232,7 +243,8 @@ def optimize_landscape(ground_truth_energy_fn,
                       r0_init,
                       r0_final,
                       k_s,
-                      beta):
+                      beta,
+                      savefig_losses = False):
   """Iteratively reconstruct a black box energy landscape from simulated trajectories. Optimize a protocol
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
   to create a protocol that will allow for more accurate reconstructions.
@@ -290,13 +302,43 @@ def optimize_landscape(ground_truth_energy_fn,
     energy_fn_guess = V_biomolecule_reconstructed(k_s, jnp.array(positions), jnp.array(energies))
     
     # Optimize a protocol with this new landscape
-    logging.info("Optimiziing protocol from linear using reconstructed landscape.")
+    logging.info("Optimizing protocol from linear using reconstructed landscape.")
     # error_samples = find_error_samples(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
     
     grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)
     lin_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
     coeffs_, _, losses = optimize_protocol(lin_trap_coeffs, grad_fxn, optimizer, opt_batch_size, opt_steps)
-    
+    if savefig_losses:
+      _, ax = plt.subplots(1, 2, figsize=[24, 12])
+
+      #avg_loss = jnp.mean(jnp.array(losses), axis = 0)
+      plot_with_stddev(losses.T, ax=ax[0])
+
+      # ax[0].set_title(f'Jarzynski Error over Optimization; Short trap; STD error sampling; {batch_size}; {opt_steps}.')
+      ax[0].set_title(f"Iterative Iter Num {iter_num}")
+      ax[0].set_xlabel('Number of Optimization Steps')
+      ax[0].set_ylabel('Error')
+
+      trap_fn = make_trap_fxn(jnp.arange(simulation_steps), lin_trap_coeffs, r0_init, r0_final)
+      init_sched = trap_fn(jnp.arange(simulation_steps))
+      ax[1].plot(jnp.arange(simulation_steps), init_sched, label='Initial guess')
+
+      for i, (_, coeff) in enumerate(coeffs_):
+        if i%10 == 0 and i!=0:
+          trap_fn = make_trap_fxn(jnp.arange(simulation_steps),coeff,r0_init,r0_final)
+          full_sched = trap_fn(jnp.arange(simulation_steps))
+          ax[1].plot(jnp.arange(simulation_steps), full_sched, '-', label=f'Step {i}')
+
+      # Plot final estimate:
+      trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs_[-1][1],r0_init,r0_final)
+      full_sched = trap_fn(jnp.arange(simulation_steps))
+      ax[1].plot(jnp.arange(simulation_steps), full_sched, '-', label=f'Final')
+
+
+      ax[1].legend()#
+      ax[1].set_title('Schedule evolution')
+      plt.savefig(f"losses_iter{iter_num}.png")
+
     final_coeff = coeffs_[-1][1]
     coeffs.append(final_coeff)
     
