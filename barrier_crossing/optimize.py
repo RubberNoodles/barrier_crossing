@@ -19,7 +19,7 @@ import jax.example_libraries.optimizers as jopt
 from jax_md import quantity, space
 
 from barrier_crossing.energy import V_biomolecule_geiger
-from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
+from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev, trap_sum, trap_sum_rev
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 
 def single_estimate_work(energy_fn,
@@ -396,7 +396,7 @@ def single_estimate_rev_split(energy_fn,
   def _single_estimate(coeffs_for_opt, coeffs_leave,seed):
     trap_leave = make_trap_fxn_rev(jnp.arange(step_cut), coeffs_leave, r0_init, r_cut)
     trap_opt = make_trap_fxn_rev(jnp.arange(simulation_steps - step_cut), coeffs_for_opt, r_cut, r0_final)
-    trap_fn = trap_sum(jnp.arange(simulation_steps),simulation_steps, step_cut,trap_leave, trap_opt)
+    trap_fn = trap_sum_rev(jnp.arange(simulation_steps),simulation_steps, step_cut,trap_leave, trap_opt)
     positions, log_probs, works = simulate_brownian_harmonic(energy_fn, init_position, trap_fn, 
                                                              simulation_steps, Neq, shift, seed, dt, temperature, mass, gamma)
     total_work = works.sum()
