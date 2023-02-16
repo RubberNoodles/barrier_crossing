@@ -421,8 +421,18 @@ def estimate_gradient_rev_split(batch_size,
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
 
+def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
+  stddev = jnp.std(x, axis)
+  mn = jnp.mean(x, axis)
+  xs = jnp.arange(mn.shape[0]) * dt
+
+  ax.fill_between(xs,
+                  mn + n * stddev, mn - n * stddev, alpha=.3)
+  ax.plot(xs, mn, label=label)
+
 def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_position_rev,
-                            step_cut, optimizer, batch_size, opt_steps, save_path = None):
+                            step_cut, optimizer, batch_size, opt_steps, energy_fn, Neq,
+                            shift, dt, temperature,mass, gamma, beta,simulation_steps, save_path = None):
   """
   New version of a training loop to optimize the chebyshev polynomial that defines the 
   protocol of moving a harmonic trap over a free energy landscape. Two sets of coefficients 
@@ -436,8 +446,8 @@ def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_pos
   
   # Optimize first part (coeffs1)
   
-  batch_grad_fn1= lambda batch_size: estimate_gradient_rev(batch_size, energy_sivak, init_position_rev, r0_init, r_cut, Neq, shift, step_cut, dt_sc, temperature_sc,
-                                     mass_sc, gamma_sc, beta_sc)
+  batch_grad_fn1= lambda batch_size: estimate_gradient_rev(batch_size, energy_fn, init_position_rev, r0_init, r_cut, Neq, shift, step_cut, dt, temperature,
+                                     mass, gamma, beta)
   coeffs1_optimize = []
   losses1 = []
   init_state1 = optimizer.init_fn(coeffs1)
@@ -451,7 +461,7 @@ def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_pos
     grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state), split)
     opt_state = optimizer.update_fn(j, grad, opt_state)
     losses1.append(summary[2])
-    coeffs_.append((j,) + (optimizer.params_fn(opt_state),))
+    coeffs1_optimize.append((j,) + (optimizer.params_fn(opt_state),))
     logging.info("init parameters 1 : ", optimizer.params_fn(init_state1))
     logging.info("final parameters 1 : ", optimizer.params_fn(opt_state))
 
@@ -476,7 +486,7 @@ def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_pos
       full_sched = trap_fn(jnp.arange(step_cut))
       ax[1].plot(jnp.arange(step_cut), full_sched, '-', label=f'Step {j}')
 
-  trap_fn = make_trap_fxn(jnp.arange(step_cut), coeffs_[-1][1],r0_init,r_cut)
+  trap_fn = make_trap_fxn(jnp.arange(step_cut), coeffs1_optimize[-1][1],r0_init,r_cut)
   full_sched = trap_fn(jnp.arange(step_cut))
   ax[1].plot(jnp.arange(step_cut), full_sched, '-', label=f'Final')
   ax[1].set_title('Schedule evolution')
@@ -486,8 +496,8 @@ def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_pos
   plt.savefig("./optimization1.png")
 
   # Optimize second part (coeffs2)
-  batch_grad_fn2= lambda batch_size: estimate_gradient_rev_split(batch_size,energy_sivak, init_position_rev_sc, r0_init, r0_final, r_cut, Neq, shift, sim_steps,step_cut, dt_sc, temperature_sc,
-                                     mass_sc, gamma_sc, beta_sc)
+  batch_grad_fn2= lambda batch_size: estimate_gradient_rev_split(batch_size,energy_fn, init_position_rev, r0_init, r0_final, r_cut, Neq, shift, simulation_steps,step_cut, dt, temperature,
+                                     mass, gamma, beta)
   init_coeffs = coeffs2
   coeffs_leave = coeffs1_final
 
@@ -515,7 +525,7 @@ def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_pos
     logging.info("init parameters 2 : ", optimizer.params_fn(init_state))
     logging.info("final parameters 2 : ", optimizer.params_fn(opt_state))
 
-  losses2 = jax.tree_map(lambda *args: jnp.stack(args), *losses)
+  losses2 = jax.tree_map(lambda *args: jnp.stack(args), *losses2)
   coeffs2_final = coeffs2_optimize[-1][1]
 
   # Plot Second Optimization Results
@@ -546,3 +556,4 @@ def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_pos
   plt.savefig("./optimization2.png")
 
   return coeffs1_final, coeffs2_final
+
