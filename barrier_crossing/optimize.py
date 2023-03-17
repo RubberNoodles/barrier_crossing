@@ -19,7 +19,7 @@ import jax.example_libraries.optimizers as jopt
 from jax_md import quantity, space
 
 from barrier_crossing.energy import V_biomolecule_geiger
-from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
+from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev, trap_sum, trap_sum_rev
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 
 def single_estimate_work(energy_fn,
@@ -391,3 +391,178 @@ def estimate_gradient_acc_rev_trunc(error_samples,batch_size,
     summary_total.append(loss)
     return grad_total, (gradient_estimator_total, summary_total)
   return _estimate_grad
+
+def single_estimate_rev_split(energy_fn,
+                        init_position, r0_init, r0_final, r_cut,
+                        Neq, shift,
+                        simulation_steps,step_cut, dt,
+                        temperature, mass, gamma, beta):
+  """
+  New gradient for the optimization that splits the original 
+  trap functions into two parts. 
+  """
+  @functools.partial(jax.value_and_grad, has_aux = True)
+  def _single_estimate(coeffs_for_opt, coeffs_leave,seed):
+    trap_leave = make_trap_fxn_rev(jnp.arange(step_cut), coeffs_leave, r0_init, r_cut)
+    trap_opt = make_trap_fxn_rev(jnp.arange(simulation_steps - step_cut), coeffs_for_opt, r_cut, r0_final)
+    trap_fn = trap_sum_rev(jnp.arange(simulation_steps),simulation_steps, step_cut,trap_leave, trap_opt)
+    positions, log_probs, works = simulate_brownian_harmonic(energy_fn, init_position, trap_fn, 
+                                                             simulation_steps, Neq, shift, seed, dt, temperature, mass, gamma)
+    total_work = works.sum()
+    tot_log_prob = log_probs.sum()
+    summary = (positions, tot_log_prob, jnp.exp(beta*total_work))
+
+    gradient_estimator = (tot_log_prob) * jax.lax.stop_gradient(jnp.exp(beta * total_work)) + jax.lax.stop_gradient(beta * jnp.exp(beta*total_work)) * total_work
+    return gradient_estimator, summary
+  return _single_estimate
+
+def estimate_gradient_rev_split(batch_size,
+                          energy_fn,
+                          init_position, r0_init, r0_final, r_cut,
+                          Neq, shift,
+                          simulation_steps,step_cut, dt,
+                          temperature, mass, gamma, beta):
+  mapped_estimate = jax.vmap(single_estimate_rev_split(energy_fn, init_position, r0_init, r0_final,r_cut, Neq, shift, simulation_steps, step_cut, dt, temperature, mass, gamma, beta), [None,None, 0])  
+  #@jax.jit
+  def _estimate_gradient(coeffs_for_opt,coeffs_leave, seed):
+    seeds = jax.random.split(seed, batch_size)
+    (gradient_estimator, summary), grad = mapped_estimate(coeffs_for_opt,coeffs_leave, seeds)
+    return jnp.mean(grad, axis=0), (gradient_estimator, summary)
+  return _estimate_gradient
+
+def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
+  stddev = jnp.std(x, axis)
+  mn = jnp.mean(x, axis)
+  xs = jnp.arange(mn.shape[0]) * dt
+
+  ax.fill_between(xs,
+                  mn + n * stddev, mn - n * stddev, alpha=.3)
+  ax.plot(xs, mn, label=label)
+
+def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_position_rev,
+                            step_cut, optimizer, batch_size, opt_steps, energy_fn, Neq,
+                            shift, dt, temperature,mass, gamma, beta,simulation_steps, save_path = None):
+  """
+  New version of a training loop to optimize the chebyshev polynomial that defines the 
+  protocol of moving a harmonic trap over a free energy landscape. Two sets of coefficients 
+  that define part of the protocol before r_cut and after r_cut are optimized to minimize
+  the Jarzynski error at extensions equal to r_cut and r0_final. 
+  Outputs coeffs1_optimized, coeffs2_optimized and plots the two optimizations.
+
+  """
+  key = jax.random.PRNGKey(int(time.time()))
+  key, split = jax.random.split(key, 2)
+  
+  # Optimize first part (coeffs1)
+  
+  batch_grad_fn1= lambda batch_size: estimate_gradient_rev(batch_size, energy_fn, init_position_rev, r0_init, r_cut, Neq, shift, step_cut, dt, temperature,
+                                     mass, gamma, beta)
+  coeffs1_optimize = []
+  losses1 = []
+  init_state1 = optimizer.init_fn(coeffs1)
+  opt_state = optimizer.init_fn(coeffs1)
+  coeffs1_optimize.append((0,) + (optimizer.params_fn(opt_state),))
+
+  grad_fn = batch_grad_fn1(batch_size)
+  opt_coeffs = []
+  for j in tqdm.trange(opt_steps,position=1, desc="Optimize Protocol: ", leave = True):
+    key, split = jax.random.split(key)
+    grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state), split)
+    opt_state = optimizer.update_fn(j, grad, opt_state)
+    losses1.append(summary[2])
+    coeffs1_optimize.append((j,) + (optimizer.params_fn(opt_state),))
+    logging.info("init parameters 1 : ", optimizer.params_fn(init_state1))
+    logging.info("final parameters 1 : ", optimizer.params_fn(opt_state))
+
+  losses1 = jax.tree_map(lambda *args: jnp.stack(args), *losses1)
+  coeffs1_final = coeffs1_optimize[-1][1]
+  
+  # Plot optimization results 
+  _, ax = plt.subplots(1, 2, figsize=[24, 12])
+
+  plot_with_stddev(losses1.T, ax=ax[0])
+  ax[0].set_title('Optimization Part 1')
+  ax[0].set_xlabel('Number of Optimization Steps')
+  ax[0].set_ylabel('Loss')
+
+  trap_init = make_trap_fxn(jnp.arange(step_cut), coeffs1, r0_init,
+                                     r_cut)
+  ax[1].plot(jnp.arange(step_cut), trap_init(jnp.arange(step_cut)), label='Initial Guess')
+
+  for j, coeff in coeffs1_optimize:
+    if j%50 == 0 and j!=0:  
+      trap_fn = make_trap_fxn(jnp.arange(step_cut),coeff,r0_init,r_cut)
+      full_sched = trap_fn(jnp.arange(step_cut))
+      ax[1].plot(jnp.arange(step_cut), full_sched, '-', label=f'Step {j}')
+
+  trap_fn = make_trap_fxn(jnp.arange(step_cut), coeffs1_optimize[-1][1],r0_init,r_cut)
+  full_sched = trap_fn(jnp.arange(step_cut))
+  ax[1].plot(jnp.arange(step_cut), full_sched, '-', label=f'Final')
+  ax[1].set_title('Schedule evolution')
+
+  ax[0].legend()
+  ax[1].legend()
+  plt.savefig("./optimization1.png")
+
+  # Optimize second part (coeffs2)
+  batch_grad_fn2= lambda batch_size: estimate_gradient_rev_split(batch_size,energy_fn, init_position_rev, r0_init, r0_final, r_cut, Neq, shift, simulation_steps,step_cut, dt, temperature,
+                                     mass, gamma, beta)
+  init_coeffs = coeffs2
+  coeffs_leave = coeffs1_final
+
+  summaries2 = []
+  coeffs2_optimize = []
+  losses2 = []
+  
+  key = jax.random.PRNGKey(int(time.time()))
+  key, split = jax.random.split(key, 2)
+  
+  init_state = optimizer.init_fn(init_coeffs)
+  opt_state = optimizer.init_fn(init_coeffs)
+  coeffs2_optimize.append((0,) + (optimizer.params_fn(opt_state),))
+
+  grad_fn = batch_grad_fn2(batch_size)
+  for j in tqdm.trange(opt_steps,position=1, desc="Optimize Protocol: ", leave = True):
+    key, split = jax.random.split(key)
+    grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state),coeffs_leave, split)
+
+    opt_state = optimizer.update_fn(j, grad, opt_state)
+    losses2.append(summary[2])
+      
+    coeffs2_optimize.append((j,) + (optimizer.params_fn(opt_state),))
+
+    logging.info("init parameters 2 : ", optimizer.params_fn(init_state))
+    logging.info("final parameters 2 : ", optimizer.params_fn(opt_state))
+
+  losses2 = jax.tree_map(lambda *args: jnp.stack(args), *losses2)
+  coeffs2_final = coeffs2_optimize[-1][1]
+
+  # Plot Second Optimization Results
+  _, ax = plt.subplots(1, 2, figsize=[24, 12])
+
+  plot_with_stddev(losses2.T, ax=ax[0])
+  ax[0].set_title('Optimization Part 2')
+  ax[0].set_xlabel('Number of Optimization Steps')
+  ax[0].set_ylabel('Loss')
+
+  trap_init = make_trap_fxn(jnp.arange(step_cut), coeffs2, r_cut,
+                                     r0_final)
+  ax[1].plot(jnp.arange(simulation_steps-step_cut), trap_init(jnp.arange(simulation_steps-step_cut)), label='Initial Guess')
+
+  for j, coeff in coeffs2_optimize:
+    if j%50 == 0 and j!=0:  
+      trap_fn = make_trap_fxn(jnp.arange(simulation_steps - step_cut),coeff,r_cut,r0_final)
+      full_sched = trap_fn(jnp.arange(simulation_steps - step_cut))
+      ax[1].plot(jnp.arange(simulation_steps - step_cut), full_sched, '-', label=f'Step {j}')
+
+  trap_fn = make_trap_fxn(jnp.arange(simulation_steps - step_cut), coeffs2_optimize[-1][1],r_cut, r0_final)
+  full_sched = trap_fn(jnp.arange(simulation_steps - step_cut))
+  ax[1].plot(jnp.arange(simulation_steps-step_cut), full_sched, '-', label=f'Final')
+  ax[1].set_title('Schedule evolution')
+
+  ax[0].legend()
+  ax[1].legend()
+  plt.savefig("./optimization2.png")
+
+  return coeffs1_final, coeffs2_final
+

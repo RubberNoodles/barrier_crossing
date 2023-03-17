@@ -103,3 +103,32 @@ def make_custom_trap_fxn_rev(time_vec, timestep_trap_position, r0_init, r0_final
   def Get_r0(step):
     return custom_positions[step]
   return Get_r0 
+
+def trap_sum(timevec, simulation_steps, cut, trap1, trap2): 
+  """
+  Make a trap function out of two "pieces" : trap1 and trap2.
+  cut is the simulation step at which trap1 ends and trap2 starts.
+  """
+  positions1 = trap1(jnp.arange(cut))
+  positions2 = trap2(jnp.arange(simulation_steps-cut))
+  def Get_r0(step):
+    positions = []
+    positions.append(jnp.where(step < cut, positions1[step], positions2[step-cut]))
+    #return jnp.array(positions).flatten()
+    return positions[0]
+  return Get_r0
+
+def trap_sum_rev(timevec, simulation_steps, cut, trap1, trap2): 
+  """
+  Make a trap function out of two "pieces" : trap1 and trap2.
+  This is the reverse direction, so
+  cut is the simulation step at which trap 2 ends and trap 1 starts
+  """
+  positions1 = trap1(jnp.arange(cut))
+  positions2 = trap2(jnp.arange(simulation_steps-cut))
+  def Get_r0(step):
+    positions = []
+    positions.append(jnp.where(step < cut, positions2[step], positions1[step-cut]))
+    #return jnp.array(positions).flatten()
+    return positions[0]
+  return Get_r0
