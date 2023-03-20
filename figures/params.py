@@ -9,6 +9,8 @@ import jax.numpy as jnp
 import jax.random as random
 from jax_md import space
 
+import barrier_crossing.energy as bc_energy
+
 N = 1
 dim = 1
 
@@ -17,8 +19,7 @@ _, shift = space.free() # Defines how to move a particle by small distances dR.
 # ================= SIVAK & CROOKE =====================
 
 # Harmonic Trap Parameters S&C
-#k_s_sc = 0.4 # stiffness; 
-k_s_sc = 0.6 # stiffness; 
+k_s_sc = 0.4 # stiffness; 
 r0_init_sc = -10. #nm; initial trap position
 r0_final_sc = 10. #nm; final trap position
 
@@ -52,8 +53,5 @@ simulation_steps_sc = int(end_time_sc / dt_sc)
 
 Neq = 500
 
-opt_batch_size = 10000
-opt_num_steps = 1000
-
-reconstruct_bins = 100
+energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
 

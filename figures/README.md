@@ -12,25 +12,13 @@ may be helpful reference.
 All tests will take the parameters in `params.py` in order to maintain consistency. Change these values at your own peril.
 
 
+`work_error_opt`: Optimize a protocol using dissipative work vs. Jarzynski error on Sivak & Crooks double well landscape.
 
-**Codes using Sivak & Crooks Landscape**
+`reconstructions`: Using protocols optimized through various regimes, reconstruct the landscape with forward simulations according to Engel 2020 and plot the reconstructions.
 
-`optimize_work_err`: Optimize a protocol using Geiger and Dellago form for the Jarzynski error, and find that error optimized protocols narrow the work distribution. # TODO
+`accumulated_grad`: Optimizes a protocol using a loss function that accumulates loss from an array of different protocol starting points. `extensions.csv` is a list of comma-separated extensions that `acc_batch_extensions.py` will find optimal protocols for. We then take a batch of forward simulations with this optimized protocol to reconstruct the landscape using Megan's method and to plot a work distribution histogram.
 
-`accumulated_loss`: Optimizes a protocol using a loss function that accumulates loss from an array of different protocol starting points. `extensions.csv` is a list of comma-separated extensions that `acc_batch_extensions.py` will find optimal protocols for. We then take a batch of forward simulations with this optimized protocol to reconstruct the landscape using Megan's method and to plot a work distribution histogram.
-
-`comparing_error_fn`: Optimize protocol with loss functions that track Jarzynski error or dissipative work. Compare the work distributions of the optimized protocols.
-
-`iterating_landscape`: Using the iterative landscape reconstruction procedure, iterate on the landscape.
-
-`template_sc.py`: This contains all imports and initial parameters that we use for the Sivak & Crooks symmetric double-well landscape. It is recommended to use this file as the beginning of any new tests.
-
-
-TODO: Create a file which contains standard parameters that can be modified as opposed to modifying test functions.
-
-**Codes Using Geiger & Dellago Landscape**
-
-`slow_reconstruction`: We find that a perfect reconstruction can be made by moving the simulation sufficiently slowly. # TODO
+`iterative`: Using the iterative landscape reconstruction procedure, iterate on the landscape. The procedure consists of forward optimizations on a true landscape to obtain dissipitave work values at each position. Using this data and Engel 2020's reconstrution procedure, we can reconstruct a landscape that we can sample from and perform gradient descent to learn an optimal protocol where the landscape is one of the elements of our computational graph.
 
 
 

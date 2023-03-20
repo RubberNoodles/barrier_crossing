@@ -1,31 +1,28 @@
 ###################################################
 # This code is a TEMPLATE for Sivak & Crooks
-# testing. Last changed 12/18/2022. 
+# testing. Last changed 3/20/2023. 
 # WARNING: This code is NOT maintained.
 ###################################################
-
 import time
 import tqdm
 import pickle
+import csv
+import sys
+
+import jax
+import jax.numpy as jnp
+import numpy as onp
+import jax.random as random
+import jax.example_libraries.optimizers as jopt
+from jax_md import space
+
+import matplotlib.pyplot as plt
 
 import barrier_crossing.energy as bc_energy
 import barrier_crossing.protocol as bc_protocol
 import barrier_crossing.simulate as bc_simulate
 import barrier_crossing.optimize as bc_optimize
 import barrier_crossing.iterate_landscape as bc_landscape
-
-import jax
-
-import jax.numpy as jnp
-import numpy as onp
-
-import jax.random as random
-
-import jax.example_libraries.optimizers as jopt
-
-from jax_md import space
-
-import matplotlib.pyplot as plt
 
 from figures.params import * # global variables;
 
