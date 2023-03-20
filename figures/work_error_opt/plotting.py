@@ -1,5 +1,5 @@
 
-import tests.params
+from figures.params import * # global variables;
 
 
 def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
