@@ -1,21 +1,38 @@
+import pickle
+import jax.numpy as jnp
+
+import matplotlib.pyplot as plt
+
+import barrier_crossing.protocol as bc_protocol 
 
 from figures.params import * # global variables;
 
 
-def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
-  stddev = jnp.std(x, axis)
-  mn = jnp.mean(x, axis)
-  xs = jnp.arange(mn.shape[0]) * dt
-
-  ax.fill_between(xs,
-                  mn + n * stddev, mn - n * stddev, alpha=.3)
-  ax.plot(xs, mn, label=label)
-_, ax = plt.subplots(1, 2, figsize=[16, 8])
-
 
 if __name__ == "__main__":
-  lin_coeffs_sc = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree = 12, y_intercept = r0_init_sc)
 
-  # Trap Functions. Reverse mode trap functions are for when we compute Jarzynski error with reverse protocol trajectories.
-  trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
-  trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
+  data_path = "output_data/"
+  with open(data_path + "work_coeffs.pkl", "rb") as f:
+    coeffs_work = pickle.load(f)
+  with open(data_path + "error_coeffs.pkl", "rb") as f:
+    coeffs_err = pickle.load(f)
+  
+  work_trap = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs_work, r0_init_sc, r0_final_sc)
+  err_trap = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs_err, r0_init_sc, r0_final_sc)
+
+  plt.figure(figsize=[8,8])
+
+  time_vec = jnp.arange(simulation_steps_sc)
+
+  plt.title("Optimized Protocols")
+  plt.xlabel("Time (s)")
+  plt.ylabel("Trap Position")
+  plt.plot(time_vec * dt_sc, work_trap(time_vec), label = "Work Optimized")
+  plt.plot(time_vec * dt_sc, err_trap(time_vec), label = "Error Optimized")
+
+  plt.legend()
+  plt.savefig("plots/opt_protocols.png")
+
+
+
+  
