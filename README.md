@@ -49,6 +49,6 @@ Training loop using Jarzynski equality error for a single energy difference or m
 ### `iterate_landscape.py`
 Iteratively attempt to reconstruct a black box landscape by looping over two tasks: based on a protocol for pulling the molecule, take a large number of simulations to reconstruct an energy landscape. Using this energy landscape, optimize a protocol to use to once again simulate and reconstruct.
 
-## Testing
+## Figures
 
-There is a variety of tests that can be found in `tests`.
+All figures found in the paper were produced using the codes available in the `figures` directory. See the `README.md` for more information.

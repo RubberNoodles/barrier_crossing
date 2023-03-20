@@ -1,12 +1,13 @@
 ############################################
 ### GLOBAL parameters for all figures.   ###
 ############################################
+# Style: https://docs.python.org/3/faq/programming.html#how-do-i-share-global-variables-across-modules
 
 # Symmetric.
 
 import jax.numpy as jnp
 import jax.random as random
-
+from jax_md import space
 
 N = 1
 dim = 1
