@@ -39,7 +39,7 @@ def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   ax.fill_between(xs,
                   mn + n * stddev, mn - n * stddev, alpha=.3)
   ax.plot(xs, mn, label=label)
-_, ax = plt.subplots(1, 2, figsize=[16, 8])
+
 
 if __name__ == "__main__":
   
@@ -153,6 +153,7 @@ if __name__ == "__main__":
 
   coeffs, summaries, losses = bc_optimize.optimize_protocol(lin_coeffs_sc, grad_acc_rev, optimizer, batch_size, opt_steps, print_log=True)
   
+  _, ax = plt.subplots(1, 2, figsize=[16, 8])
   #avg_loss = jnp.mean(jnp.array(losses), axis = 0)
   plot_with_stddev(losses.T, ax=ax[0])
 

@@ -42,10 +42,10 @@ if __name__ == "__main__":
       )
   
   max_iter = 3
-  opt_steps_landscape = 5
-  bins = 10
-  opt_batch_size = 100
-  rec_batch_size = 10
+  opt_steps_landscape = 500
+  bins = 100
+  opt_batch_size = 10000
+  rec_batch_size = 1000
 
   grad_no_E = lambda num_batches, energy_fn: bc_optimize.estimate_gradient_rev(
 #      extensions,

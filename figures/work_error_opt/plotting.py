@@ -17,8 +17,8 @@ if __name__ == "__main__":
   with open(data_path + "error_coeffs.pkl", "rb") as f:
     coeffs_err = pickle.load(f)
   
-  work_trap = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs_work, r0_init_sc, r0_final_sc)
-  err_trap = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeffs_err, r0_init_sc, r0_final_sc)
+  work_trap = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), jnp.array(coeffs_work), r0_init_sc, r0_final_sc)
+  err_trap = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), jnp.array(coeffs_err), r0_init_sc, r0_final_sc)
 
   plt.figure(figsize=[8,8])
 
