@@ -22,6 +22,7 @@ import barrier_crossing.iterate_landscape as bc_landscape
 from figures.params import * # global variables;
 
 if __name__ == "__main__":
+  save_dir = "results_0.1/"
   # Protocol Coefficients
   lin_coeffs_sc = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree = 12, y_intercept = r0_init_sc)
 
@@ -95,7 +96,7 @@ if __name__ == "__main__":
   plt.xlabel("Position (x)")
   plt.ylabel("Free Energy (G)")
   plt.title("Iteratively Reconstructing Landscape")
-  plt.savefig("results/reconstruct_landscapes.png")
+  plt.savefig(save_dir + "reconstruct_landscapes.png")
   
   plt.figure(figsize = (8,8))
   trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
@@ -107,7 +108,7 @@ if __name__ == "__main__":
   plt.ylabel("Position (x)")
   plt.title("Protocols Over Iteration")
   plt.legend()
-  plt.savefig("results/opt_protocol_evolution.png")
+  plt.savefig(save_dir + "opt_protocol_evolution.png")
   
-  with open("results/coeffs.pkl", "wb") as f:
+  with open(save_dir + "coeffs.pkl", "wb") as f:
     pickle.dump(coeffs, f)
