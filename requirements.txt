@@ -10,9 +10,9 @@ flatbuffers==2.0
 fonttools==4.34.4
 gast==0.5.3
 importlib-resources==5.8.0
-jax==0.3.23
-jax-md==0.2.0
-jaxlib==0.3.22
+jax==0.4.11
+jaxlib==0.4.11
+jax-md==0.2.5
 jmp==0.0.2
 jraph==0.0.5.dev0
 kiwisolver==1.4.3
@@ -34,4 +34,3 @@ tqdm==4.64.0
 typing==3.7.4.3
 typing_extensions==4.3.0
 zipp==3.8.1
-barrier-crossing==0.1.6.2
