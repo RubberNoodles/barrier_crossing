@@ -10,7 +10,7 @@ from jax import random
 
 from jax_md import quantity, space
 
-from barrier_crossing.energy import V_biomolecule_geiger, V_simple_spring, brownian
+from barrier_crossing.energy import V_biomolecule_geiger, V_simple_spring, brownian, nvt_langevin
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
 
 def simulate_brownian_harmonic(energy_fn,
@@ -72,6 +72,64 @@ def simulate_brownian_harmonic(energy_fn,
   positions = jnp.concatenate([jnp.reshape(eq_state.position, [1,1,1]), positions])
   return positions, log_probs, works
 
+def simulate_langevin_harmonic(energy_fn,
+                               init_position,
+                               trap_fn,
+                               simulation_steps,
+                               Neq,
+                               shift,
+                               key,
+                               dt=1e-5,
+                               temperature=1e-5, mass=1.0, gamma=1.0):
+  """Simulation of LANGEVIN particle being dragged by a moving harmonic trap.
+  Args:
+    energy_fn: the function that governs particle energy. Here, an external harmonic potential
+    r0_init: initial position of the trap, for which equilibration is done
+    Neq: number of equilibration steps
+    shift: shift_fn governing the LANGEVIN simulation
+    key: random key
+    num_steps: total # simulation steps
+    dt: integration time step
+    temperature: simulation temperature kT
+
+  Returns:
+    positions: particle positions (trajectory) for each simulation step.
+    log_probs: log probability of a particle being at each point on the trajectory.
+    works: total work required to drag the particle, from eq'n 17 in Jarzynski 2008
+  """
+
+  def equilibrate(init_state, Neq, apply, r0_init):
+    @jax.jit
+    def scan_eq(state, step):
+      state = apply(state, r0=r0_init)
+      return state, 0
+    state, _ = jax.lax.scan(scan_eq,init_state,jnp.arange(Neq))
+    # for step in jnp.arange(Neq):
+    #   state, _ = scan_eq(state, step)
+    return state
+
+  def increment_work(state, step):
+        return (energy_fn(state.position, r0=trap_fn(step)) - energy_fn(state.position, r0=trap_fn(step-1)))
+
+  @jax.jit
+  def scan_fn(state, step):
+    dW = increment_work(state, step) #increment based on position BEFORE 'thermal kick' a la Crooks
+    # Dynamically pass r0 to apply, which passes it on to energy_fn
+    state = apply(state, r0=trap_fn(step))
+    return state, [state.position, state.log_prob, dW]
+
+  r0_init = trap_fn(0)
+  key, split = jax.random.split(key)
+
+  init, apply = nvt_langevin(energy_fn, shift, dt=dt, kT=temperature, gamma=gamma)
+
+  eq_state = equilibrate(init(split, init_position, mass=mass), Neq, apply, r0_init)
+  state = eq_state
+  state, (positions, log_probs, works) = jax.lax.scan(scan_fn,state,(jnp.arange(simulation_steps-1)+1))
+
+  works = jnp.concatenate([jnp.reshape(0., [1]), works])
+  positions = jnp.concatenate([jnp.reshape(eq_state.position, [1,1,1]), positions])
+  return positions, log_probs, works
 
 def batch_simulate_harmonic(batch_size,
                             energy_fn,
