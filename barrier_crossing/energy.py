@@ -8,16 +8,22 @@ import jax_md as jmd
 from tensorflow_probability.substrates import jax as tfp
 tfd = tfp.distributions
 
+from jax_md import util
+
+Array = util.Array
+
 from barrier_crossing.protocol import make_trap_fxn, make_trap_fxn_rev
 
 """##Custom Brownian simulator
 
 This is a modification of the JAX-MD Brownian simulator that also returns the log probability of any trajectory that runs. This is needed in order to compute gradients correctly (eq'n 12 in my arXiv paper)
 """
-
-class BrownianState(collections.namedtuple('BrownianState',
-                                           'position mass rng log_prob')):
-  pass
+@jmd.dataclasses.dataclass
+class BrownianState:
+  position: Array
+  mass: float
+  rng: Array
+  log_prob: float
 
 def brownian(energy_or_force,
              shift,
@@ -66,8 +72,9 @@ def brownian(energy_or_force,
     return tfd.Normal(mean, jnp.sqrt(variance))
   
   def init_fn(key, R, mass=jnp.float32(1)):
-    mass = jmd.simulate.canonicalize_mass(mass)
-    return BrownianState(R, mass, key, 0.)
+    state = BrownianState(R, mass, key, 0.)
+    state = jmd.simulate.canonicalize_mass(state)
+    return state
 
   def apply_fn(state, t=jnp.float32(0), **kwargs):
     dist = _dist(state, t, **kwargs)
