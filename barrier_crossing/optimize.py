@@ -4,6 +4,7 @@ import pickle
 import time
 import tqdm
 import logging
+import deprecation
 
 import matplotlib.pyplot as plt
 
@@ -142,6 +143,8 @@ def find_error_samples(batch_size, energy_fn, simulate_fn, rev_trap_fn, simulati
   midpoint_timestep = jnp.array(midpoint_timestep)
   return midpoint_timestep
 
+@deprecation.deprecated(deprecated_in="0.1.7.0",
+                        details="Use the estimate_gradient_rev function instead. Accumulated gradients are not available.")
 def estimate_gradient_acc_rev_extensions(error_samples,batch_size,
                           energy_fn,
                           init_position, r0_init, r0_final,
@@ -175,6 +178,8 @@ def estimate_gradient_acc_rev_extensions(error_samples,batch_size,
     return grad_total, loss, gradient_estimator_total, summary_total
   return _estimate_grad
 
+@deprecation.deprecated(deprecated_in="0.1.7.0",
+                        details="Use the estimate_gradient_rev function instead. Accumulated gradients are not available.")
 def estimate_gradient_acc_rev_extensions_scale(error_samples,batch_size,
                           energy_fn,
                           init_position, r0_init, r0_final,
@@ -182,6 +187,8 @@ def estimate_gradient_acc_rev_extensions_scale(error_samples,batch_size,
                           simulation_steps, dt,
                           temperature, mass, gamma, beta):
   """ 
+  DEPRECATED
+
   New version of estimate_gradient_acc_rev, which takes
   samples of extensions instead of time steps in simulation.
   ToDo: change returns, so it's compatible with optimize_protocol
@@ -277,7 +284,8 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
 
 #### TRUNCATED CODE
 
-
+@deprecation.deprecated(deprecated_in="0.1.7.0",
+                        details="Use the estimate_gradient_rev function instead. Truncated gradients are not available.")
 def single_estimate_rev_trunc(energy_fn,
                         init_position, r0_init, r0_final,
                         Neq, shift,
@@ -303,6 +311,8 @@ def single_estimate_rev_trunc(energy_fn,
     return gradient_estimator, summary
   return _single_estimate 
 
+@deprecation.deprecated(deprecated_in="0.1.7.0",
+                        details="Use the estimate_gradient_rev function instead. Truncated gradients are not available.")
 def estimate_gradient_rev_trunc(batch_size,
                           energy_fn,
                           init_position, r0_init, r0_final,
@@ -323,6 +333,8 @@ def estimate_gradient_rev_trunc(batch_size,
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
 
+@deprecation.deprecated(deprecated_in="0.1.7.0",
+                        details="Use the estimate_gradient_rev function instead. Truncated gradients are not available.")
 def estimate_gradient_acc_rev_trunc(error_samples,batch_size,
                           energy_fn,
                           init_position, r0_init, r0_final,
