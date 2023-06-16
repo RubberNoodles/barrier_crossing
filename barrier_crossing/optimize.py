@@ -71,21 +71,13 @@ def estimate_gradient_work(batch_size,
   return _estimate_gradient
 
 
-def single_estimate_rev(energy_fn,
-                        init_position, r0_init, r0_final,
-                        Neq, shift,
-                        simulation_steps, dt,
-                        temperature, mass, gamma, beta):
+def single_estimate_rev(simulate_fn_no_trap,
+                        r0_init, r0_final, simulation_steps, 
+                        beta):
   @functools.partial(jax.value_and_grad, has_aux = True)
   def _single_estimate(coeffs, seed):
     trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
-    positions, log_probs, works = simulate_brownian_harmonic(
-        energy_fn, 
-        init_position, trap_fn,
-        simulation_steps,
-        Neq, shift, seed, 
-        dt, temperature, mass, gamma
-        )
+    positions, log_probs, works = simulate_fn_no_trap(trap_fn, seed)
     total_work = works.sum()
     tot_log_prob = log_probs.sum()
     summary = (positions, tot_log_prob, jnp.exp(beta*total_work))
@@ -95,23 +87,24 @@ def single_estimate_rev(energy_fn,
   return _single_estimate 
 
 def estimate_gradient_rev(batch_size,
-                          energy_fn,
-                          init_position, r0_init, r0_final,
-                          Neq, shift,
-                          simulation_steps, dt,
-                          temperature, mass, gamma, beta):
+                          simulate_fn_no_trap,
+                          r0_init, r0_final, simulation_steps, 
+                          beta):
   """Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). 
   Compute the total gradient with forward trajectories and loss based on work used.
     Returns:
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
-  mapped_estimate = jax.vmap(single_estimate_rev(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma, beta), [None, 0])  
+  mapped_estimate = jax.vmap(single_estimate_rev(simulate_fn_no_trap,
+                          r0_init, r0_final, simulation_steps, 
+                          beta), [None, 0])  
   @jax.jit 
   def _estimate_gradient(coeffs, seed):
     seeds = jax.random.split(seed, batch_size)
     (gradient_estimator, summary), grad = mapped_estimate(coeffs, seeds)
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
+
 
 def find_error_samples(batch_size, energy_fn, simulate_fn, rev_trap_fn, simulation_steps, key, bins):
   """Given a (reversed) protocol and set of bins, return an array of the average time it takes for the particle to reach the midpoint
