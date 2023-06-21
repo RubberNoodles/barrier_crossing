@@ -22,7 +22,7 @@ import barrier_crossing.iterate_landscape as bc_landscape
 from figures.params import * # global variables;
 
 if __name__ == "__main__":
-  save_dir = "results_0.1/"
+  save_dir = "results_3e-5/"
   # Protocol Coefficients
   lin_coeffs_sc = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree = 12, y_intercept = r0_init_sc)
 
@@ -30,10 +30,22 @@ if __name__ == "__main__":
   trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   
-  simulate_sivak_fn_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
+  true_sivak_simulation_fwd = lambda trap_fn: lambda keys: bc_simulate.simulate_langevin_harmonic(
+      energy_sivak, 
+      init_position_fwd_sc, 
+      trap_fn,
+      simulation_steps_sc, 
+      Neq, 
+      shift, 
+      keys,
+      dt_sc,
+      temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
+      )
+  
+  simulate_grad_sivak_rev = lambda energy_fn: lambda trap_fn, keys: bc_simulate.simulate_langevin_harmonic(
       energy_fn, 
       init_position_fwd_sc, 
-      trap_fn_fwd_sc,
+      trap_fn,
       simulation_steps_sc, 
       Neq, 
       shift, 
@@ -41,29 +53,27 @@ if __name__ == "__main__":
       dt_sc,
       temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
       )
-  
+
   max_iter = 3
   opt_steps_landscape = 500
-  bins = 100
-  opt_batch_size = 10000
+  bins = 500
+  opt_batch_size = 1000
   rec_batch_size = 1000
 
   grad_no_E = lambda num_batches, energy_fn: bc_optimize.estimate_gradient_rev(
-#      extensions,
-      num_batches, energy_fn, init_position_rev_sc, 
-      r0_init_sc, r0_final_sc, Neq, shift, 
-      simulation_steps_sc, dt_sc, 
-      temperature_sc, mass_sc, gamma_sc, beta_sc)
+      num_batches,
+      simulate_grad_sivak_rev(energy_fn),
+      r0_init_sc, r0_final_sc, simulation_steps_sc,
+      beta_sc)
 
-  lr = jopt.polynomial_decay(1., opt_steps_landscape, 0.01)
+  lr = jopt.polynomial_decay(0.03, opt_steps_landscape, 0.001)
   optimizer = jopt.adam(lr)
 
   key = random.PRNGKey(int(time.time()))
   
-  landscapes, coeffs, positions = bc_landscape.optimize_landscape(energy_sivak,
-                      simulate_sivak_fn_fwd,
-                      trap_fn_rev_sc, 
-                      lin_coeffs_sc, 
+  landscapes, coeffs, positions = bc_landscape.optimize_landscape(
+                      true_sivak_simulation_fwd,
+                      trap_fn_fwd_sc, # First reconstruction; should one reconstruct with forward or reverse simulations? Does it matter?
                       grad_no_E,
                       key,
                       max_iter,

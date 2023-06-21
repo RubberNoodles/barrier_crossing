@@ -19,7 +19,7 @@ _, shift = space.free() # Defines how to move a particle by small distances dR.
 # ================= SIVAK & CROOKE =====================
 
 # Harmonic Trap Parameters S&C
-k_s_sc = 0.4 # stiffness; 
+k_s_sc = 0.1 # stiffness; 
 r0_init_sc = -10. #nm; initial trap position
 r0_final_sc = 10. #nm; final trap position
 
@@ -40,15 +40,17 @@ x_m=10. #nm
 delta_E=7.0 #pN nm
 
 # Symmetric wells.
-kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
+#kappa_l=21.3863/(beta_sc*x_m**2) #pN/nm #for Ebarrier = 10kT and delta_E=0, as C&S use
+#kappa_l=6.38629/(beta_sc*x_m**2) # Ebarrier ~ 13 kT
+kappa_l=2.6258/(beta_sc*x_m**2)#barrier 0.625kT
 kappa_r=kappa_l #pN/nm; 
 
 # Asymmetric wells.
 # kappa_l=6.38629/(beta*x_m**2)
 # kappa_r= 5 * kappa_l #pN/nm; Asymmetric wells
 
-end_time_sc = 0.01
-dt_sc = 1e-6
+end_time_sc = 1e-5
+dt_sc = 3e-9
 simulation_steps_sc = int(end_time_sc / dt_sc)
 
 Neq = 500

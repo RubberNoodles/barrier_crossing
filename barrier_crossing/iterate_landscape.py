@@ -227,10 +227,9 @@ def landscape_diff(ls_1, ls_2):
   return jnp.linalg.norm(jnp.array(ls_2[1])-jnp.array(ls_1[1]))
 
 
-def optimize_landscape(ground_truth_energy_fn,
+def optimize_landscape(
                       simulate_fn,
                       init_trap_fn,
-                      init_trap_coeffs,
                       grad_fn_no_E,
                       key,
                       max_iter,
@@ -249,16 +248,11 @@ def optimize_landscape(ground_truth_energy_fn,
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
   to create a protocol that will allow for more accurate reconstructions.
   Args:
-    ground_truth_energy_fn: Energy landscape we are trying to reconstruct. Callable(particle_position, trap_position) ->
-      energy. 
-        Intended to act as an unknown landscape with outputs of particle trajectory that would be obtained
-      from experimentation.
-    simulate_fn: Callable(Energy_fn, trap_schedule) 
+    simulate_fn: Callable(trap_schedule) -> Callable(keys) 
       -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
         Function that simulates moving the particle along the given trap_schedule given a specified
       energy function.
-    init_trap_fn: Callable(time_step) -> trap_position
-    init_trap_coeffs: Array[Float]. Coefficients of Chebyshev polynomial of initial protocol
+    init_trap_fn: Callable(time_step) -> trap_position. Forward trap.
     grad_fn_no_E: Callable(batch_size, energy_fn) -> Callable(coeffs, seed, *args)
         Function that allows input of arbitrary energy, function. Intended to be used as follows
       ``grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)``
@@ -281,17 +275,15 @@ def optimize_landscape(ground_truth_energy_fn,
   diff = 1e10 # large number
 
   trap_fn = init_trap_fn
-  trap_coeffs = init_trap_coeffs
   
   for iter_num in tqdm.trange(max_iter, position=2, desc="Optimize Landscape: "):
     if new_landscape:
       old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1])) # TODO
 
     _, (trajectories, works, log_probs) = batch_simulate_harmonic(reconstruct_batch_size,
-                            ground_truth_energy_fn,
-                            simulate_fn,
+                            simulate_fn(trap_fn),
                             simulation_steps,
-                            key)
+                            key) 
     
     logging.info("Creating landscape.")
     new_landscape = energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
@@ -308,6 +300,7 @@ def optimize_landscape(ground_truth_energy_fn,
     grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)
     lin_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
     coeffs_, _, losses = optimize_protocol(lin_trap_coeffs, grad_fxn, optimizer, opt_batch_size, opt_steps)
+
     if savefig_losses:
       _, ax = plt.subplots(1, 2, figsize=[24, 12])
 

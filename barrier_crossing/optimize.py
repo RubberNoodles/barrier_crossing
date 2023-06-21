@@ -23,24 +23,14 @@ from barrier_crossing.energy import V_biomolecule_geiger
 from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev, trap_sum, trap_sum_rev
 from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
 
-def single_estimate_work(energy_fn,
-                        init_position, r0_init, r0_final,
-                        Neq,
-                        shift,
-                        simulation_steps, dt,
-                        temperature, mass, gamma):
+def single_estimate_work(simulate_fn,
+                        r0_init, r0_final,
+                        simulation_steps):
   @functools.partial(jax.value_and_grad, has_aux=True) #the 'aux' is the summary
   def _single_estimate(coeffs, seed): 
       # Forward direction to compute the gradient of the work used.
       trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
-      positions, log_probs, works = simulate_brownian_harmonic(
-          energy_fn, 
-          init_position,
-          trap_fn,
-          simulation_steps,
-          Neq, shift, seed, 
-          dt, temperature, mass, gamma
-          )
+      positions, log_probs, works = simulate_fn( trap_fn, seed)
       total_work = works.sum()
       tot_log_prob = log_probs.sum()
       summary = (positions, tot_log_prob, total_work)
@@ -51,18 +41,15 @@ def single_estimate_work(energy_fn,
   return _single_estimate 
 
 def estimate_gradient_work(batch_size,
-                          energy_fn,
-                          init_position, r0_init, r0_final,
-                          Neq,
-                          shift,
-                          simulation_steps, dt,
-                          temperature, mass, gamma):
+                          simulate_fn,
+                          r0_init, r0_final,
+                          simulation_steps):
   """Compute the total gradient with forward trajectories and loss based on work used.
     Returns:
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
   
-  mapped_estimate = jax.vmap(single_estimate_work(energy_fn, init_position, r0_init, r0_final, Neq, shift, simulation_steps, dt, temperature, mass, gamma), [None, 0])
+  mapped_estimate = jax.vmap(single_estimate_work(simulate_fn, r0_init, r0_final, simulation_steps), [None, 0])
 
   @jax.jit #why am I allowed to jit something whose output is a function? Thought it had to be pytree output...
   def _estimate_gradient(coeffs, seed):
@@ -72,13 +59,13 @@ def estimate_gradient_work(batch_size,
   return _estimate_gradient
 
 
-def single_estimate_rev(simulate_fn_no_trap,
+def single_estimate_rev(simulate_fn,
                         r0_init, r0_final, simulation_steps, 
                         beta):
   @functools.partial(jax.value_and_grad, has_aux = True)
   def _single_estimate(coeffs, seed):
     trap_fn = make_trap_fxn_rev(jnp.arange(simulation_steps), coeffs, r0_init, r0_final)
-    positions, log_probs, works = simulate_fn_no_trap(trap_fn, seed)
+    positions, log_probs, works = simulate_fn(trap_fn, seed)
     total_work = works.sum()
     tot_log_prob = log_probs.sum()
     summary = (positions, tot_log_prob, jnp.exp(beta*total_work))
@@ -88,15 +75,18 @@ def single_estimate_rev(simulate_fn_no_trap,
   return _single_estimate 
 
 def estimate_gradient_rev(batch_size,
-                          simulate_fn_no_trap,
+                          simulate_fn,
                           r0_init, r0_final, simulation_steps, 
                           beta):
-  """Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). 
+  """
+  TODO: update docstring.
+
+  Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). 
   Compute the total gradient with forward trajectories and loss based on work used.
     Returns:
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
-  mapped_estimate = jax.vmap(single_estimate_rev(simulate_fn_no_trap,
+  mapped_estimate = jax.vmap(single_estimate_rev(simulate_fn,
                           r0_init, r0_final, simulation_steps, 
                           beta), [None, 0])  
   @jax.jit 

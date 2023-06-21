@@ -31,7 +31,7 @@ if __name__ == "__main__":
     "Linear Protocol": "linear", 
     "Work Optimized Protocol": "work.pkl",
     "Single Error Protocol":  "error.pkl",
-    "Accumulated Error Protocol": "accumulated.pkl",
+    #"Accumulated Error Protocol": "accumulated.pkl",
     }
   
   coeff_dir = "coeffs/"
@@ -62,10 +62,10 @@ if __name__ == "__main__":
     key = random.PRNGKey(int(time.time()))
     key, split = random.split(key)
 
-    simulate_sivak_fwd = lambda energy_fn, keys: bc_simulate.simulate_brownian_harmonic(
-      energy_fn, 
+    simulate_sivak_fwd_grad = lambda  trap_fn_arb, keys: bc_simulate.simulate_langevin_harmonic(
+      energy_sivak, 
       init_position_fwd_sc, 
-      trap_fn,
+      trap_fn_arb,
       simulation_steps_sc, 
       Neq, 
       shift, 
@@ -74,12 +74,14 @@ if __name__ == "__main__":
       temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
       )
 
+    simulate_sivak_fwd = lambda keys: simulate_sivak_fwd_grad(trap_fn, keys)
+
     batch_size_sc_rec = 10
     batch_size_grad = 1000
     bins = 5
 
     total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
-        batch_size_sc_rec, energy_sivak, simulate_sivak_fwd, simulation_steps_sc, key)
+        batch_size_sc_rec, simulate_sivak_fwd, simulation_steps_sc, key)
     
     # work distribution data
     mean_work = batch_works.mean()
@@ -117,17 +119,10 @@ if __name__ == "__main__":
     # loss values 
     grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev(
       num_batches,
-      energy_sivak,
-      init_position_rev_sc,
+      simulate_sivak_fwd_grad,
       r0_init_sc,
       r0_final_sc,
-      Neq,
-      shift,
       simulation_steps_sc,
-      dt_sc,
-      temperature_sc,
-      mass_sc,
-      gamma_sc,
       beta_sc)
       
     grad, (_, summary) = grad_rev(batch_size_grad)(coeff, split)
@@ -153,17 +148,22 @@ if __name__ == "__main__":
       }
     
 
-    plt.plot(midpoints, energies_aligned, label = trap_name)
+  plt.plot(midpoints, energies_aligned, label = trap_name)
   plt.legend()
   plt.savefig("plotting/reconstructions.png")
 
   with open("landscape_data.pkl", "wb") as f:
+    for trap_name, data in plot_data.items():
+        pass # not sure how to do this right now but there is an error    
+        # pickle.dump(plot_data, f)
+        # AttributeError: Can't pickle local object 'make_trap_fxn.<locals>.Get_r0'
+        # plot_data[trap_name]["trap"] = 
     pickle.dump(plot_data, f)
 
 
 
 
-"""
+"""`
   # Table comparison of protocols --> Important graph to have! --> Adjust for different protocols etc
 
   # Table comparison (+ reconstruction info)

@@ -1,5 +1,4 @@
 # Optimize coefficients for work and error distributions.
-
 import time
 import tqdm
 import pickle
@@ -42,38 +41,48 @@ if __name__ == "__main__":
   trap_fn_fwd_sc = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
   trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
 
+  simulate_sivak_fwd_unf = lambda trap_fn, keys: bc_simulate.simulate_langevin_harmonic(
+    energy_sivak, 
+    init_position_fwd_sc, 
+    trap_fn,
+    simulation_steps_sc, 
+    Neq, 
+    shift, 
+    keys, 
+    dt_sc,
+    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
+    )
+
+  simulate_sivak_rev_unf = lambda trap_fn, keys: bc_simulate.simulate_langevin_harmonic(
+    energy_sivak, 
+    init_position_rev_sc, 
+    trap_fn,
+    simulation_steps_sc, 
+    Neq, 
+    shift, 
+    keys, 
+    dt_sc,
+    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
+    )
+  
   grad_fwd = lambda num_batches: bc_optimize.estimate_gradient_work(
     num_batches,
-    energy_sivak,
-    init_position_rev_sc,
+    simulate_sivak_fwd_unf,
     r0_init_sc,
     r0_final_sc,
-    Neq,
-    shift,
-    simulation_steps_sc,
-    dt_sc,
-    temperature_sc,
-    mass_sc,
-    gamma_sc)
+    simulation_steps_sc)
   
   grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev(
     num_batches,
-    energy_sivak,
-    init_position_rev_sc,
+    simulate_sivak_rev_unf,
     r0_init_sc,
     r0_final_sc,
-    Neq,
-    shift,
     simulation_steps_sc,
-    dt_sc,
-    temperature_sc,
-    mass_sc,
-    gamma_sc,
     beta_sc)
 
 
   batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 1000 # Number of gradient descent steps to take.
+  opt_steps = 10 # Number of gradient descent steps to take.
   
   lr = jopt.polynomial_decay(1., opt_steps, 0.001)
   optimizer = jopt.adam(lr)
