@@ -132,7 +132,6 @@ def simulate_langevin_harmonic(energy_fn,
   return positions, log_probs, works
 
 def batch_simulate_harmonic(batch_size,
-                            energy_fn,
                             simulate_fn,
                             simulation_steps,
                             key,
@@ -166,7 +165,7 @@ def batch_simulate_harmonic(batch_size,
   total_works = []
 
   # To generate a bunch of samples, we 'map' across seeds.
-  mapped_sim = jax.vmap(lambda keys : simulate_fn(energy_fn, keys) ) 
+  mapped_sim = jax.vmap(lambda keys : simulate_fn(keys) ) 
   seeds = jax.random.split(split, batch_size)
   trajectories, log_probs, works = mapped_sim(seeds) #seed is array with diff seed for each run.
 
