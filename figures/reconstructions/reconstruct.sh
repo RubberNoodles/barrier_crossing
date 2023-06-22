@@ -10,6 +10,6 @@ module load cuda/12.0.1-fasrc01
 module load cudnn/8.8.0.121_cuda12-fasrc01
 pip3 install -e ../../
 pip3 install -r ./../../requirements.txt
-pip3 install "jax[cuda12_cudnn88]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 
 python3 reconstruct.py
