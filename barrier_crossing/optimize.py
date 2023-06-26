@@ -434,7 +434,7 @@ def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
                   mn + n * stddev, mn - n * stddev, alpha=.3)
   ax.plot(xs, mn, label=label)
 
-def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_position_rev,
+def optimize_protocol_split(simulate_fn_no_trap,coeffs1, coeffs2, r0_init, r0_final, r_cut, init_position_rev,
                             step_cut, optimizer, batch_size, opt_steps, energy_fn, Neq,
                             shift, dt, temperature,mass, gamma, beta,simulation_steps, save_path = None):
   """
@@ -450,10 +450,9 @@ def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_pos
   
   # Optimize first part (coeffs1)
   
-  batch_grad_fn1= lambda batch_size: estimate_gradient_rev(batch_size, energy_fn, init_position_rev, r0_init, r_cut, Neq, shift, step_cut, dt, temperature,
-                                     mass, gamma, beta)
-  coeffs1_optimize = []
+  batch_grad_fn1= lambda batch_size: estimate_gradient_rev(batch_size, simulate_fn_no_trap, energy_fn, r0_init, r_cut,simulation_steps,beta)
   losses1 = []
+  coeffs1_optimize = []
   init_state1 = optimizer.init_fn(coeffs1)
   opt_state = optimizer.init_fn(coeffs1)
   coeffs1_optimize.append((0,) + (optimizer.params_fn(opt_state),))
@@ -500,8 +499,10 @@ def optimize_protocol_split(coeffs1, coeffs2, r0_init, r0_final, r_cut, init_pos
   plt.savefig("./optimization1.png")
 
   # Optimize second part (coeffs2)
-  batch_grad_fn2= lambda batch_size: estimate_gradient_rev_split(batch_size,energy_fn, init_position_rev, r0_init, r0_final, r_cut, Neq, shift, simulation_steps,step_cut, dt, temperature,
-                                     mass, gamma, beta)
+  batch_grad_fn2= lambda batch_size: estimate_gradient_rev_split(batch_size,
+                          simulate_fn_no_trap, energy_fn,
+                          r0_init, r0_final, r_cut,step_cut,
+                          simulation_steps,beta)
   init_coeffs = coeffs2
   coeffs_leave = coeffs1_final
 
