@@ -408,8 +408,8 @@ def single_estimate_rev_split(simulate_fn_no_trap, r0_init, r0_final, r_cut,step
   return _single_estimate
 
 def estimate_gradient_rev_split(batch_size,
-                          simulate_fn_no_trap,,
-                          r0_init, r0_final, r_cut,step_cut,
+                          simulate_fn_no_trap,
+                          r0_init, r0_final, r_cut, step_cut,
                           simulation_steps,beta):
   mapped_estimate = jax.vmap(single_estimate_rev_split(simulate_fn_no_trap, r0_init, r0_final, r_cut,step_cut,
                         simulation_steps, beta), [None,None, 0])
