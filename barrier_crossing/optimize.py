@@ -387,11 +387,8 @@ def estimate_gradient_acc_rev_trunc(error_samples,batch_size,
     return grad_total, (gradient_estimator_total, summary_total)
   return _estimate_grad
 
-def single_estimate_rev_split(energy_fn,
-                        init_position, r0_init, r0_final, r_cut,
-                        Neq, shift,
-                        simulation_steps,step_cut, dt,
-                        temperature, mass, gamma, beta):
+def single_estimate_rev_split(simulate_fn_no_trap, r0_init, r0_final, r_cut,step_cut,
+                        simulation_steps, beta):
   """
   New gradient for the optimization that splits the original 
   trap functions into two parts. 
@@ -401,8 +398,7 @@ def single_estimate_rev_split(energy_fn,
     trap_leave = make_trap_fxn_rev(jnp.arange(step_cut), coeffs_leave, r0_init, r_cut)
     trap_opt = make_trap_fxn_rev(jnp.arange(simulation_steps - step_cut), coeffs_for_opt, r_cut, r0_final)
     trap_fn = trap_sum_rev(jnp.arange(simulation_steps),simulation_steps, step_cut,trap_leave, trap_opt)
-    positions, log_probs, works = simulate_brownian_harmonic(energy_fn, init_position, trap_fn, 
-                                                             simulation_steps, Neq, shift, seed, dt, temperature, mass, gamma)
+    positions, log_probs, works = simulate_fn_no_trap(trap_fn, seed)
     total_work = works.sum()
     tot_log_prob = log_probs.sum()
     summary = (positions, tot_log_prob, jnp.exp(beta*total_work))
@@ -412,18 +408,26 @@ def single_estimate_rev_split(energy_fn,
   return _single_estimate
 
 def estimate_gradient_rev_split(batch_size,
-                          energy_fn,
-                          init_position, r0_init, r0_final, r_cut,
-                          Neq, shift,
-                          simulation_steps,step_cut, dt,
-                          temperature, mass, gamma, beta):
-  mapped_estimate = jax.vmap(single_estimate_rev_split(energy_fn, init_position, r0_init, r0_final,r_cut, Neq, shift, simulation_steps, step_cut, dt, temperature, mass, gamma, beta), [None,None, 0])  
+                          simulate_fn_no_trap,,
+                          r0_init, r0_final, r_cut,step_cut,
+                          simulation_steps,beta):
+  mapped_estimate = jax.vmap(single_estimate_rev_split(simulate_fn_no_trap, r0_init, r0_final, r_cut,step_cut,
+                        simulation_steps, beta), [None,None, 0])
   #@jax.jit
   def _estimate_gradient(coeffs_for_opt,coeffs_leave, seed):
     seeds = jax.random.split(seed, batch_size)
     (gradient_estimator, summary), grad = mapped_estimate(coeffs_for_opt,coeffs_leave, seeds)
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
+
+def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
+  stddev = jnp.std(x, axis)
+  mn = jnp.mean(x, axis)
+  xs = jnp.arange(mn.shape[0]) * dt
+
+  ax.fill_between(xs,
+                  mn + n * stddev, mn - n * stddev, alpha=.3)
+  ax.plot(xs, mn, label=label)
 
 def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   stddev = jnp.std(x, axis)
@@ -450,7 +454,7 @@ def optimize_protocol_split(simulate_fn_no_trap,coeffs1, coeffs2, r0_init, r0_fi
   
   # Optimize first part (coeffs1)
   
-  batch_grad_fn1= lambda batch_size: estimate_gradient_rev(batch_size, simulate_fn_no_trap, energy_fn, r0_init, r_cut,simulation_steps,beta)
+  batch_grad_fn1= lambda batch_size: estimate_gradient_rev(batch_size, simulate_fn_no_trap, r0_init, r_cut,simulation_steps,beta)
   losses1 = []
   coeffs1_optimize = []
   init_state1 = optimizer.init_fn(coeffs1)
@@ -500,7 +504,7 @@ def optimize_protocol_split(simulate_fn_no_trap,coeffs1, coeffs2, r0_init, r0_fi
 
   # Optimize second part (coeffs2)
   batch_grad_fn2= lambda batch_size: estimate_gradient_rev_split(batch_size,
-                          simulate_fn_no_trap, energy_fn,
+                          simulate_fn_no_trap,
                           r0_init, r0_final, r_cut,step_cut,
                           simulation_steps,beta)
   init_coeffs = coeffs2
