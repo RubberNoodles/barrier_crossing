@@ -72,7 +72,7 @@ def brownian(energy_or_force,
 
   force_fn = quantity.canonicalize_force(energy_or_force)
 
-  dt, gamma = util.static_cast(dt, gamma)
+  #dt, gamma = util.static_cast(dt, gamma)
 
   T_schedule = interpolate.canonicalize(T_schedule)
 
