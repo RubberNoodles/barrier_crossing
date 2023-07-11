@@ -22,16 +22,21 @@ def simulate_brownian_harmonic(energy_fn,
                                key,
                                dt=1e-5,
                                temperature=1e-5, mass=1.0, gamma=1.0):
-  """Simulation of Brownian particle being dragged by a moving harmonic trap. Previously called run_brownian_opt
+  """Simulation of Brownian particle being dragged by a moving harmonic trap. First equilibrate
+  system with Neq simulation steps, pull particle over energy landscape.
+  
   Args:
-    energy_fn: the function that governs particle energy. Here, an external harmonic potential
-    r0_init: initial position of the trap, for which equilibration is done
+    energy_fn: the function that governs particle energy.
+    init_position: [[f32]], initial position of the particle
+    trap_fn: Protocol for harmonic trap
+    simulation_steps: total # simulation steps
     Neq: number of equilibration steps
     shift: shift_fn governing the Brownian simulation
     key: random key
-    num_steps: total # simulation steps
     dt: integration time step 
-    temperature: simulation temperature kT
+    temperature: simulation temperature in kT
+    mass: mass of particle in g
+    gamma: friction coefficient
 
   Returns:
     positions: particle positions (trajectory) for each simulation step.
@@ -81,16 +86,22 @@ def simulate_langevin_harmonic(energy_fn,
                                key,
                                dt=1e-5,
                                temperature=1e-5, mass=1.0, gamma=1.0):
-  """Simulation of LANGEVIN particle being dragged by a moving harmonic trap.
+  """Simulation of LANGEVIN particle being dragged by a moving harmonic trap. Use 
+  nvt_langevin from JAX-MD. This is equivalent to the brownian simulator, except
+  it includes inertia.
+  
   Args:
-    energy_fn: the function that governs particle energy. Here, an external harmonic potential
-    r0_init: initial position of the trap, for which equilibration is done
+   energy_fn: the function that governs particle energy.
+    init_position: [[f32]], initial position of the particle
+    trap_fn: Protocol for harmonic trap
+    simulation_steps: total # simulation steps
     Neq: number of equilibration steps
-    shift: shift_fn governing the LANGEVIN simulation
+    shift: shift_fn governing the Brownian simulation
     key: random key
-    num_steps: total # simulation steps
-    dt: integration time step
-    temperature: simulation temperature kT
+    dt: integration time step 
+    temperature: simulation temperature in kT
+    mass: mass of particle in g
+    gamma: friction coefficient
 
   Returns:
     positions: particle positions (trajectory) for each simulation step.
@@ -136,13 +147,13 @@ def batch_simulate_harmonic(batch_size,
                             simulation_steps,
                             key,
                             memory_limit = None): 
-  """Given trap and simulation functions, run code to simulate a brownian particle moved by trap
+  """Given trap and simulation functions, run code to simulate a particle moved by trap
   in JAX optimized batches.
   Args:
     energy_fn: Callable(particle_position, r0) -> float. Gives the energy of a particle at a particular
       position + trap at position r0
     simulate_fn: Callable(Energy_fn, keys)
-      -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
+      -> final ParticleState, (Array[particle_position], Array[log probability], Array[work])
       Function simulating particle moving.
     batch_size: Integer specifying how many different trajectories to simulate.
     key: rng, jax.random.

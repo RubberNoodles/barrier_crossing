@@ -244,17 +244,18 @@ def optimize_landscape(
                       k_s,
                       beta,
                       savefig_losses = False):
-  """Iteratively reconstruct a black box energy landscape from simulated trajectories. Optimize a protocol
+  """Iteratively reconstruct a de novo energy landscape from simulated trajectories. Optimize a protocol
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
   to create a protocol that will allow for more accurate reconstructions.
+  
   Args:
     simulate_fn: Callable(trap_schedule) -> Callable(keys) 
       -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
-        Function that simulates moving the particle along the given trap_schedule given a specified
+        Function that simulates moving the particle along the given trap_schedule given a de novo
       energy function.
     init_trap_fn: Callable(time_step) -> trap_position. Forward trap.
     grad_fn_no_E: Callable(batch_size, energy_fn) -> Callable(coeffs, seed, *args)
-        Function that allows input of arbitrary energy, function. Intended to be used as follows
+        Function that takes input of arbitrary energy function. Intended to be used as follows
       ``grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)``
     key: rng
     max_iter: Integer specifying number of iterations of reconstruction.

@@ -45,6 +45,14 @@ def estimate_gradient_work(batch_size,
                           r0_init, r0_final,
                           simulation_steps):
   """Compute the total gradient with forward trajectories and loss based on work used.
+  
+    Args:
+      batch_size: Number of trajectories to simulate simultaneously.
+      simulate_fn: Callable (trap_fn, keys) -> positions, log_probs, works.
+        Simulator function governing particle dynamics.
+      r0_init: float describing where trap begins
+      r0_final float describing where trap ends
+      simulation_steps: number of steps to run simulation for.
     Returns:
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
@@ -79,10 +87,16 @@ def estimate_gradient_rev(batch_size,
                           r0_init, r0_final, simulation_steps, 
                           beta):
   """
-  TODO: update docstring.
-
   Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). 
   Compute the total gradient with forward trajectories and loss based on work used.
+    Args:
+      batch_size: Number of trajectories to simulate simultaneously.
+      simulate_fn: Callable (trap_fn, keys) -> positions, log_probs, works.
+        Simulator function governing particle dynamics.
+      r0_init: float describing where trap begins
+      r0_final float describing where trap ends
+      simulation_steps: number of steps to run simulation for.
+      beta: float describing inverse of temperature in kT^-1
     Returns:
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
@@ -220,7 +234,13 @@ def optimize_protocol(init_coeffs, batch_grad_fn, optimizer, batch_size, num_ste
     the coefficients of the Chebyshev polynomials. 
       Currently used for Engel's work reduction (forward) and Geiger & Dellago 2010 Part IV. D. (reverse)
     
-    # TODO: describe other self-explanatory args
+  Args:
+    init_coeffs: Array[] containing oefficients optimization begins with.
+    batch_grad_fn: Callable function which takes coefficients and keys and outputs next gradient descent step
+    optimizer: JAX class with in-built functionality to update parameters
+    batch_size: Number of simulations to perform simultaneously.
+    num_steps: int describing number of optimization steps (epochs).
+    
   Returns:
     ``coeffs``: List of tuples of (``optimization_step``, ``protocol coefficients``)
     ``summaries``: List of outputs from batch_harmonic_simulator. Currently empty due to RAM constraints
@@ -419,15 +439,6 @@ def estimate_gradient_rev_split(batch_size,
     (gradient_estimator, summary), grad = mapped_estimate(coeffs_for_opt,coeffs_leave, seeds)
     return jnp.mean(grad, axis=0), (gradient_estimator, summary)
   return _estimate_gradient
-
-def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
-  stddev = jnp.std(x, axis)
-  mn = jnp.mean(x, axis)
-  xs = jnp.arange(mn.shape[0]) * dt
-
-  ax.fill_between(xs,
-                  mn + n * stddev, mn - n * stddev, alpha=.3)
-  ax.plot(xs, mn, label=label)
 
 def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   stddev = jnp.std(x, axis)

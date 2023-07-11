@@ -54,14 +54,12 @@ def brownian(energy_or_force,
     energy_or_force: A function that produces either an energy or a force from
       a set of particle positions specified as an ndarray of shape
       [n, spatial_dimension].
-    shift_fn: A function that displaces positions, R, by an amount dR. Both R
+    shift: A function that displaces positions, R, by an amount dR. Both R
       and dR should be ndarrays of shape [n, spatial_dimension].
     dt: Floating point number specifying the timescale (step size) of the
       simulation.
     T_schedule: Either a floating point number specifying a constant temperature
       or a function specifying temperature as a function of time.
-    quant: Either a quantity.Energy or a quantity.Force specifying whether
-      energy_or_force is an energy or force respectively.
     gamma: A float specifying the friction coefficient between the particles
       and the solvent.
   Returns:
@@ -118,7 +116,9 @@ probability of a movement occurring as a state variable.
 
 @dataclasses.dataclass
 class NVTLangevinState:
-  """A struct containing state information for the Langevin thermostat.
+  """
+  
+  A struct containing state information for the Langevin thermostat.
 
   Attributes:
     position: The current position of the particles. An ndarray of floats with
@@ -144,11 +144,6 @@ class NVTLangevinState:
   def velocity(self) -> Array:
     return self.momentum / self.mass
 
-  # def set(self, **kwargs):
-  #   for key, value in kwargs.items():
-  #     setattr(self, key, value)
-  #   return self
-
 
 @simulate.dispatch_by_state
 def stochastic_step(state: NVTLangevinState, dt:float, kT: float, gamma: float):
@@ -168,7 +163,9 @@ def nvt_langevin(energy_or_force_fn: Callable[..., Array],
                  gamma: float=0.1,
                  center_velocity: bool=True,
                  **sim_kwargs) -> Simulator:
-  """Simulation in the NVT ensemble using the BAOAB Langevin thermostat.
+  """Forked from JAX-MD
+  
+  Simulation in the NVT ensemble using the BAOAB Langevin thermostat.
 
   Samples from the canonical ensemble in which the number of particles (N),
   the system volume (V), and the temperature (T) are held constant. Langevin
