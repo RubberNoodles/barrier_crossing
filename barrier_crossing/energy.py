@@ -267,7 +267,7 @@ def V_biomolecule_geiger(k_s, epsilon, sigma):
       x = position[0][0]
       #underlying energy landscape:
       # 1/beta * log(e^(-0.5 beta kappa_1 (x + x_m)^2) + )
-      Em = epsilon * ((1 - (x/sigma - 1)**2)**2 + (epsilon/2)*((x/sigma) - 1))
+      Em = epsilon * (1 - (x/sigma - 1)**2)**2 + (epsilon/2)*((x/sigma) - 1)
       #moving harmonic potential:
       Es = k_s/2 * (x-r0) ** 2
       return Em + Es
