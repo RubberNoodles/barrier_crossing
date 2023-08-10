@@ -26,25 +26,40 @@ import matplotlib.pyplot as plt
 from figures.params import * # global variables;
 
 if __name__ == "__main__":
+  kappa_l_list = [ x/(beta_sc*x_m**2) for x in [6.38629, 8., 10., 12., 15., 17., 19., 21.3863]]
+  kappa_l = kappa_l_list[1]
+  kappa_r=kappa_l*10  
+  
+  energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
+  
   
   coeff_files = {
     "Linear Protocol": "linear", 
+    "Optimized Linear": "opt_linear.pkl",
     "Work Optimized Protocol": "work.pkl",
     "Single Error Protocol":  "error.pkl",
+    "Iterative Protocol": "iterative.pkl",
     #"Accumulated Error Protocol": "accumulated.pkl",
     }
   
   coeff_dir = "coeffs/"
   plot_data = {}
   
-  plt.figure(figsize = (8,8))
-  plt.title("S&C Energy Reconstructions")
-  plt.xlabel("Position")
-  plt.ylabel("Energy")
+  fig_rec = plt.figure(figsize = (8,8))
+  fig_pro = plt.figure(figsize = (8,8))
+  ax_reconstruct = fig_rec.add_subplot(1, 1, 1)
+  ax_protocol = fig_pro.add_subplot(1, 1, 1)
+
+  ax_protocol.set_title("Protocols")
+  ax_protocol.set_xlabel("Timestep")
+  ax_protocol.set_ylabel("Position")
+  ax_reconstruct.set_title("S&C Energy Reconstructions")
+  ax_reconstruct.set_xlabel("Position")
+  ax_reconstruct.set_ylabel("Energy")
 
   no_trap_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, 0, beta_sc)
-  time_vec = jnp.linspace(-20,20, 1000)
-  plt.plot(time_vec, jnp.squeeze(no_trap_sivak(time_vec.reshape(1,1,1000))), label = "Original")
+  time_vec = jnp.linspace(-20,15, 1000)
+  ax_reconstruct.plot(time_vec, jnp.squeeze(no_trap_sivak(time_vec.reshape(1,1,1000))), label = "Original")
 
   for trap_name, file_name in coeff_files.items():
     if file_name == "linear":
@@ -58,7 +73,10 @@ if __name__ == "__main__":
         raise
     
     trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeff, r0_init_sc, r0_final_sc)
-
+    
+    time_vec = jnp.arange(simulation_steps_sc-1)
+    ax_protocol.plot(time_vec, trap_fn(time_vec), label = trap_name)
+    
     key = random.PRNGKey(int(time.time()))
     key, split = random.split(key)
 
@@ -76,9 +94,9 @@ if __name__ == "__main__":
 
     simulate_sivak_fwd = lambda keys: simulate_sivak_fwd_grad(trap_fn, keys)
 
-    batch_size_sc_rec = 10
+    batch_size_sc_rec = 1000
     batch_size_grad = 1000
-    bins = 5
+    bins = 100
 
     total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
         batch_size_sc_rec, simulate_sivak_fwd, simulation_steps_sc, key)
@@ -103,8 +121,8 @@ if __name__ == "__main__":
     disc = bc_landscape.landscape_discrepancies(landscape, no_trap_sivak, no_trap_sivak([[0.]]), -10., 10.)
     bias = max(disc)
     
-    max_rec = bc_landscape.find_max(landscape, -5., 5.)
-    difference = no_trap_sivak([[0.]]) - max_rec
+    max_rec = bc_landscape.find_max(landscape, -10., 10.)
+    difference = no_trap_sivak([[bc_landscape.find_max_pos(no_trap_sivak, 5)]]) - max_rec
     energies_aligned = energies + difference
     
     no_trap_rec_fn = bc_energy.V_biomolecule_reconstructed(0, midpoints, energies_aligned)
@@ -146,11 +164,12 @@ if __name__ == "__main__":
         "discrepancy": disc_samples
         }
       }
+    ax_reconstruct.plot(midpoints, energies_aligned, label = trap_name)
     
-
-  plt.plot(midpoints, energies_aligned, label = trap_name)
-  plt.legend()
-  plt.savefig("plotting/reconstructions.png")
+  ax_protocol.legend()
+  ax_reconstruct.legend()
+  fig_rec.savefig("plotting/reconstructions.png")
+  fig_pro.savefig("plotting/protocol.png")
 
   with open("landscape_data.pkl", "wb") as f:
     for trap_name, data in plot_data.items():

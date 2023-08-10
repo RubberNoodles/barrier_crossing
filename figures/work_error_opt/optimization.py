@@ -50,7 +50,7 @@ if __name__ == "__main__":
     shift, 
     keys, 
     dt_sc,
-    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
+    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the system.
     )
 
   simulate_sivak_rev_unf = lambda trap_fn, keys: bc_simulate.simulate_langevin_harmonic(
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     shift, 
     keys, 
     dt_sc,
-    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
+    temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the system.
     )
   
   grad_fwd = lambda num_batches: bc_optimize.estimate_gradient_work(
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
 
   batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 10 # Number of gradient descent steps to take.
+  opt_steps = 1000 # Number of gradient descent steps to take.
   
   lr = jopt.polynomial_decay(1., opt_steps, 0.001)
   optimizer = jopt.adam(lr)

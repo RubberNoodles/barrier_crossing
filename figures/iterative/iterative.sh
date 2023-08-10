@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --gres=gpu:8
-#SBATCH -t 0-16:00          # Runtime in D-HH:MM, minimum of 10 minutes
+#SBATCH --gres=gpu:2
+#SBATCH -t 1-00:00          # Runtime in D-HH:MM, minimum of 10 minutes
 #SBATCH -p seas_gpu       # Partition to submit to
-#SBATCH --mem-per-cpu=16000           # Memory pool for all cores (see also --mem-per-cpu)
+#SBATCH --mem-per-cpu=32000           # Memory pool for all cores (see also --mem-per-cpu)
 #SBATCH -o out_%A_eps_%a.out  # Requires ./log directory
 #SBATCH -e err_%A_eps_%a.err  # File to which STDERR will be written, %j inserts jobid
 #SBATCH --array=1-8
