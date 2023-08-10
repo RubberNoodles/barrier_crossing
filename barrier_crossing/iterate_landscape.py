@@ -107,19 +107,19 @@ def find_max_pos(landscape, barrier_pos):
       max = position
   return max
 
-def find_min_pos(landscape, r0_init, r0_final):
+def find_min_pos(landscape, min_1_guess, min_2_guess):
   """
   Finds the positions of the minima 
   in the reconstructed landscape.
-  Inputs: r0_init and r0_final are expected positions of the wells
+  Inputs: min_1_guess and min_2_guess are expected positions of the wells
   Returns : (position of first well, position of second well)
   """
-  min1 = r0_init
-  min2 = r0_final
-  for position in range(min1-5,min1+5,1):
+  min1 = min_1_guess
+  min2 = min_2_guess
+  for position in jnp.linspace(min_1_guess-3,min_1_guess+3,100):
     if landscape([[position]]) < landscape([[min1]]):
       min1 = position
-  for position2 in range(min2-5, min2+5, 1):
+  for position2 in jnp.linspace(min_2_guess-3, min_2_guess+3, 100):
     if landscape([[position2]]) < landscape([[min2]]):
       min2 = position2
   return (min1, min2)
@@ -229,7 +229,7 @@ def landscape_diff(ls_1, ls_2):
 
 def optimize_landscape(
                       simulate_fn,
-                      init_trap_fn,
+                      init_coeffs,
                       grad_fn_no_E,
                       key,
                       max_iter,
@@ -243,7 +243,7 @@ def optimize_landscape(
                       r0_final,
                       k_s,
                       beta,
-                      savefig_losses = False):
+                      savefig = False):
   """Iteratively reconstruct a de novo energy landscape from simulated trajectories. Optimize a protocol
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
   to create a protocol that will allow for more accurate reconstructions.
@@ -253,7 +253,7 @@ def optimize_landscape(
       -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
         Function that simulates moving the particle along the given trap_schedule given a de novo
       energy function.
-    init_trap_fn: Callable(time_step) -> trap_position. Forward trap.
+    init_coeffs: Array[] Chebyshev coefficients of trap.
     grad_fn_no_E: Callable(batch_size, energy_fn) -> Callable(coeffs, seed, *args)
         Function that takes input of arbitrary energy function. Intended to be used as follows
       ``grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)``
@@ -275,7 +275,7 @@ def optimize_landscape(
   iter_num = 0
   diff = 1e10 # large number
 
-  trap_fn = init_trap_fn
+  trap_fn = make_trap_fxn(jnp.arange(simulation_steps), init_coeffs, r0_init, r0_final)
   
   for iter_num in tqdm.trange(max_iter, position=2, desc="Optimize Landscape: "):
     if new_landscape:
@@ -288,7 +288,7 @@ def optimize_landscape(
     
     logging.info("Creating landscape.")
     new_landscape = energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
-    landscapes.append(new_landscape[1])
+    landscapes.append(new_landscape)
 
     positions, energies = new_landscape
     
@@ -299,10 +299,12 @@ def optimize_landscape(
     # error_samples = find_error_samples(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
     
     grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)
-    lin_trap_coeffs = linear_chebyshev_coefficients(r0_init,r0_final,simulation_steps, degree = 12, y_intercept = r0_init)
-    coeffs_, _, losses = optimize_protocol(lin_trap_coeffs, grad_fxn, optimizer, opt_batch_size, opt_steps)
+   
+    init_trap_coeffs = init_coeffs
+    
+    coeffs_, _, losses = optimize_protocol(init_trap_coeffs, grad_fxn, optimizer, opt_batch_size, opt_steps)
 
-    if savefig_losses:
+    if savefig:
       _, ax = plt.subplots(1, 2, figsize=[24, 12])
 
       #avg_loss = jnp.mean(jnp.array(losses), axis = 0)
@@ -313,12 +315,13 @@ def optimize_landscape(
       ax[0].set_xlabel('Number of Optimization Steps')
       ax[0].set_ylabel('Error')
 
-      trap_fn = make_trap_fxn(jnp.arange(simulation_steps), lin_trap_coeffs, r0_init, r0_final)
+      trap_fn = make_trap_fxn(jnp.arange(simulation_steps), init_trap_coeffs, r0_init, r0_final)
       init_sched = trap_fn(jnp.arange(simulation_steps))
       ax[1].plot(jnp.arange(simulation_steps), init_sched, label='Initial guess')
 
       for i, (_, coeff) in enumerate(coeffs_):
-        if i%10 == 0 and i!=0:
+        print_per = max(1, int(opt_steps/5))
+        if i% print_per == 0 and i!=0:
           trap_fn = make_trap_fxn(jnp.arange(simulation_steps),coeff,r0_init,r0_final)
           full_sched = trap_fn(jnp.arange(simulation_steps))
           ax[1].plot(jnp.arange(simulation_steps), full_sched, '-', label=f'Step {i}')
@@ -331,7 +334,7 @@ def optimize_landscape(
 
       ax[1].legend()#
       ax[1].set_title('Schedule evolution')
-      plt.savefig(f"losses_iter{iter_num}.png")
+      plt.savefig(f"losses_iter{iter_num}_{savefig}.png")
 
     final_coeff = coeffs_[-1][1]
     coeffs.append(final_coeff)
@@ -343,8 +346,16 @@ def optimize_landscape(
       logging.info(f"Difference between prior landscape: {diff:.4f}")
 
     iter_num += 1
+    
+  _, (trajectories, works, log_probs) = batch_simulate_harmonic(reconstruct_batch_size,
+                            simulate_fn(trap_fn),
+                            simulation_steps,
+                            key) 
   
-  positions = new_landscape[0]
-  return landscapes, coeffs, positions
+  logging.info("Creating landscape.")
+  new_landscape = energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
+  landscapes.append(new_landscape)
+  
+  return landscapes, coeffs
     
     
