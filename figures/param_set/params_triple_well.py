@@ -4,10 +4,12 @@ import jax.numpy as jnp
 import barrier_crossing.energy as bc_energy
 
 simulation_steps = p.simulation_steps
+sim_cut_steps = p.sim_cut_steps
 Neq = p.Neq
 dt = p.dt
 r0_init = p.r0_init
 r0_final = p.r0_final
+r0_cut = p.r0_cut
 beta = p.beta
 
 param_set = p.sc_params
@@ -19,3 +21,4 @@ e_energies = jnp.array(pos_e)[:,1] * 2
 
 
 energy_sivak = bc_energy.V_biomolecule_reconstructed(p.k_s, e_positions, e_energies)
+param_set.set_energy_fn(energy_sivak)

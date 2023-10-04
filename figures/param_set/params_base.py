@@ -22,6 +22,7 @@ _, shift = space.free() # Defines how to move a particle by small distances dR.
 # Harmonic Trap Parameters S&C
 r0_init = -10. #nm; initial trap position
 r0_final = 10. #nm; final trap position
+r0_cut = 0. #nm; where to split protocol
 
 # Particle Parameters S&C
 mass = 1e-17 # g
@@ -38,14 +39,14 @@ gamma = 1./(beta*D*mass) #s^(-1)
 # S&C Energy landscape params:
 x_m=10. #nm
 delta_E= 0. #pN nm
-
+kappa_l=6.38629/(beta*x_m**2) # Ebarrier ~ 2,5 kT
+kappa_r=kappa_l #pN/nm; 
 Neq = 500
 
 end_time = 3e-6
-dt = 3e-9
+dt = 1e-9
 simulation_steps = int(end_time / dt)
-kappa_l=6.38629/(beta*x_m**2) # Ebarrier ~ 2,5 kT
-kappa_r=10*kappa_l #pN/nm; 
+sim_cut_steps = simulation_steps // 2
 
 k_s = 0.1 # stiffness; 
 
@@ -57,12 +58,16 @@ sc_params = bc_params.SCParameters( N = N,
                                     init_position_fwd = init_position_fwd,
                                     init_position_rev = init_position_rev,
                                     temperature = temperature,
-                                    beta = temperature,
+                                    beta = beta,
                                     D = D, #(in nm**2/s) 
                                     gamma = gamma,
                                     x_m = x_m,
                                     delta_E = delta_E,
                                     kappa_l = kappa_l,
                                     kappa_r = kappa_r,
+                                    dt = dt,
+                                    end_time = end_time,
+                                    Neq = Neq,
+                                    simulation_steps = simulation_steps
 )
 
