@@ -13,3 +13,5 @@ geiger_output
 *.out
 *.err
 src
+
+losses_iter*
