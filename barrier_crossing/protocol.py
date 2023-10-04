@@ -111,7 +111,7 @@ def make_custom_trap_fxn_rev(time_vec, timestep_trap_position, r0_init, r0_final
     return custom_positions[step]
   return Get_r0 
 
-def trap_sum(timevec, simulation_steps, cut, trap1, trap2): 
+def trap_sum(simulation_steps, cut, trap1, trap2): 
   """
   Make a trap function out of two "pieces" : trap1 and trap2.
   cut is the simulation step at which trap1 ends and trap2 starts.
