@@ -23,6 +23,12 @@ class MDParameters:
   init_position_rev: Array
   k_s: float
   
+  end_time: float
+  dt: float
+  simulation_steps: float
+  
+  Neq: int
+    
   def energy_fn(self, k_s, custom = None):
     # Energy function output to be overridden by subclasses.
     pass
@@ -30,19 +36,22 @@ class MDParameters:
   def set_energy_fn(self, custom):
     self.custom = custom
   
-  def simulate_fn(self, trap_fn, simulation_steps, Neq, key, dt, regime = "langevin", fwd = True, custom = None, **kwargs):
+  def simulate_fn(self, trap_fn, key, regime = "langevin", fwd = True, custom = None, **kwargs):
     init_pos = self.init_position_fwd if fwd else self.init_position_rev
     energy_fn = energy_fn(custom = custom) if custom else self.energy_fn()
+    
+    self.__dict__.update(kwargs)
+    
     
     if regime.strip().lower() == "langevin":
       return bc_simulate.simulate_langevin_harmonic( energy_fn,
                                                      init_pos,
                                                      trap_fn,
-                                                     simulation_steps,
-                                                     Neq,
+                                                     self.simulation_steps,
+                                                     self.Neq,
                                                      self.shift,
                                                      key,
-                                                     dt,
+                                                     self.dt,
                                                      self.temperature,
                                                      self.mass,
                                                      self.gamma
@@ -52,11 +61,11 @@ class MDParameters:
       return bc_simulate.simulate_brownian_harmonic( energy_fn,
                                                      init_pos,
                                                      trap_fn,
-                                                     simulation_steps,
-                                                     Neq,
+                                                     self.simulation_steps,
+                                                     self.Neq,
                                                      self.shift,
                                                      key,
-                                                     dt,
+                                                     self.dt,
                                                      self.temperature,
                                                      self.mass,
                                                      self.gamma
