@@ -258,133 +258,134 @@ def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
                   mn + n * stddev, mn - n * stddev, alpha=.3)
   ax.plot(xs, mn, label=label)
 
-def optimize_protocol_split(simulate_fn_no_trap,coeffs1, coeffs2, r0_init, r0_final, r_cut, init_position_rev,
-                            step_cut, optimizer, batch_size, opt_steps, energy_fn, Neq,
-                            shift, dt, temperature,mass, gamma, beta,simulation_steps, save_path = None):
+def optimize_protocol_split(simulate_fn_no_trap,first_coeff, second_coeff, r0_init, r0_final, r_cut,
+                            step_cut, optimizer, batch_size, opt_steps, beta, simulation_steps, file_path = ""):
   """
   New version of a training loop to optimize the chebyshev polynomial that defines the 
   protocol of moving a harmonic trap over a free energy landscape. Two sets of coefficients 
   that define part of the protocol before r_cut and after r_cut are optimized to minimize
   the Jarzynski error at extensions equal to r_cut and r0_final. 
-  Outputs coeffs1_optimized, coeffs2_optimized and plots the two optimizations.
+  
+  Args:
+    simulation_fn_no_trap: Callable(simulation_steps) -> Callable(trap_fn, keys) -> 
+  Outputs first_coeff_optimized, second_coeff_optimized and plots the two optimizations.
 
   """
   key = jax.random.PRNGKey(int(time.time()))
   key, split = jax.random.split(key, 2)
   
-  # Optimize first part (coeffs1)
+  # Optimize first part (first_coeff)
   
-  batch_grad_fn1= lambda batch_size: estimate_gradient_rev(batch_size, simulate_fn_no_trap, r0_init, r_cut,simulation_steps,beta)
-  losses1 = []
-  coeffs1_optimize = []
-  init_state1 = optimizer.init_fn(coeffs1)
-  opt_state = optimizer.init_fn(coeffs1)
-  coeffs1_optimize.append((0,) + (optimizer.params_fn(opt_state),))
+  batch_grad_fn_1= lambda batch_size: estimate_gradient_rev(batch_size, simulate_fn_no_trap(step_cut), r0_init, r_cut, step_cut,beta)
+  first_losses = []
+  first_coeff_optimize = []
+  init_state = optimizer.init_fn(first_coeff)
+  opt_state = optimizer.init_fn(first_coeff)
+  first_coeff_optimize.append((0,) + (optimizer.params_fn(opt_state),))
 
-  grad_fn = batch_grad_fn1(batch_size)
-  opt_coeffs = []
+  grad_fn = batch_grad_fn_1(batch_size)
+  
   for j in tqdm.trange(opt_steps,position=1, desc="Optimize Protocol: ", leave = True):
     key, split = jax.random.split(key)
     grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state), split)
     opt_state = optimizer.update_fn(j, grad, opt_state)
-    losses1.append(summary[2])
-    coeffs1_optimize.append((j,) + (optimizer.params_fn(opt_state),))
-    logging.info("init parameters 1 : ", optimizer.params_fn(init_state1))
+    first_losses.append(summary[2])
+    first_coeff_optimize.append((j,) + (optimizer.params_fn(opt_state),))
+    logging.info("init parameters 1 : ", optimizer.params_fn(init_state))
     logging.info("final parameters 1 : ", optimizer.params_fn(opt_state))
 
-  losses1 = jax.tree_map(lambda *args: jnp.stack(args), *losses1)
-  coeffs1_final = coeffs1_optimize[-1][1]
+  first_losses = jax.tree_map(lambda *args: jnp.stack(args), *first_losses)
+  first_coeff_opt = first_coeff_optimize[-1][1]
   
   # Plot optimization results 
   _, ax = plt.subplots(1, 2, figsize=[24, 12])
 
-  plot_with_stddev(losses1.T, ax=ax[0])
+  plot_with_stddev(first_losses.T, ax=ax[0])
   ax[0].set_title('Optimization Part 1')
   ax[0].set_xlabel('Number of Optimization Steps')
   ax[0].set_ylabel('Loss')
 
-  trap_init = make_trap_fxn(jnp.arange(step_cut), coeffs1, r0_init,
+  trap_init = make_trap_fxn(jnp.arange(step_cut), first_coeff, r0_init,
                                      r_cut)
   ax[1].plot(jnp.arange(step_cut), trap_init(jnp.arange(step_cut)), label='Initial Guess')
 
-  for j, coeff in coeffs1_optimize:
+  for j, coeff in first_coeff_optimize:
     if j%50 == 0 and j!=0:  
       trap_fn = make_trap_fxn(jnp.arange(step_cut),coeff,r0_init,r_cut)
       full_sched = trap_fn(jnp.arange(step_cut))
       ax[1].plot(jnp.arange(step_cut), full_sched, '-', label=f'Step {j}')
 
-  trap_fn = make_trap_fxn(jnp.arange(step_cut), coeffs1_optimize[-1][1],r0_init,r_cut)
+  trap_fn = make_trap_fxn(jnp.arange(step_cut), first_coeff_optimize[-1][1],r0_init,r_cut)
   full_sched = trap_fn(jnp.arange(step_cut))
   ax[1].plot(jnp.arange(step_cut), full_sched, '-', label=f'Final')
   ax[1].set_title('Schedule evolution')
 
   ax[0].legend()
   ax[1].legend()
-  plt.savefig("./optimization1.png")
-
-  # Optimize second part (coeffs2)
-  batch_grad_fn2= lambda batch_size: estimate_gradient_rev_split(batch_size,
-                          simulate_fn_no_trap,
+  plt.savefig(file_path + "optimization_split_1.png")
+  # Optimize second part (second_coeff)
+  batch_grad_fn_2= lambda batch_size: estimate_gradient_rev_split(batch_size,
+                          simulate_fn_no_trap(simulation_steps),
                           r0_init, r0_final, r_cut,step_cut,
                           simulation_steps,beta)
-  init_coeffs = coeffs2
-  coeffs_leave = coeffs1_final
+  init_coeffs = second_coeff
+  coeffs_leave = first_coeff_opt
 
-  summaries2 = []
-  coeffs2_optimize = []
-  losses2 = []
+
+  second_coeff_optimize = []
+  second_losses = []
   
   key = jax.random.PRNGKey(int(time.time()))
   key, split = jax.random.split(key, 2)
   
   init_state = optimizer.init_fn(init_coeffs)
   opt_state = optimizer.init_fn(init_coeffs)
-  coeffs2_optimize.append((0,) + (optimizer.params_fn(opt_state),))
+  second_coeff_optimize.append((0,) + (optimizer.params_fn(opt_state),))
 
-  grad_fn = batch_grad_fn2(batch_size)
+  grad_fn = batch_grad_fn_2(batch_size)
   for j in tqdm.trange(opt_steps,position=1, desc="Optimize Protocol: ", leave = True):
     key, split = jax.random.split(key)
     grad, (_, summary) = grad_fn(optimizer.params_fn(opt_state),coeffs_leave, split)
 
     opt_state = optimizer.update_fn(j, grad, opt_state)
-    losses2.append(summary[2])
+    second_losses.append(summary[2])
       
-    coeffs2_optimize.append((j,) + (optimizer.params_fn(opt_state),))
+    second_coeff_optimize.append((j,) + (optimizer.params_fn(opt_state),))
 
     logging.info("init parameters 2 : ", optimizer.params_fn(init_state))
     logging.info("final parameters 2 : ", optimizer.params_fn(opt_state))
 
-  losses2 = jax.tree_map(lambda *args: jnp.stack(args), *losses2)
-  coeffs2_final = coeffs2_optimize[-1][1]
+  second_losses = jax.tree_map(lambda *args: jnp.stack(args), *second_losses)
+  second_coeff_opt = second_coeff_optimize[-1][1]
 
   # Plot Second Optimization Results
   _, ax = plt.subplots(1, 2, figsize=[24, 12])
 
-  plot_with_stddev(losses2.T, ax=ax[0])
+  plot_with_stddev(second_losses.T, ax=ax[0])
   ax[0].set_title('Optimization Part 2')
   ax[0].set_xlabel('Number of Optimization Steps')
   ax[0].set_ylabel('Loss')
 
-  trap_init = make_trap_fxn(jnp.arange(step_cut), coeffs2, r_cut,
+  trap_init = make_trap_fxn(jnp.arange(step_cut), second_coeff, r_cut,
                                      r0_final)
   ax[1].plot(jnp.arange(simulation_steps-step_cut), trap_init(jnp.arange(simulation_steps-step_cut)), label='Initial Guess')
 
-  for j, coeff in coeffs2_optimize:
+  for j, coeff in second_coeff_optimize:
     if j%50 == 0 and j!=0:  
       trap_fn = make_trap_fxn(jnp.arange(simulation_steps - step_cut),coeff,r_cut,r0_final)
       full_sched = trap_fn(jnp.arange(simulation_steps - step_cut))
       ax[1].plot(jnp.arange(simulation_steps - step_cut), full_sched, '-', label=f'Step {j}')
 
-  trap_fn = make_trap_fxn(jnp.arange(simulation_steps - step_cut), coeffs2_optimize[-1][1],r_cut, r0_final)
+  trap_fn = make_trap_fxn(jnp.arange(simulation_steps - step_cut), second_coeff_optimize[-1][1],r_cut, r0_final)
   full_sched = trap_fn(jnp.arange(simulation_steps - step_cut))
   ax[1].plot(jnp.arange(simulation_steps-step_cut), full_sched, '-', label=f'Final')
   ax[1].set_title('Schedule evolution')
 
   ax[0].legend()
   ax[1].legend()
-  plt.savefig("./optimization2.png")
+  plt.savefig(file_path + "optimization_split_2.png")
 
-  return coeffs1_final, coeffs2_final
+  return first_coeff_opt, second_coeff_opt
 
 
 @deprecation.deprecated(deprecated_in="0.1.7.0",
