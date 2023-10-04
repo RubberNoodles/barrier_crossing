@@ -1,3 +1,5 @@
+## Legacy code to plot protocols against each other. This code is now in reconstructions.py
+
 import pickle
 import jax.numpy as jnp
 

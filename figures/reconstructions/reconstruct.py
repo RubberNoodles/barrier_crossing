@@ -1,8 +1,11 @@
 # Given coefficients (pickled); reconstruct and determine
-# reconstructions statistics.
+# forward simulation and reconstructions statistics.
 import time
 import tqdm
 import pickle
+import sys
+import os
+import importlib
 
 import barrier_crossing.energy as bc_energy
 import barrier_crossing.protocol as bc_protocol
@@ -23,47 +26,56 @@ from jax_md import space
 
 import matplotlib.pyplot as plt
 
-from figures.params import * # global variables;
+# from figures.params import * # global variables;
 
 if __name__ == "__main__":
-  kappa_l_list = [ x/(beta_sc*x_m**2) for x in [6.38629, 8., 10., 12., 15., 17., 19., 21.3863]]
-  kappa_l = kappa_l_list[1]
-  kappa_r=kappa_l*10  
+  landscape_name = str(sys.argv[1])
+  landscape_path = landscape_name.replace(" ", "_").replace(".", "_").lower()
+  param_name = str(sys.argv[2])
+  p = importlib.import_module(f"figures.param_set.params_{param_name}")
   
-  energy_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s_sc, beta_sc)
-  
+  parent_dir = f"output_data/{landscape_path}/"
+  if not os.path.isdir(parent_dir+"plotting"):
+    os.mkdir(parent_dir + "plotting")
+  coeff_dir = parent_dir + "coeffs/"
   
   coeff_files = {
     "Linear Protocol": "linear", 
-    "Optimized Linear": "opt_linear.pkl",
+    #"Optimized Linear": "opt_linear.pkl",
     "Work Optimized Protocol": "work.pkl",
     "Single Error Protocol":  "error.pkl",
-    "Iterative Protocol": "iterative.pkl",
-    #"Accumulated Error Protocol": "accumulated.pkl",
+    #"Iterative Protocol": "iterative.pkl",
+    "Split Error Protocol": "split.pkl",
+    # "Accumulated Error Protocol": "accumulated.pkl",
+    # "Near Equilibrium Protocol": "near_eq.pkl"
     }
-  
-  coeff_dir = "coeffs/"
+
   plot_data = {}
   
   fig_rec = plt.figure(figsize = (8,8))
   fig_pro = plt.figure(figsize = (8,8))
+  fig_hist = plt.figure(figsize = (8,8))
+  
   ax_reconstruct = fig_rec.add_subplot(1, 1, 1)
   ax_protocol = fig_pro.add_subplot(1, 1, 1)
+  ax_hist = fig_hist.add_subplot(1,1,1)
 
-  ax_protocol.set_title("Protocols")
+  ax_protocol.set_title(f"{landscape_name} Protocols")
   ax_protocol.set_xlabel("Timestep")
   ax_protocol.set_ylabel("Position")
-  ax_reconstruct.set_title("S&C Energy Reconstructions")
+  ax_reconstruct.set_title(f"{landscape_name} Energy Reconstructions")
   ax_reconstruct.set_xlabel("Position")
   ax_reconstruct.set_ylabel("Energy")
+  ax_hist.set_title(f"{landscape_name} Work Dissipated Distribution")
+  ax_hist.set_xlabel("Dissipated Work")
 
-  no_trap_sivak = bc_energy.V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, 0, beta_sc)
+  no_trap_sivak = p.param_set.energy_fn(0.)
   time_vec = jnp.linspace(-20,15, 1000)
   ax_reconstruct.plot(time_vec, jnp.squeeze(no_trap_sivak(time_vec.reshape(1,1,1000))), label = "Original")
 
   for trap_name, file_name in coeff_files.items():
     if file_name == "linear":
-      coeff = bc_protocol.linear_chebyshev_coefficients(r0_init_sc, r0_final_sc, simulation_steps_sc, degree = 12, y_intercept = r0_init_sc)
+      coeff = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.simulation_steps, degree = 12, y_intercept = p.r0_init)
     else:
       try:
         with open(coeff_dir + file_name, "rb") as f:
@@ -72,38 +84,40 @@ if __name__ == "__main__":
         print(f"In order to run this code, you need a file of coefficients called {coeff_dir+file_name}")
         raise
     
-    trap_fn = bc_protocol.make_trap_fxn(jnp.arange(simulation_steps_sc), coeff, r0_init_sc, r0_final_sc)
+    if file_name == "split.pkl":
+      # We are going to only look at gradient values for the second set of coefficients
+      _a = bc_protocol.make_trap_fxn( jnp.arange(p.sim_cut_steps), coeff[0], p.r0_init, p.r0_cut)
+      _b = bc_protocol.make_trap_fxn( jnp.arange(p.simulation_steps - p.sim_cut_steps), coeff[1], p.r0_cut, p.r0_final)
+      trap_fn = bc_protocol.trap_sum(p.simulation_steps, p.sim_cut_steps, _a, _b)
+      
+    else:
+      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), coeff, p.r0_init, p.r0_final)
     
-    time_vec = jnp.arange(simulation_steps_sc-1)
-    ax_protocol.plot(time_vec, trap_fn(time_vec), label = trap_name)
+    time_vec = jnp.arange(p.simulation_steps-1)
+    
     
     key = random.PRNGKey(int(time.time()))
     key, split = random.split(key)
 
-    simulate_sivak_fwd_grad = lambda  trap_fn_arb, keys: bc_simulate.simulate_langevin_harmonic(
-      energy_sivak, 
-      init_position_fwd_sc, 
-      trap_fn_arb,
-      simulation_steps_sc, 
-      Neq, 
-      shift, 
+    simulate_sivak_fwd_grad = lambda  trap_fn_arb, keys: p.param_set.simulate_fn(
+      trap_fn_arb, 
       keys, 
-      dt_sc,
-      temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
-      )
+      regime = "langevin",
+      fwd = True)
 
     simulate_sivak_fwd = lambda keys: simulate_sivak_fwd_grad(trap_fn, keys)
 
     batch_size_sc_rec = 1000
     batch_size_grad = 1000
-    bins = 100
+    bins = 20
 
     total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
-        batch_size_sc_rec, simulate_sivak_fwd, simulation_steps_sc, key)
+        batch_size_sc_rec, simulate_sivak_fwd, p.simulation_steps, key)
     
     # work distribution data
     mean_work = batch_works.mean()
     tail = total_work.mean() - total_work.min()
+    w_diss = jnp.cumsum(batch_works, axis = -1)[:, -1] - p.param_set.delta_E
 
     # reconstructions stats
     midpoints, energies = bc_landscape.energy_reconstruction(
@@ -111,10 +125,10 @@ if __name__ == "__main__":
         batch_trajectories, 
         bins, 
         trap_fn, 
-        simulation_steps_sc, 
+        p.simulation_steps, 
         batch_size_sc_rec, 
-        k_s_sc, 
-        beta_sc)
+        p.param_set.k_s, 
+        p.beta)
   
     landscape = (midpoints, energies)
     
@@ -135,15 +149,30 @@ if __name__ == "__main__":
     bias_samples = disc_samples.max()
 
     # loss values 
-    grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev(
-      num_batches,
-      simulate_sivak_fwd_grad,
-      r0_init_sc,
-      r0_final_sc,
-      simulation_steps_sc,
-      beta_sc)
+    print(coeff)
+    if file_name == "split.pkl":
+      grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev_split(
+        num_batches,
+        simulate_sivak_fwd_grad,
+        p.r0_init,
+        p.r0_final,
+        p.r0_cut,
+        p.sim_cut_steps,
+        p.simulation_steps,
+        p.beta)
+      grad, (_, summary) = grad_rev(batch_size_grad)(*coeff, split)
       
-    grad, (_, summary) = grad_rev(batch_size_grad)(coeff, split)
+      print(f"Weird coeff?: {coeff}")
+    else:
+      grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev(
+        num_batches,
+        simulate_sivak_fwd_grad,
+        p.r0_init,
+        p.r0_final,
+        p.simulation_steps,
+        p.beta)
+      grad, (_, summary) = grad_rev(batch_size_grad)(coeff, split)
+    
 
     plot_data[trap_name] = {
       "trap": trap_fn,
@@ -164,14 +193,19 @@ if __name__ == "__main__":
         "discrepancy": disc_samples
         }
       }
+    ax_hist.axvline(x = w_diss.mean())
+    ax_hist.hist(w_diss, weights=jnp.ones(len(w_diss)) / len(w_diss), bins = 30, label = trap_name, alpha = 0.7)
+    ax_protocol.plot(time_vec, trap_fn(time_vec), label = trap_name)
     ax_reconstruct.plot(midpoints, energies_aligned, label = trap_name)
     
+  ax_hist.legend()
   ax_protocol.legend()
   ax_reconstruct.legend()
-  fig_rec.savefig("plotting/reconstructions.png")
-  fig_pro.savefig("plotting/protocol.png")
+  fig_hist.savefig(parent_dir + "plotting/work_distribution.png")
+  fig_rec.savefig(parent_dir + "plotting/reconstructions.png")
+  fig_pro.savefig(parent_dir + "plotting/protocol.png")
 
-  with open("landscape_data.pkl", "wb") as f:
+  with open(parent_dir + "/landscape_data.pkl", "wb") as f:
     for trap_name, data in plot_data.items():
         pass # not sure how to do this right now but there is an error    
         # pickle.dump(plot_data, f)
@@ -187,7 +221,7 @@ if __name__ == "__main__":
 
   # Table comparison (+ reconstruction info)
   _, (ax0, ax1) = plt.subplots(1, 2, figsize=[24, 12])
-  step = jnp.arange(simulation_steps_sc)
+  step = jnp.arange(p.simulation_steps)
   for p_name in plot_data:
     data = plot_data[p_name]
     ax0.plot(step, data["trap"](step), label = f'{p_name}')
