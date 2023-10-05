@@ -11,7 +11,7 @@ beta = p.beta
 
 param_set = p.sc_params
 
-param_set.kappa_l = 6.38629/(p.beta* p.x_m**2)
-param_set.kappa_r = 5 * param_set.kappa_l
+param_set.kappa_l = 2.6258/(beta * p.x_m ** 2) #barrier 0.625kT
+param_set.kappa_r = 10 * param_set.kappa_l
 
 energy_sivak = param_set.energy_fn(p.k_s)

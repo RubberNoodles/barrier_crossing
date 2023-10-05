@@ -43,8 +43,8 @@ kappa_l=6.38629/(beta*x_m**2) # Ebarrier ~ 2,5 kT
 kappa_r=kappa_l #pN/nm; 
 Neq = 500
 
-end_time = 3e-6
-dt = 1e-9
+end_time = 1e-5
+dt = 3e-9
 simulation_steps = int(end_time / dt)
 sim_cut_steps = simulation_steps // 2
 
