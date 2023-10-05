@@ -1,7 +1,6 @@
 # Given coefficients (pickled); reconstruct and determine
 # forward simulation and reconstructions statistics.
 import time
-import tqdm
 import pickle
 import sys
 import os
@@ -13,16 +12,9 @@ import barrier_crossing.simulate as bc_simulate
 import barrier_crossing.optimize as bc_optimize
 import barrier_crossing.iterate_landscape as bc_landscape
 
-import jax
-
 import jax.numpy as jnp
-import numpy as onp
-
 import jax.random as random
-
 import jax.example_libraries.optimizers as jopt
-
-from jax_md import space
 
 import matplotlib.pyplot as plt
 
@@ -108,8 +100,8 @@ if __name__ == "__main__":
     simulate_sivak_fwd = lambda keys: simulate_sivak_fwd_grad(trap_fn, keys)
 
     batch_size_sc_rec = 1000
-    batch_size_grad = 1000
-    bins = 20
+    batch_size_grad = 2000
+    bins = 70
 
     total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
         batch_size_sc_rec, simulate_sivak_fwd, p.simulation_steps, key)
@@ -149,7 +141,6 @@ if __name__ == "__main__":
     bias_samples = disc_samples.max()
 
     # loss values 
-    print(coeff)
     if file_name == "split.pkl":
       grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev_split(
         num_batches,
@@ -211,7 +202,7 @@ if __name__ == "__main__":
         # pickle.dump(plot_data, f)
         # AttributeError: Can't pickle local object 'make_trap_fxn.<locals>.Get_r0'
         # plot_data[trap_name]["trap"] = 
-    pickle.dump(plot_data, f)
+    #pickle.dump(plot_data, f)
 
 
 
