@@ -242,7 +242,7 @@ def estimate_gradient_rev_split(batch_size,
                           simulation_steps,beta):
   mapped_estimate = jax.vmap(single_estimate_rev_split(simulate_fn_no_trap, r0_init, r0_final, r_cut,step_cut,
                         simulation_steps, beta), [None,None, 0])
-  #@jax.jit
+  @jax.jit
   def _estimate_gradient(coeffs_for_opt,coeffs_leave, seed):
     seeds = jax.random.split(seed, batch_size)
     (gradient_estimator, summary), grad = mapped_estimate(coeffs_for_opt,coeffs_leave, seeds)
