@@ -84,11 +84,11 @@ if __name__ == "__main__":
   lr = jopt.exponential_decay(0.3, opt_steps, 0.03)
   optimizer = jopt.adam(lr)
 
-  simulate_langevin_notrap_rev = lambda trap_fn, keys: bc_simulate.simulate_langevin_harmonic(
+  simulate_langevin_notrap_rev = lambda steps: lambda trap_fn, keys: bc_simulate.simulate_langevin_harmonic(
     energy_sivak,
     init_position_rev_sc,
     trap_fn,
-    simulation_steps_sc,
+    steps,
     Neq,
     shift,
     keys,
@@ -96,12 +96,12 @@ if __name__ == "__main__":
     temperature_sc, mass_sc, gamma_sc # These parameters describe the state of the brownian system.
     )
   
-  coeffs1_optimized, coeffs2_optimized = bc_optimize.optimize_protocol_split(simulate_langevin_notrap_rev,coeffs1, coeffs2, r0_init_sc, r0_final_sc, r_cut, init_position_rev_sc,
-                            step_cut, optimizer, batch_size, opt_steps, energy_sivak, Neq,
-                            shift, dt_sc, temperature_sc,mass_sc, gamma_sc, beta_sc,simulation_steps_sc, save_path = None)
+  coeffs1_optimized, coeffs2_optimized = bc_optimize.optimize_protocol_split(simulate_langevin_notrap_rev,coeffs1, coeffs2, r0_init_sc, r0_final_sc, r_cut,
+                            step_cut, optimizer, batch_size, opt_steps, beta_sc, simulation_steps_sc, file_path = "")
 
-  with open('testing/langevin/coeffs1_split_optimized_cut1000_dE3_ks04.txt', 'w') as f:
-    f.write(str(coeffs1_optimized))
+  print(coeffs1_optimized)
+  # with open('testing/langevin/coeffs1_split_optimized_cut1000_dE3_ks04.txt', 'w') as f:
+  #   f.write(str(coeffs1_optimized))
 
-  with open('testing/langevin/coeffs2_split_optimized_cut1000_dE3_ks04.txt', 'w') as f:
-    f.write(str(coeffs2_optimized))
+  # with open('testing/langevin/coeffs2_split_optimized_cut1000_dE3_ks04.txt', 'w') as f:
+  #   f.write(str(coeffs2_optimized))

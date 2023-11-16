@@ -1,23 +1,14 @@
 
 import time
-import tqdm
-import pickle
-
-import jax
 
 import jax.numpy as jnp
-import numpy as onp
-
 import jax.random as random
-
-import jax.example_libraries.optimizers as jopt
 
 from jax_md import space
 
 import barrier_crossing.energy as bc_energy
 import barrier_crossing.protocol as bc_protocol
 import barrier_crossing.simulate as bc_simulate
-import barrier_crossing.optimize as bc_optimize
 import barrier_crossing.iterate_landscape as bc_landscape
 
 import matplotlib.pyplot as plt
@@ -168,7 +159,7 @@ simulate_sivak_fn_fwd = lambda energy_fn, keys: bc_simulate.simulate_langevin_ha
     )
 
 total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
-    2000, simulate_sivak_fn_fwd, simulation_steps_sc, key)
+    2000, simulate_sivak_fn_fwd, key)
 
 midpoints_lin, energies_lin = bc_landscape.energy_reconstruction(batch_works, batch_trajectories, 100, trap_fn_fwd_sc, simulation_steps_sc, 2000, k_s_sc, beta_sc)
 energy_sivak = bc_energy.V_biomolecule_reconstructed(k_s_sc, jnp.array(midpoints_lin), jnp.array(energies_lin)) # reconstructed 

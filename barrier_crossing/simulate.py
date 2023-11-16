@@ -1,17 +1,10 @@
-import time
-import sys
 
 import matplotlib.pyplot as plt
 
 import jax
 import jax.numpy as jnp
 
-from jax import random 
-
-from jax_md import quantity, space
-
-from barrier_crossing.energy import V_biomolecule_geiger, V_simple_spring, brownian, nvt_langevin
-from barrier_crossing.protocol import linear_chebyshev_coefficients, make_trap_fxn, make_trap_fxn_rev
+from barrier_crossing.energy import brownian, nvt_langevin
 
 def simulate_brownian_harmonic(energy_fn,
                                init_position,
@@ -144,7 +137,6 @@ def simulate_langevin_harmonic(energy_fn,
 
 def batch_simulate_harmonic(batch_size,
                             simulate_fn,
-                            simulation_steps,
                             key,
                             memory_limit = None): 
   """Given trap and simulation functions, run code to simulate a particle moved by trap
@@ -157,7 +149,7 @@ def batch_simulate_harmonic(batch_size,
       Function simulating particle moving.
     batch_size: Integer specifying how many different trajectories to simulate.
     key: rng, jax.random.
-    simulation_steps: Integer specifying number of steps to run the simulation for.
+    memory_limit: WIP
   Returns:
     Array[], Tuple(Array[Array[]], Array[Array[]], Array[])
 
