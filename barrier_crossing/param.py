@@ -1,4 +1,5 @@
 ### Create datastructures to collect molecular dynamics simulation parameters
+### for different simulation regimes
 
 from jax_md import space, util
 
@@ -38,7 +39,7 @@ class MDParameters:
   
   def simulate_fn(self, trap_fn, key, regime = "langevin", fwd = True, custom = None, **kwargs):
     init_pos = self.init_position_fwd if fwd else self.init_position_rev
-    energy_fn = energy_fn(custom = custom) if custom else self.energy_fn()
+    energy_fn = custom if custom else self.energy_fn() # Primarily for plotting/iterative procedure
     
     self.__dict__.update(kwargs)
     
