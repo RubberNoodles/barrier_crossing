@@ -1,22 +1,16 @@
 import copy
-import time
 import logging
 import tqdm
 
 import matplotlib.pyplot as plt
 
 import jax.numpy as jnp
-import jax.random as random
 import jax
 
-import jax.example_libraries.optimizers as jopt
-
-from jax_md import space
-
-from barrier_crossing.energy import V_biomolecule_geiger, V_biomolecule_reconstructed
-from barrier_crossing.protocol import make_trap_fxn, make_trap_fxn_rev, linear_chebyshev_coefficients
-from barrier_crossing.simulate import simulate_brownian_harmonic, batch_simulate_harmonic
-from barrier_crossing.optimize import estimate_gradient_work, optimize_protocol, find_error_samples
+from barrier_crossing.energy import V_biomolecule_reconstructed
+from barrier_crossing.protocol import make_trap_fxn
+from barrier_crossing.simulate import batch_simulate_harmonic
+from barrier_crossing.optimize import optimize_protocol
 
 def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   stddev = jnp.std(x, axis)
@@ -281,9 +275,8 @@ def optimize_landscape(
     if new_landscape:
       old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1])) # TODO
 
-    _, (trajectories, works, log_probs) = batch_simulate_harmonic(reconstruct_batch_size,
+    _, (trajectories, works, _) = batch_simulate_harmonic(reconstruct_batch_size,
                             simulate_fn(trap_fn),
-                            simulation_steps,
                             key) 
     
     logging.info("Creating landscape.")
@@ -347,9 +340,8 @@ def optimize_landscape(
 
     iter_num += 1
     
-  _, (trajectories, works, log_probs) = batch_simulate_harmonic(reconstruct_batch_size,
+  _, (trajectories, works, _) = batch_simulate_harmonic(reconstruct_batch_size,
                             simulate_fn(trap_fn),
-                            simulation_steps,
                             key) 
   
   logging.info("Creating landscape.")

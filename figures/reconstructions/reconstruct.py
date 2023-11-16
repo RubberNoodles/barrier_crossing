@@ -61,9 +61,9 @@ if __name__ == "__main__":
   ax_hist.set_title(f"{landscape_name} Work Dissipated Distribution")
   ax_hist.set_xlabel("Dissipated Work")
 
-  no_trap_sivak = p.param_set.energy_fn(0.)
+  no_trap = p.param_set.energy_fn(0.)
   time_vec = jnp.linspace(-20,15, 1000)
-  ax_reconstruct.plot(time_vec, jnp.squeeze(no_trap_sivak(time_vec.reshape(1,1,1000))), label = "Original")
+  ax_reconstruct.plot(time_vec, jnp.squeeze(no_trap(time_vec.reshape(1,1,1000))) - no_trap([[p.r0_init]]), label = "Original")
 
   for trap_name, file_name in coeff_files.items():
     if file_name == "linear":
@@ -91,20 +91,20 @@ if __name__ == "__main__":
     key = random.PRNGKey(int(time.time()))
     key, split = random.split(key)
 
-    simulate_sivak_fwd_grad = lambda  trap_fn_arb, keys: p.param_set.simulate_fn(
+    simulate_fwd_grad = lambda  trap_fn_arb, keys: p.param_set.simulate_fn(
       trap_fn_arb, 
       keys, 
       regime = "langevin",
       fwd = True)
 
-    simulate_sivak_fwd = lambda keys: simulate_sivak_fwd_grad(trap_fn, keys)
+    simulate_fwd = lambda keys: simulate_fwd_grad(trap_fn, keys)
 
     batch_size_sc_rec = 1000
     batch_size_grad = 2000
     bins = 70
 
     total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
-        batch_size_sc_rec, simulate_sivak_fwd, p.simulation_steps, key)
+        batch_size_sc_rec, simulate_fwd, key)
     
     # work distribution data
     mean_work = batch_works.mean()
@@ -124,18 +124,20 @@ if __name__ == "__main__":
   
     landscape = (midpoints, energies)
     
-    disc = bc_landscape.landscape_discrepancies(landscape, no_trap_sivak, no_trap_sivak([[0.]]), -10., 10.)
+    disc = bc_landscape.landscape_discrepancies(landscape, no_trap, no_trap([[0.]]), -10., 10.)
     bias = max(disc)
     
-    max_rec = bc_landscape.find_max(landscape, -10., 10.)
-    difference = no_trap_sivak([[bc_landscape.find_max_pos(no_trap_sivak, 5)]]) - max_rec
-    energies_aligned = energies + difference
+    no_trap_rec_fn = bc_energy.V_biomolecule_reconstructed(0, midpoints, energies)
     
-    no_trap_rec_fn = bc_energy.V_biomolecule_reconstructed(0, midpoints, energies_aligned)
+    first_well_pos, _ = bc_landscape.find_min_pos(no_trap_rec_fn, -10, 10)
+    # max_rec = bc_landscape.find_max(landscape, -10., 10.)
+    
+    difference = difference - no_trap_rec_fn([[first_well_pos]])
+    energies_aligned = energies - difference
     
     # stats at extension values 
     extensions = [-10,-5,0] # temporary
-    disc_samples = bc_landscape.landscape_discrepancies_samples(no_trap_rec_fn, no_trap_sivak, extensions)
+    disc_samples = bc_landscape.landscape_discrepancies_samples(no_trap_rec_fn, no_trap, extensions)
     disc_samples = jnp.array(disc_samples)
     mean_disc_samples = disc_samples.mean()
     bias_samples = disc_samples.max()
@@ -144,7 +146,7 @@ if __name__ == "__main__":
     if file_name == "split.pkl":
       grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev_split(
         num_batches,
-        simulate_sivak_fwd_grad,
+        simulate_fwd_grad,
         p.r0_init,
         p.r0_final,
         p.r0_cut,
@@ -157,7 +159,7 @@ if __name__ == "__main__":
     else:
       grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev(
         num_batches,
-        simulate_sivak_fwd_grad,
+        simulate_fwd_grad,
         p.r0_init,
         p.r0_final,
         p.simulation_steps,
@@ -185,7 +187,7 @@ if __name__ == "__main__":
         }
       }
     ax_hist.axvline(x = w_diss.mean())
-    ax_hist.hist(w_diss, weights=jnp.ones(len(w_diss)) / len(w_diss), bins = 30, label = trap_name, alpha = 0.7)
+    ax_hist.hist(w_diss, weights=jnp.ones(len(w_diss)) / len(w_diss), bins = 50, label = trap_name, alpha = 0.7)
     ax_protocol.plot(time_vec, trap_fn(time_vec), label = trap_name)
     ax_reconstruct.plot(midpoints, energies_aligned, label = trap_name)
     

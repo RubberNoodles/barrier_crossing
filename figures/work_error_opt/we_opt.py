@@ -42,19 +42,19 @@ if __name__ == "__main__":
   coeffs_split_1 = jnp.array(bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_cut, p.sim_cut_steps, degree = 12, y_intercept = -10))
   coeffs_split_2 = jnp.array(bc_protocol.linear_chebyshev_coefficients(p.r0_cut, p.r0_final, p.simulation_steps - p.sim_cut_steps, degree = 12, y_intercept = 0))
   
-  simulate_sivak_fwd_unf = lambda trap_fn, keys: p.param_set.simulate_fn(
+  simulate_fwd_unf = lambda trap_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
     keys, 
     regime = "langevin",
     fwd = True)
   
-  simulate_sivak_rev_unf = lambda trap_fn, keys: p.param_set.simulate_fn(
+  simulate_rev_unf = lambda trap_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
     keys, 
     regime = "langevin",
     fwd = False)
   
-  simulate_sivak_split_unf = lambda simulation_steps: lambda trap_fn, keys: p.param_set.simulate_fn(
+  simulate_split_unf = lambda simulation_steps: lambda trap_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
     keys, 
     regime = "langevin",
@@ -63,23 +63,23 @@ if __name__ == "__main__":
   
   grad_fwd = lambda num_batches: bc_optimize.estimate_gradient_work(
     num_batches,
-    simulate_sivak_fwd_unf,
+    simulate_fwd_unf,
     p.r0_init,
     p.r0_final,
     p.simulation_steps)
   
   grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev(
     num_batches,
-    simulate_sivak_rev_unf,
+    simulate_rev_unf,
     p.r0_init,
     p.r0_final,
     p.simulation_steps,
     p.beta)
 
-  batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
+  batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
   opt_steps = 500 # Number of gradient descent steps to take.
   
-  lr = jopt.polynomial_decay(0.3, opt_steps, 0.001)
+  lr = jopt.polynomial_decay(0.03, opt_steps, 0.001)
   optimizer = jopt.adam(lr)
 
   coeffs_work, summaries_work, losses_work = bc_optimize.optimize_protocol(lin_coeffs, grad_fwd, optimizer, batch_size, opt_steps)
@@ -87,7 +87,7 @@ if __name__ == "__main__":
   coeffs_err, summaries_err, losses_err = bc_optimize.optimize_protocol(lin_coeffs, grad_rev, optimizer, batch_size, opt_steps)
 
   coeffs_split = bc_optimize.optimize_protocol_split(
-    simulate_sivak_split_unf, 
+    simulate_split_unf, 
     coeffs_split_1, 
     coeffs_split_2, 
     p.r0_init, 

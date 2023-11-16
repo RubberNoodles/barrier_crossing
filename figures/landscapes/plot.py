@@ -18,7 +18,10 @@ if __name__ == "__main__":
     p = importlib.import_module(f"figures.param_set.params_{ext}")
 
     length = p.r0_final - p.r0_init
-    interval = (p.r0_init - length/2, p.r0_final + length/2)
+    if ext == "triple_well":
+      interval = (p.r0_init - length/16, p.r0_final + length/16)
+    else:
+      interval = (p.r0_init - length/2, p.r0_final + length/2)
     
     e_fn = p.param_set.energy_fn(0.)
     
@@ -33,5 +36,5 @@ if __name__ == "__main__":
 
   
 
-  plt.legend()
+  fig.legend()
   plt.savefig("landscapes.png", transparent = False)

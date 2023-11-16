@@ -67,13 +67,13 @@ if __name__ == "__main__":
     sim_work_rev = lambda keys: p.param_set.simulate_fn(work_trap, keys, "langevin", fwd = False)
     sim_linear_rev = lambda keys: p.param_set.simulate_fn(linear_trap, keys, "langevin", fwd = False)
     
-    total_er, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_error, p.simulation_steps, key)
-    total_wo, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_work, p.simulation_steps, key)
-    total_li, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_linear, p.simulation_steps, key)
+    total_er, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_error, key)
+    total_wo, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_work, key)
+    total_li, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_linear, key)
     
-    total_rev_er, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_error_rev, p.simulation_steps, key)
-    total_rev_wo, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_work_rev, p.simulation_steps, key)
-    total_rev_li, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_linear_rev, p.simulation_steps, key)
+    total_rev_er, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_error_rev, key)
+    total_rev_wo, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_work_rev, key)
+    total_rev_li, _ = bc_simulate.batch_simulate_harmonic(batch_size, sim_linear_rev, key)
     
     work_err = total_er.mean()
     work_wo = total_wo.mean()
