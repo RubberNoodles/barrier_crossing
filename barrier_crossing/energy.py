@@ -203,14 +203,6 @@ def nvt_langevin(energy_or_force_fn: Callable[..., Array],
   """
   force_fn = quantity.canonicalize_force(energy_or_force_fn)
 
-  # def _dist(state, **kwargs):
-  #   _kT = kwargs.pop('kT', kT)
-  #   nu = f32(1) / (state.mass * gamma)
-  #   F = force_fn(state.position, **kwargs)
-  #   mean =  F * nu * dt
-  #   variance = f32(2) * _kT * dt * nu
-  #   return simulate.Normal(mean, jnp.sqrt(variance))
-
   @jit
   def init_fn(key, R, mass=f32(1.0), **kwargs):
     _kT = kwargs.pop('kT', kT)
@@ -228,7 +220,7 @@ def nvt_langevin(energy_or_force_fn: Callable[..., Array],
     _kT = kwargs.pop('kT', kT)
     dt_2 = _dt / 2
 
-    key, split = random.split(state.rng)
+    #key, split = random.split(state.rng)
 
     state = simulate.momentum_step(state, dt_2)
     state = simulate.position_step(state, shift_fn, dt_2, **kwargs)
