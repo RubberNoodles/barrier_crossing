@@ -12,6 +12,8 @@ logs
 geiger_output
 *.out
 *.err
+*.png
+*.pkl
 src
 
 losses_iter*
