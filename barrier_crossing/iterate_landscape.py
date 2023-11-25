@@ -29,6 +29,8 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
   free-energy landscapes.
   t - time step
   l - bin index (0 <= l < number of bins)
+  
+  # TODO: Write algorithm to compute all bins at the same time (reduce recomputation).
   """
   logging.info("Reconstructing the landscape...")
   traj_min = traj_min = min(trajectories[:,0]) 
