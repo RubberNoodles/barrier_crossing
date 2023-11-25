@@ -1,4 +1,5 @@
-"""Tests for barrier_crossing.energy, defining energy and environments of MD simulations"""
+"""Tests for barrier_crossing.energy, defining energy and environments of MD simulations
+Forked from jax_md testing"""
 
 from barrier_crossing.energy import brownian, nvt_langevin
 
