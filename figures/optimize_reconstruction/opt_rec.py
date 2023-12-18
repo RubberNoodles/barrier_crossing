@@ -120,7 +120,7 @@ simulation_steps_gd = int(end_time_gd / dt_gd)
 
 #end_time_sc = 0.01
 # dt_sc = 2e-8 this might be exceeding floating point precision or something..
-end_time_sc = 3e-6
+end_time_sc = 1e-2
 dt_sc = 1e-8
 simulation_steps_sc = int(end_time_sc / dt_sc)
 
@@ -146,8 +146,9 @@ trap_fn_rev_gd = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_gd), 
 trap_fn_rev_sc = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_sc), lin_coeffs_sc, r0_init_sc, r0_final_sc)
 trap_fn_rev_custom = bc_protocol.make_trap_fxn_rev(jnp.arange(simulation_steps_custom), lin_coeffs_custom, r0_init_custom, r0_final_custom)
 
-simulate_sivak_fn_fwd = lambda energy_fn, keys: bc_simulate.simulate_langevin_harmonic(
-    energy_fn, 
+#simulate_sivak_fn_fwd = lambda keys: bc_simulate.simulate_langevin_harmonic(
+simulate_sivak_fn_fwd = lambda keys: bc_simulate.simulate_brownian_harmonic(
+    energy_sivak, 
     init_position_fwd_sc, 
     trap_fn_fwd_sc,
     simulation_steps_sc, 
@@ -159,7 +160,7 @@ simulate_sivak_fn_fwd = lambda energy_fn, keys: bc_simulate.simulate_langevin_ha
     )
 
 total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
-    2000, simulate_sivak_fn_fwd, key)
+    1000, simulate_sivak_fn_fwd, key)
 
 midpoints_lin, energies_lin = bc_landscape.energy_reconstruction(batch_works, batch_trajectories, 100, trap_fn_fwd_sc, simulation_steps_sc, 2000, k_s_sc, beta_sc)
 energy_sivak = bc_energy.V_biomolecule_reconstructed(k_s_sc, jnp.array(midpoints_lin), jnp.array(energies_lin)) # reconstructed 

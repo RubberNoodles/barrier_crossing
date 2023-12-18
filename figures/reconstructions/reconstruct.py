@@ -14,7 +14,6 @@ import barrier_crossing.iterate_landscape as bc_landscape
 
 import jax.numpy as jnp
 import jax.random as random
-import jax.example_libraries.optimizers as jopt
 
 import matplotlib.pyplot as plt
 
@@ -107,9 +106,9 @@ if __name__ == "__main__":
 
     simulate_fwd = lambda keys: simulate_fwd_grad(trap_fn, keys)
 
-    batch_size_sc_rec = 1000
+    batch_size_sc_rec = 3000
     batch_size_grad = 2000
-    bins = 70
+    bins = 50
 
     total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
         batch_size_sc_rec, simulate_fwd, key)
@@ -117,8 +116,12 @@ if __name__ == "__main__":
     # work distribution data
     mean_work = batch_works.mean()
     tail = total_work.mean() - total_work.min()
-    w_diss = jnp.cumsum(batch_works, axis = -1)[:, -1] - p.param_set.delta_E
-
+    #w_diss = jnp.cumsum(batch_works, axis = -1)[:, -1] - p.param_set.delta_E
+    
+    # Dissipated work = Work Used - Free Energy Difference
+    w_diss = total_work - (p.param_set.energy_fn()([[p.r0_final]]) - p.param_set.energy_fn()([[p.r0_init]])) 
+    
+    
     # reconstructions stats
     midpoints, energies = bc_landscape.energy_reconstruction(
         batch_works, 
@@ -134,6 +137,8 @@ if __name__ == "__main__":
     
     disc = bc_landscape.landscape_discrepancies(landscape, no_trap, no_trap([[0.]]), -10., 10.)
     bias = max(disc)
+    
+    print(f"{trap_name}: W_diss: {w_diss.mean()}, tail: {tail}, bias: {bias}")
     
     no_trap_rec_fn = bc_energy.V_biomolecule_reconstructed(0, midpoints, energies)
     
@@ -163,7 +168,6 @@ if __name__ == "__main__":
         p.beta)
       grad, (_, summary) = grad_rev(batch_size_grad)(*coeff, split)
       
-      print(f"Weird coeff?: {coeff}")
     else:
       grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev(
         num_batches,
@@ -185,9 +189,9 @@ if __name__ == "__main__":
       "mean_work": mean_work,
       "discrepancy": disc,
       "tail": tail,
-      "work loss": summary[2].mean(),
-      "error loss": summary[2].mean(),
-      "accumulated loss": summary[2].mean(),
+      "work loss": summary[2].mean(), # TODO
+      "error loss": summary[2].mean(), # TODO
+      "accumulated loss": summary[2].mean(), # TODO
       "samples": {
         "mean_discrepancy": mean_disc_samples,
         "bias": bias_samples,

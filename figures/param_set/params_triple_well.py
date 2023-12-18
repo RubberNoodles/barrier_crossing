@@ -14,11 +14,10 @@ beta = p.beta
 
 param_set = p.sc_params
 
-scale = 2
-pos_e = [[5.4*x, 8*x**2 + 0.3 * x**3 - 6 * x ** 4 + x**6] for x in jnp.linspace(-6,6,1000)] # https://www.scielo.org.mx/pdf/rmf/v57n1/v57n1a8.pdf
+pos_e = [[5.5*x, 8*x**2 + 0.3 * x**3 - 6 * x ** 4 + x**6] for x in jnp.linspace(-6,6,1000)] # https://www.scielo.org.mx/pdf/rmf/v57n1/v57n1a8.pdf
 e_positions = jnp.array(pos_e)[:,0]
-e_energies = jnp.array(pos_e)[:,1] * 2
+e_energies = jnp.array(pos_e)[:,1] * 3.5
 
 
-energy_sivak = bc_energy.V_biomolecule_reconstructed(p.k_s, e_positions, e_energies)
-param_set.set_energy_fn(energy_sivak)
+energy_triple_well = bc_energy.V_biomolecule_reconstructed(p.k_s, e_positions, e_energies)
+param_set.set_energy_fn(energy_triple_well)

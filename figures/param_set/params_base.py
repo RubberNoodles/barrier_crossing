@@ -6,10 +6,8 @@
 # Symmetric.
 
 import jax.numpy as jnp
-import jax.random as random
 from jax_md import space
 
-import barrier_crossing.energy as bc_energy
 import barrier_crossing.param as bc_params
 
 N = 1
@@ -31,6 +29,7 @@ init_position_rev = r0_final*jnp.ones((N,dim))
 
 # Brownian Environment S&C
 temperature = 4.183 #at 303K=30C S&C
+# temperature = temperature/4
 beta=1.0/temperature #1/(pNnm)
 D = 0.44*1e6 #(in nm**2/s) 
 gamma = 1./(beta*D*mass) #s^(-1)
@@ -41,13 +40,18 @@ x_m=10. #nm
 delta_E= 0. #pN nm
 kappa_l=6.38629/(beta*x_m**2) # Ebarrier ~ 2,5 kT
 kappa_r=kappa_l #pN/nm; 
-Neq = 500
+Neq = 1000
 
-end_time = 1e-5
-dt = 3e-9
+# end_time = 1e-6 # Langevin
+# dt = 1e-9
+end_time = 1e-3 # Brownian
+dt = 3e-7 # needs to be 1e-7 to avoid drift...
+
+
 simulation_steps = int(end_time / dt)
 sim_cut_steps = simulation_steps // 2
 
+# Megan's is 0.4
 k_s = 0.1 # stiffness; 
 
 sc_params = bc_params.SCParameters( N = N,
