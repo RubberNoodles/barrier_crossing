@@ -1,13 +1,15 @@
 #!/bin/bash
 
-declare -A landscapes=( ["Double Well 2.5kT Barrier"]="2_5kt" 
-                        ["Double Well 10kT Barrier"]="10kt"
-                        ["Asymetric Double Well"]="asym"
-                        ["Triple Well"]="triple_well"
+declare -A landscapes=( ["Double Well 2.5kT Barrier Brownian"]="2_5kt" 
+                        ["Double Well 10kT Barrier Brownian"]="10kt"
+                        ["Asymetric Double Well Brownian"]="asym"
+                        ["Triple Well Brownian"]="triple_well"
                         )
 
 #declare -A figures=( [reconstructions]="reconstruct.sh" [work_error_opt]="we_opt.sh" )
 declare -A figures=( [work_error_opt]="we_opt.sh" )
+#declare -A figures=( [iterative]="iterative.sh" )
+#declare -A figures=( [reconstructions]="reconstruct.sh" )
 # Need to fix iterative before I can do anything.
 
 for figure in "${!figures[@]}"; do
@@ -15,20 +17,7 @@ for figure in "${!figures[@]}"; do
   
   
   for landscape in "${!landscapes[@]}"; do  
-   
-    echo "Looking for lock..."
-    n=0
-
-    while ! ln -s . lock; do 
-            sleep 15
-            n=$((n+1))
-    done
-    echo "Lock Found!"
-    
-
     # cat params_set/params_base_sc.py params_set/params_${landscapes[$landscape]} > params.py  
-    
-    trap "{ echo Process terminated prematurely.; rm lock }" ERR
 
     echo "Task $figure on $landscape is starting. Modules & Dependencies Loading..."
     #echo 
@@ -38,15 +27,16 @@ for figure in "${!figures[@]}"; do
         
     
 
-    if [ $figure = "iterative" ]; then
-      sbatch --test-only ${figures[$figure]} "$landscape"
-      rm ../lock
-    else
-      sbatch ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
+    # if [ $figure = "iterative" ]; then
+    #   sbatch --test-only ${figures[$figure]} "$landscape"
+    #   rm ../lock
+    # else
+    
+    
+    sbatch ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
       #python3 ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
       #rm ../lock
-    fi
-    
+    #fi
     cd ../
   done
 done

@@ -6,6 +6,12 @@ declare -a figures=( "asymetric_double_well"
                      "triple_well"
 )
 
+declare -a figures=( "asymetric_double_well_brownian" 
+                     "double_well_2_5kt_barrier_brownian"
+                     "double_well_10kt_barrier_brownian"
+                     "triple_well_brownian"
+)
+
 for figure in "${figures[@]}"; do
   # mkdir "output_data/$figure"
   # mkdir "output_data/$figure/coeffs"
