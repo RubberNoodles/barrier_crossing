@@ -4,6 +4,8 @@ import tqdm
 
 import matplotlib.pyplot as plt
 
+import numpy as onp
+
 import jax.numpy as jnp
 import jax
 
@@ -24,71 +26,61 @@ def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   ax.plot(xs, mn, label=label)
   
 def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, batch_size, k_s, beta):
-  """
-  Outputs a (midpoints, free_energies) tuple for reconstructing 
-  free-energy landscapes.
-  t - time step
-  l - bin index (0 <= l < number of bins)
+  """Outputs a (midpoints, free_energies) tuple for reconstructing 
+  free-energy landscapes according to formalism by Hummer & Szabo 2001.
+
+  Args:
+      works Array[batch_size, simulation_steps]: Along the second axis, the amount of work done for the
+        given trajectory up until the given simulation step.
+      trajectories Array[]: Particle positions at each simulation step.
+      bins int: Number of bins to reconstruct.
+      trap_fn Callable(time_step) -> float: Function to determine trap position
+      simulation_steps int: Number of simulation steps. Equal to simulation_length/dt.
+      batch_size int: Number of distinct random trajectories. Requires at least 100 for most simulations.
+      k_s float: Trap stiffness.
+      beta float: Inverse temperature (1/kT).
+
+  Returns:
+      midpoints Array[]: midpoints of equally spaced bins along the reaction coordinate.
+      energies Array[]: Energies[n] corresponds to the reconstructed free energy at midpoints[n].
   
-  # TODO: Write algorithm to compute all bins at the same time (reduce recomputation).
+  ------
+  1. G. Hummer and A. Szabo. Free energy reconstruction from nonequilibrium single-molecule pulling experiments.
+    Proceedings of the National Academy of Sciences of the United States of America, 98(7):3658–3661, Mar 2001.
   """
-  logging.info("Reconstructing the landscape...")
-  traj_min = traj_min = min(trajectories[:,0]) 
-  traj_max = max(trajectories[:, simulation_steps]) 
+  
+  if works.shape != (batch_size, simulation_steps):
+    raise ValueError(f"Array `works` should be of shape ({batch_size, simulation_steps}), got ({works.shape}) instead.")
+  
+  exp_works = jnp.exp( - beta * works)
+  eta = jnp.mean(exp_works, axis = 0)
+
+  traj_min = trajectories.min()
+  traj_max = trajectories.max()
   bin_width = (traj_max-traj_min)/bins
 
-  # Use less than 10 gb of memory:
-  num_pages = int(simulation_steps * batch_size * batch_size / 1e9)
-  if num_pages == 0:
-    page_size = 0
-  else:
-    page_size = int(simulation_steps / num_pages)
 
-  def exponential_avg(t): #find exponential average using eq. 3.20
-    exp_works_t = jnp.exp(-beta * works)[:,t] #find exponential of work at t
-    return (1/batch_size)*(jnp.sum(exp_works_t, 0)) 
-  def numerator(t,l): # approximate numerator in eq. 3.16 using eq. 3.20
-    exp_works_t = jnp.exp(-beta * works)[:,t] #find exponential of work at t
-    traj_t = trajectories[:,t] #trajectories at time t
-    heaviside = jnp.where((traj_min + l * bin_width <= traj_t) & (traj_t <=traj_min + (l+1) * bin_width), 1 , 0)
-    return (1/batch_size) * jnp.sum(exp_works_t * heaviside)
-  def potential_energy(l, t):
-    q_l = traj_min + (l + 0.5) * bin_width # midpoint of the lth extension bin
-    return 0.5 * k_s * (trap_fn(t) - q_l)**2
-  def free_energy_q(l): # find free energy for lth bin
-    num = 0.
-    denom = 0.
-    page_start = 0
+  traj_mask = jnp.squeeze(jnp.floor(bins * ((trajectories-traj_min)/(traj_max - traj_min))))
 
-    batch_num = jax.vmap(lambda t: numerator(t,l)/ exponential_avg(t))
-    batch_denom =jax.vmap(lambda t: (jnp.exp(-beta*potential_energy(l,t))) / exponential_avg(t))
+  traj_bins = traj_mask.astype(int) + jnp.outer(jnp.ones(batch_size), jnp.arange(simulation_steps)) * bins
+  midpoints = jnp.array([traj_min + (i+0.5) * bin_width for i in range(bins)])
 
-    
-    for _ in range(num_pages):
-      assert(page_size > 0)
-      page_end = int(page_start + page_size)
-      page_range = jnp.arange(page_start, page_end)
-      num += batch_num(page_range).sum()
-      denom += batch_denom(page_range).sum() 
-      
-      page_start = page_end
+  bin_arr = onp.zeros(bins * simulation_steps)
 
-    page_range = jnp.arange(page_start, simulation_steps)
-    if page_range.shape[0] != 0:
-      num += batch_num(page_range).sum()
-      denom += batch_denom(page_range).sum()
-    
-    return (-(1/beta) * jnp.log(num/denom))
+  onp.add.at(bin_arr, traj_bins.astype(int), exp_works)
 
-  midpoints = []
-  free_energies = []
-  for k in tqdm.trange(bins, position=0, desc="Reconstruct Landscape Bins: "):
-    logging.info(f"Reconstructing for bin {k+1}")
-    energy = free_energy_q(k)
-    free_energies.append(energy)
-    midpoints.append((traj_min[0][0] + (k+0.5)*bin_width[0][0]))
-  
-  return (jnp.array(midpoints), jnp.array(free_energies))
+  bin_arr = bin_arr / batch_size
+
+  # u(z,t): at each timestep and midpoint, we have a deflection energy
+  vectorized_trap = jax.vmap(trap_fn)
+  repeat_trap_positions = jnp.tile(vectorized_trap(jnp.arange(simulation_steps)), (bins, 1))
+  deflect = jnp.exp(-beta * k_s * 0.5 * jnp.square( repeat_trap_positions.T - midpoints).T)
+
+  numerator = bin_arr.reshape(simulation_steps, bins).T @ jnp.reciprocal(eta)
+  denominator = deflect @ jnp.reciprocal(eta)
+  energies = -(1/beta) * jnp.log(jnp.divide(numerator, denominator))
+
+  return jnp.array(midpoints), jnp.array(energies)
 
 def find_max_pos(landscape, barrier_pos):
   """
