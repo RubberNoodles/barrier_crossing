@@ -28,11 +28,9 @@ echo "Modules & Dependencies Loading..."
 module load python/3.10.9-fasrc01
 module load cuda/12.2.0-fasrc01
 module load cudnn/8.9.2.26_cuda12-fasrc01
+
+source ./../env/bin/activate
 pip3 install -e "../../"
-pip3 install -r "./../../requirements.txt"
-pip3 install --upgrade "jax[cuda12_pip]==0.4.16" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-
-
 # num_extension=$1
 
 # if [ ${SLURM_ARRAY_TASK_ID} -eq 1 ]; then

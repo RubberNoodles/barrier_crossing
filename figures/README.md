@@ -11,7 +11,12 @@ may be helpful reference.
 
 All tests will take the parameters in `params.py` in order to maintain consistency. Change these values at your own peril.
 
-
+Before running SLURM batch scripts, one should must install the following dependencies:
+```
+pip3 install -e "../"
+pip3 install -r "../requirements.txt"
+pip3 install --upgrade "jax[cuda12_pip]==0.4.16" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
 `work_error_opt`: Optimize a protocol using dissipative work vs. Jarzynski error on Sivak & Crooks double well landscape.
 
 `reconstructions`: Using protocols optimized through various regimes, reconstruct the landscape with forward simulations according to Engel 2020 and plot the reconstructions.
