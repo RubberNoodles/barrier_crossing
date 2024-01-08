@@ -6,7 +6,7 @@ import jax.numpy as jnp
 epsilon = 0.5
 sigma = 1.0
 simulation_steps = 500
-sim_cut_steps = p.sim_cut_steps
+sim_cut_steps = simulation_steps//2
 Neq = p.Neq
 dt = 2e-3
 r0_init = 0.

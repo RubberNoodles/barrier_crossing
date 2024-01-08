@@ -11,6 +11,7 @@ import barrier_crossing.simulate as bc_simulate
 ShiftFn = space.ShiftFn
 Array = util.Array
 
+
 @dataclass
 class MDParameters:
   N: int
@@ -23,16 +24,19 @@ class MDParameters:
   init_position_fwd: Array
   init_position_rev: Array
   k_s: float
-  
   end_time: float
   dt: float
-  simulation_steps: float
+  
   
   Neq: int
     
   def energy_fn(self, k_s, custom = None):
     # Energy function output to be overridden by subclasses.
     pass
+  
+  @property
+  def simulation_steps(self):
+    return int(self.end_time/self.dt)
   
   def set_energy_fn(self, custom):
     self.custom = custom

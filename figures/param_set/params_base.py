@@ -44,15 +44,11 @@ Neq = 1000
 
 # end_time = 1e-6 # Langevin
 # dt = 1e-9
-end_time = 1e-3 # Brownian
+end_time = 1e-4 # Brownian
 dt = 3e-7 # needs to be 1e-7 to avoid drift...
 
-
-simulation_steps = int(end_time / dt)
-sim_cut_steps = simulation_steps // 2
-
 # Megan's is 0.4
-k_s = 0.1 # stiffness; 
+k_s = 0.4 # stiffness; 
 
 sc_params = bc_params.SCParameters( N = N,
                                     dim = dim,
@@ -72,6 +68,5 @@ sc_params = bc_params.SCParameters( N = N,
                                     dt = dt,
                                     end_time = end_time,
                                     Neq = Neq,
-                                    simulation_steps = simulation_steps
 )
 

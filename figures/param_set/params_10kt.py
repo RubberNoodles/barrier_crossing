@@ -1,7 +1,5 @@
 import figures.param_set.params_base as p
 
-simulation_steps = p.simulation_steps
-sim_cut_steps = p.sim_cut_steps
 Neq = p.Neq
 dt = p.dt
 r0_init = p.r0_init
