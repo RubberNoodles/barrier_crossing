@@ -6,10 +6,9 @@ declare -A landscapes=( ["Double Well 2.5kT Barrier Brownian"]="2_5kt"
                         ["Triple Well Brownian"]="triple_well"
                         )
 
-#declare -A figures=( [reconstructions]="reconstruct.sh" [work_error_opt]="we_opt.sh" )
-declare -A figures=( [work_error_opt]="we_opt.sh" )
+#declare -A figures=( [work_error_opt]="we_opt.sh" )
 #declare -A figures=( [iterative]="iterative.sh" )
-#declare -A figures=( [reconstructions]="reconstruct.sh" )
+declare -A figures=( [reconstructions]="param_list.sh" )
 # Need to fix iterative before I can do anything.
 
 for figure in "${!figures[@]}"; do
@@ -31,9 +30,12 @@ for figure in "${!figures[@]}"; do
     #   sbatch --test-only ${figures[$figure]} "$landscape"
     #   rm ../lock
     # else
-    
-    
-    sbatch ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
+    sleep 1 # FASRC docs suggest 1s delay https://docs.rc.fas.harvard.edu/kb/submitting-large-numbers-of-jobs/
+    if [ $figure = "reconstructions" ]; then
+      ./${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
+    else
+      sbatch ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
+    fi
       #python3 ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
       #rm ../lock
     #fi

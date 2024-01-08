@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#deprecated for now
+
 declare -A landscapes=( ["Double Well 2.5kT Barrier Brownian"]="2_5kt" 
                         ["Double Well 10kT Barrier Brownian"]="10kt"
                         ["Asymetric Double Well Brownian"]="asym"
