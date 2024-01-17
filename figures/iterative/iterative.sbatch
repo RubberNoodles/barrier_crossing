@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:8
 #SBATCH -t 1-00:00          # Runtime in D-HH:MM, minimum of 10 minutes
 #SBATCH -p seas_gpu       # Partition to submit to
 #SBATCH --mem-per-cpu=16000           # Memory pool for all cores (see also --mem-per-cpu)
@@ -51,4 +51,5 @@ echo "Installation complete. Releasing Lock. Running code..."
 mv "lock" "deleteme" && rm "deleteme"
 
 #python3 "./iterative.py" ${SLURM_ARRAY_TASK_ID}
-python3 "./iterative.py" "$1" "$2"
+
+python3 iterative.py "$1" "$2" "$3" "$4" "$5"

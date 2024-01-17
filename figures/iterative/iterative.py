@@ -20,13 +20,17 @@ if __name__ == "__main__":
   param_name = str(sys.argv[2])
   p = importlib.import_module(f"figures.param_set.params_{param_name}")
   
+  p.param_set.k_s = float(sys.argv[3])
+  p.param_set.end_time = float(sys.argv[4])
+  rec_batch_size = int(sys.argv[5])
+  
   path = f"output_data/{landscape_name.replace(' ', '_').replace('.', '_').lower()}/"
   if not os.path.isdir(path):
     os.mkdir(path)
 
-  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.simulation_steps, degree = 12, y_intercept = p.r0_init)
-  trap_fn_fwd = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  trap_fn_rev = bc_protocol.make_trap_fxn_rev(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.param_set.simulation_steps, degree = 12, y_intercept = p.r0_init)
+  trap_fn_fwd = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  trap_fn_rev = bc_protocol.make_trap_fxn_rev(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
   
     
   # If triple well, we need to do something different
@@ -50,48 +54,47 @@ if __name__ == "__main__":
   #       1.21933308e-09, -4.65200489e-10,  7.08764991e-10, -1.05334935e-10,
   #       6.99122538e-10]) # Slightly shifted
 
-  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.simulation_steps, degree = 12, y_intercept = p.r0_init)
+  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.param_set.simulation_steps, degree = 12, y_intercept = p.r0_init)
   
   # Trap Functions. Reverse mode trap functions are for when we compute Jarzynski error with reverse protocol trajectories.
-  trap_fn_fwd = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  trap_fn_rev = bc_protocol.make_trap_fxn_rev(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  trap_fn_fwd = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  trap_fn_rev = bc_protocol.make_trap_fxn_rev(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
   
   true_simulation_fwd = lambda trap_fn: lambda keys: p.param_set.simulate_fn(
     trap_fn, 
     keys, 
-    regime = "langevin",
+    regime = "brownian",
     fwd = True)
   
   simulate_grad_rev = lambda energy_fn: lambda trap_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
     keys, 
-    regime = "langevin",
+    regime = "brownian",
     fwd = False,
     custom = energy_fn)
   
   # simulate_grad_fwd = lambda energy_fn: lambda trap_fn, keys: p.param_set.simulate_fn(
   #   trap_fn, 
   #   keys, 
-  #   regime = "langevin",
+  #   regime = "brownian",
   #   fwd = True,
   #   custom = energy_fn)
 
-  max_iter = 4
-  opt_steps_landscape = 1000 # 1000 + 
-  bins = 70
-  opt_batch_size = 10000 # 10k + 
-  rec_batch_size = 2000
+  max_iter = 8
+  opt_steps_landscape = 300 # 1000 + 
+  bins = 100
+  opt_batch_size = 5000 # 10k + 
 
-  # grad_no_E = lambda num_batches, energy_fn: bc_optimize.estimate_gradient_rev(
-  #     num_batches,
-  #     simulate_grad_rev(energy_fn),
-  #     p.r0_init, p.r0_final, p.simulation_steps,
-  #     p.beta)
-
-  grad_no_E = lambda num_batches, energy_fn: bc_optimize.estimate_gradient_work(
+  grad_no_E = lambda num_batches, energy_fn: bc_optimize.estimate_gradient_rev(
       num_batches,
       simulate_grad_rev(energy_fn),
-      p.r0_init, p.r0_final, p.simulation_steps)
+      p.r0_init, p.r0_final, p.param_set.simulation_steps,
+      p.beta)
+
+  # grad_no_E = lambda num_batches, energy_fn: bc_optimize.estimate_gradient_work(
+  #     num_batches,
+  #     simulate_grad_fwd(energy_fn),
+  #     p.r0_init, p.r0_final, p.param_set.simulation_steps)
 
   lr = jopt.polynomial_decay(0.1, opt_steps_landscape, 0.001)
   optimizer = jopt.adam(lr)
@@ -105,14 +108,14 @@ if __name__ == "__main__":
                       key,
                       max_iter,
                       bins,
-                      p.simulation_steps,
+                      p.param_set.simulation_steps,
                       opt_batch_size,
                       rec_batch_size,
                       opt_steps_landscape, 
                       optimizer,
                       p.r0_init, p.r0_final,
                       p.param_set.k_s, p.beta,
-                      savefig = f"barrier_{landscape_name}"
+                      savefig = f"{landscape_name}"
   )
   positions = jnp.array(landscapes[-1][0])
 
@@ -141,22 +144,22 @@ if __name__ == "__main__":
   plt.legend()
   plt.xlabel("Position (x)")
   plt.ylabel("Free Energy (G)")
-  plt.title(f"Iteratively Reconstructing Landscape; {landscape_name}")
-  plt.savefig(path + "reconstruct_landscapes.png")
+  plt.title(f"Iteratively Reconstructing Landscape; {landscape_name}; {p.param_set.end_time}")
+  plt.savefig(path + f"reconstruct_landscapes_{p.param_set.k_s}_{p.param_set.end_time}_{rec_batch_size}.png")
   
   plt.figure(figsize = (8,8))
-  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  plt.plot(trap_fn(jnp.arange(p.simulation_steps-1)), label = "Linear Protocol")
+  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps-1)), label = "Linear Protocol")
   for i, coeff in enumerate(coeffs):
-      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), coeff, p.r0_init, p.r0_final)
-      plt.plot(trap_fn(jnp.arange(p.simulation_steps-1)), label = f"Iteration {i}")
+      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), coeff, p.r0_init, p.r0_final)
+      plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps-1)), label = f"Iteration {i}")
   plt.xlabel("Simulation Step")
   plt.ylabel("Position (x)")
-  plt.title("Protocols Over Iteration")
+  plt.title(f"Protocols Over Iteration; {p.param_set.end_time}")
   plt.legend()
-  plt.savefig(path + "opt_protocol_evolution.png")
+  plt.savefig(path + f"opt_protocol_evolution_{p.param_set.k_s}_{p.param_set.end_time}_{rec_batch_size}.png")
   
-  with open(path + "coeffs.pkl", "wb") as f:
+  with open(path + f"coeffs__{p.param_set.k_s}_{p.param_set.end_time}_{rec_batch_size}.pkl", "wb") as f:
     pickle.dump(coeffs, f)
 
 print(p.param_set)

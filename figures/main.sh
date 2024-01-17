@@ -7,8 +7,8 @@ declare -A landscapes=( ["Double Well 2.5kT Barrier Brownian"]="2_5kt"
                         )
 
 #declare -A figures=( [work_error_opt]="we_opt.sh" )
-#declare -A figures=( [iterative]="iterative.sh" )
-declare -A figures=( [reconstructions]="param_list.sh" )
+declare -A figures=( [iterative]="it_params.sh" )
+#declare -A figures=( [reconstructions]="rc_params.sh" )
 # Need to fix iterative before I can do anything.
 
 for figure in "${!figures[@]}"; do
@@ -26,19 +26,11 @@ for figure in "${!figures[@]}"; do
         
     
 
-    # if [ $figure = "iterative" ]; then
-    #   sbatch --test-only ${figures[$figure]} "$landscape"
-    #   rm ../lock
-    # else
     sleep 1 # FASRC docs suggest 1s delay https://docs.rc.fas.harvard.edu/kb/submitting-large-numbers-of-jobs/
-    if [ $figure = "reconstructions" ]; then
-      ./${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
-    else
-      sbatch ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
-    fi
-      #python3 ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
-      #rm ../lock
-    #fi
+    ./${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
+    
+    #sbatch ${figures[$figure]} "$landscape" "${landscapes[$landscape]}"
+   
     cd ../
   done
 done
