@@ -162,7 +162,7 @@ simulate_sivak_fn_fwd = lambda keys: bc_simulate.simulate_brownian_harmonic(
 total_works, (batch_trajectories, batch_works, batch_log_probs) = bc_simulate.batch_simulate_harmonic(
     1000, simulate_sivak_fn_fwd, key)
 
-midpoints_lin, energies_lin = bc_landscape.energy_reconstruction(batch_works, batch_trajectories, 100, trap_fn_fwd_sc, simulation_steps_sc, 2000, k_s_sc, beta_sc)
+midpoints_lin, energies_lin = bc_landscape.energy_reconstruction(jnp.cumsum(batch_works, axis=1), batch_trajectories, 100, trap_fn_fwd_sc, simulation_steps_sc, 2000, k_s_sc, beta_sc)
 energy_sivak = bc_energy.V_biomolecule_reconstructed(k_s_sc, jnp.array(midpoints_lin), jnp.array(energies_lin)) # reconstructed 
 
 top = float(max(energies_lin[30:70]))

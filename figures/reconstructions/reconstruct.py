@@ -5,6 +5,7 @@ import pickle
 import sys
 import os
 import importlib
+import subprocess
 
 import barrier_crossing.energy as bc_energy
 import barrier_crossing.protocol as bc_protocol
@@ -23,13 +24,28 @@ if __name__ == "__main__":
   landscape_name = str(sys.argv[1])
   landscape_path = landscape_name.replace(" ", "_").replace(".", "_").lower()
   param_name = str(sys.argv[2])
+  k_s = float(sys.argv[3])
+  end_time = float(sys.argv[4])
+  batch_size_sc_rec = int(sys.argv[5])
+  
   p = importlib.import_module(f"figures.param_set.params_{param_name}")
+  p.param_set.k_s = k_s
+  p.param_set.end_time = end_time
+  sim_cut_steps = p.param_set.simulation_steps // 2
+  
   
   parent_dir = f"output_data/{landscape_path}/"
   if not os.path.isdir(parent_dir):
     os.mkdir(parent_dir)
   if not os.path.isdir(parent_dir+"plotting"):
     os.mkdir(parent_dir + "plotting")
+  
+  if not os.path.isdir(parent_dir+"coeffs"):
+    os.mkdir(parent_dir + "coeffs")
+    cp_coeff_p = subprocess.Popen(['./collect_coeffs.sh'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if "COPY_FAILED" in cp_coeff_p.communicate()[0]:
+      assert False, f"Coefficients for {parent_dir} not found."
+  
   assert os.path.isdir(parent_dir+"coeffs"), "Reconstruction code requires protocol coefficients to run."
     
   coeff_dir = parent_dir + "coeffs/"
@@ -60,21 +76,21 @@ if __name__ == "__main__":
   ax_protocol.set_title(f"{landscape_name} Protocols")
   ax_protocol.set_xlabel("Timestep")
   ax_protocol.set_ylabel("Position")
-  ax_reconstruct.set_title(f"{landscape_name} Energy Reconstructions")
+  ax_reconstruct.set_title(f"{landscape_name} Energy Reconstructions | kₛ = { p.param_set.k_s} | end_time = { p.param_set.end_time }")
   ax_reconstruct.set_xlabel("Position")
   ax_reconstruct.set_ylabel("Energy")
-  ax_hist.set_title(f"{landscape_name} Work Dissipated Distribution")
+  ax_hist.set_title(f"{landscape_name} Dissipated Work Distribution | kₛ = { p.param_set.k_s} | end_time = { p.param_set.end_time }")
   ax_hist.set_xlabel("Dissipated Work")
 
   no_trap = p.param_set.energy_fn(0.)
-  time_vec = jnp.linspace(-15,15, 1000)
+  time_vec = jnp.linspace(-20,20, 1000)
   if "triple" in landscape_name.lower():
     time_vec = jnp.linspace(-12,12, 1000)
   ax_reconstruct.plot(time_vec, jnp.squeeze(no_trap(time_vec.reshape(1,1,1000))) - no_trap([[p.r0_init]]), label = "Original", color = 'k')
 
   for ind, (trap_name, file_name) in enumerate(coeff_files.items()):
     if file_name == "linear":
-      coeff = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.simulation_steps, degree = 12, y_intercept = p.r0_init)
+      coeff = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.param_set.simulation_steps, degree = 12, y_intercept = p.r0_init)
     else:
       try:
         with open(coeff_dir + file_name, "rb") as f:
@@ -85,14 +101,14 @@ if __name__ == "__main__":
     
     if file_name == "split.pkl":
       # We are going to only look at gradient values for the second set of coefficients
-      _a = bc_protocol.make_trap_fxn( jnp.arange(p.sim_cut_steps), coeff[0], p.r0_init, p.r0_cut)
-      _b = bc_protocol.make_trap_fxn( jnp.arange(p.simulation_steps - p.sim_cut_steps), coeff[1], p.r0_cut, p.r0_final)
-      trap_fn = bc_protocol.trap_sum(p.simulation_steps, p.sim_cut_steps, _a, _b)
+      _a = bc_protocol.make_trap_fxn( jnp.arange(sim_cut_steps), coeff[0], p.r0_init, p.r0_cut)
+      _b = bc_protocol.make_trap_fxn( jnp.arange(p.param_set.simulation_steps - sim_cut_steps), coeff[1], p.r0_cut, p.r0_final)
+      trap_fn = bc_protocol.trap_sum(p.param_set.simulation_steps, sim_cut_steps, _a, _b)
       
     else:
-      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), coeff, p.r0_init, p.r0_final)
+      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), coeff, p.r0_init, p.r0_final)
     
-    time_vec = jnp.arange(p.simulation_steps-1)
+    time_vec = jnp.arange(p.param_set.simulation_steps-1)
     
     
     key = random.PRNGKey(int(time.time()))
@@ -106,9 +122,9 @@ if __name__ == "__main__":
 
     simulate_fwd = lambda keys: simulate_fwd_grad(trap_fn, keys)
 
-    batch_size_sc_rec = 3000
+    
     batch_size_grad = 2000
-    bins = 50
+    bins = 70
 
     total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
         batch_size_sc_rec, simulate_fwd, key)
@@ -124,11 +140,11 @@ if __name__ == "__main__":
     
     # reconstructions stats
     midpoints, energies = bc_landscape.energy_reconstruction(
-        batch_works, 
+        jnp.cumsum(batch_works, axis=1), 
         batch_trajectories, 
         bins, 
         trap_fn, 
-        p.simulation_steps, 
+        p.param_set.simulation_steps, 
         batch_size_sc_rec, 
         p.param_set.k_s, 
         p.beta)
@@ -163,8 +179,8 @@ if __name__ == "__main__":
         p.r0_init,
         p.r0_final,
         p.r0_cut,
-        p.sim_cut_steps,
-        p.simulation_steps,
+        sim_cut_steps,
+        p.param_set.simulation_steps,
         p.beta)
       grad, (_, summary) = grad_rev(batch_size_grad)(*coeff, split)
       
@@ -174,7 +190,7 @@ if __name__ == "__main__":
         simulate_fwd_grad,
         p.r0_init,
         p.r0_final,
-        p.simulation_steps,
+        p.param_set.simulation_steps,
         p.beta)
       grad, (_, summary) = grad_rev(batch_size_grad)(coeff, split)
     
@@ -208,9 +224,9 @@ if __name__ == "__main__":
   ax_hist.legend()
   ax_protocol.legend()
   ax_reconstruct.legend()
-  fig_hist.savefig(parent_dir + "plotting/work_distribution.png")
-  fig_rec.savefig(parent_dir + "plotting/reconstructions.png")
-  fig_pro.savefig(parent_dir + "plotting/protocol.png")
+  fig_hist.savefig(parent_dir + f"plotting/work_distribution_k{k_s}_t{end_time}_b{batch_size_sc_rec}.png")
+  fig_rec.savefig(parent_dir + f"plotting/reconstructions_k{k_s}_t{end_time}_b{batch_size_sc_rec}.png")
+  fig_pro.savefig(parent_dir + f"plotting/protocol.png")
 
   with open(parent_dir + "/landscape_data.pkl", "wb") as f:
     for trap_name, data in plot_data.items():
@@ -228,7 +244,7 @@ if __name__ == "__main__":
 
   # Table comparison (+ reconstruction info)
   _, (ax0, ax1) = plt.subplots(1, 2, figsize=[24, 12])
-  step = jnp.arange(p.simulation_steps)
+  step = jnp.arange(p.param_set.simulation_steps)
   for p_name in plot_data:
     data = plot_data[p_name]
     ax0.plot(step, data["trap"](step), label = f'{p_name}')
