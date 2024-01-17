@@ -34,30 +34,32 @@ if __name__ == "__main__":
     os.mkdir(path)
   
 
-  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.simulation_steps, degree = 12, y_intercept = p.r0_init)
-  # Trap Functions. Reverse mode trap functions are for when we compute Jarzynski error with reverse protocol trajectories.
-  trap_fn_fwd = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  trap_fn_rev = bc_protocol.make_trap_fxn_rev(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  sim_cut_steps = p.param_set.simulation_steps // 2
   
-  coeffs_split_1 = jnp.array(bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_cut, p.sim_cut_steps, degree = 12, y_intercept = -10))
-  coeffs_split_2 = jnp.array(bc_protocol.linear_chebyshev_coefficients(p.r0_cut, p.r0_final, p.simulation_steps - p.sim_cut_steps, degree = 12, y_intercept = 0))
+  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.param_set.simulation_steps, degree = 12, y_intercept = p.r0_init)
+  # Trap Functions. Reverse mode trap functions are for when we compute Jarzynski error with reverse protocol trajectories.
+  trap_fn_fwd = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  trap_fn_rev = bc_protocol.make_trap_fxn_rev(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  
+  coeffs_split_1 = jnp.array(bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_cut, sim_cut_steps, degree = 12, y_intercept = -10))
+  coeffs_split_2 = jnp.array(bc_protocol.linear_chebyshev_coefficients(p.r0_cut, p.r0_final, p.param_set.simulation_steps - sim_cut_steps, degree = 12, y_intercept = 0))
   
   simulate_fwd_unf = lambda trap_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
     keys, 
-    regime = "langevin",
+    regime = "brownian",
     fwd = True)
   
   simulate_rev_unf = lambda trap_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
     keys, 
-    regime = "langevin",
+    regime = "brownian",
     fwd = False)
   
   simulate_split_unf = lambda simulation_steps: lambda trap_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
     keys, 
-    regime = "langevin",
+    regime = "brownian",
     fwd = False,
     simulation_steps = simulation_steps)
   
@@ -66,26 +68,27 @@ if __name__ == "__main__":
     simulate_fwd_unf,
     p.r0_init,
     p.r0_final,
-    p.simulation_steps)
+    p.param_set.simulation_steps)
   
   grad_rev = lambda num_batches: bc_optimize.estimate_gradient_rev(
     num_batches,
     simulate_rev_unf,
     p.r0_init,
     p.r0_final,
-    p.simulation_steps,
+    p.param_set.simulation_steps,
     p.beta)
 
   batch_size = 10000 # Number of simulations/trajectories simulated. GPU optimized.
-  opt_steps = 500 # Number of gradient descent steps to take.
+  opt_steps = 200 # Number of gradient descent steps to take.
   
-  lr = jopt.polynomial_decay(0.03, opt_steps, 0.001)
+  lr = jopt.polynomial_decay(0.1, opt_steps, 0.001)
   optimizer = jopt.adam(lr)
 
   coeffs_work, summaries_work, losses_work = bc_optimize.optimize_protocol(lin_coeffs, grad_fwd, optimizer, batch_size, opt_steps)
-
+  print(f"first 10 work coefficients: \n{coeffs_work[:10]}")
   coeffs_err, summaries_err, losses_err = bc_optimize.optimize_protocol(lin_coeffs, grad_rev, optimizer, batch_size, opt_steps)
-
+  print(f"first 10 error coefficients: \n{coeffs_err[:10]}")
+  
   coeffs_split = bc_optimize.optimize_protocol_split(
     simulate_split_unf, 
     coeffs_split_1, 
@@ -93,12 +96,12 @@ if __name__ == "__main__":
     p.r0_init, 
     p.r0_final, 
     p.r0_cut,
-    p.sim_cut_steps, 
+    sim_cut_steps, 
     optimizer, 
     batch_size, 
     opt_steps, 
     p.beta, 
-    p.simulation_steps, 
+    p.param_set.simulation_steps, 
     file_path = path)
   
   per_5 = int(opt_steps/5)
@@ -107,24 +110,24 @@ if __name__ == "__main__":
   plot_with_stddev(losses_work.T, ax=ax_work[0])
 
   # ax_work[0].set_title(f'Jarzynski Error over Optimization; Short trap; STD error sampling; {batch_size}; {opt_steps}.')
-  ax_work[0].set_title(f'Dissipative Work; {batch_size}; {opt_steps}; {p.simulation_steps}')
+  ax_work[0].set_title(f'Dissipative Work; {batch_size}; {opt_steps}; {p.param_set.simulation_steps}')
   ax_work[0].set_xlabel('Number of Optimization Steps')
   ax_work[0].set_ylabel('Error')
 
-  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  inithed = trap_fn(jnp.arange(p.simulation_steps))
-  ax_work[1].plot(jnp.arange(p.simulation_steps), inithed, label='Initial guess')
+  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  inithed = trap_fn(jnp.arange(p.param_set.simulation_steps))
+  ax_work[1].plot(jnp.arange(p.param_set.simulation_steps), inithed, label='Initial guess')
 
   for i, (_, coeff) in enumerate(coeffs_work):
     if i% per_5 == 0 and i!=0:
-      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps),coeff,p.r0_init,p.r0_final)
-      fullhed = trap_fn(jnp.arange(p.simulation_steps))
-      ax_work[1].plot(jnp.arange(p.simulation_steps), fullhed, '-', label=f'Step {i}')
+      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps),coeff,p.r0_init,p.r0_final)
+      fullhed = trap_fn(jnp.arange(p.param_set.simulation_steps))
+      ax_work[1].plot(jnp.arange(p.param_set.simulation_steps), fullhed, '-', label=f'Step {i}')
 
   # Plot final estimate:
-  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), coeffs_work[-1][1],p.r0_init,p.r0_final)
-  fullhed = trap_fn(jnp.arange(p.simulation_steps))
-  ax_work[1].plot(jnp.arange(p.simulation_steps), fullhed, '-', label=f'Final')
+  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), coeffs_work[-1][1],p.r0_init,p.r0_final)
+  fullhed = trap_fn(jnp.arange(p.param_set.simulation_steps))
+  ax_work[1].plot(jnp.arange(p.param_set.simulation_steps), fullhed, '-', label=f'Final')
 
 
   ax_work[1].legend()#
@@ -136,24 +139,24 @@ if __name__ == "__main__":
   plot_with_stddev(losses_err.T, ax=ax_err[0])
 
   # ax_err[0].set_title(f'Jarzynski Error over Optimization; Short trap; STD error sampling; {batch_size}; {opt_steps}.')
-  ax_err[0].set_title(f'Jarzynski Error; {batch_size}; {opt_steps}; {p.simulation_steps} steps')
+  ax_err[0].set_title(f'Jarzynski Error; {batch_size}; {opt_steps}; {p.param_set.simulation_steps} steps')
   ax_err[0].set_xlabel('Number of Optimization Steps')
   ax_err[0].set_ylabel('Error')
 
-  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  inithed = trap_fn(jnp.arange(p.simulation_steps))
-  ax_err[1].plot(jnp.arange(p.simulation_steps), inithed, label='Initial guess')
+  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  inithed = trap_fn(jnp.arange(p.param_set.simulation_steps))
+  ax_err[1].plot(jnp.arange(p.param_set.simulation_steps), inithed, label='Initial guess')
 
   for i, (_, coeff) in enumerate(coeffs_err):
     if i % per_5 == 0 and i!=0:
-      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps),coeff,p.r0_init,p.r0_final)
-      fullhed = trap_fn(jnp.arange(p.simulation_steps))
-      ax_err[1].plot(jnp.arange(p.simulation_steps), fullhed, '-', label=f'Step {i}')
+      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps),coeff,p.r0_init,p.r0_final)
+      fullhed = trap_fn(jnp.arange(p.param_set.simulation_steps))
+      ax_err[1].plot(jnp.arange(p.param_set.simulation_steps), fullhed, '-', label=f'Step {i}')
 
   # Plot final estimate:
-  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.simulation_steps), coeffs_err[-1][1],p.r0_init,p.r0_final)
-  fullhed = trap_fn(jnp.arange(p.simulation_steps))
-  ax_err[1].plot(jnp.arange(p.simulation_steps), fullhed, '-', label=f'Final')
+  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), coeffs_err[-1][1],p.r0_init,p.r0_final)
+  fullhed = trap_fn(jnp.arange(p.param_set.simulation_steps))
+  ax_err[1].plot(jnp.arange(p.param_set.simulation_steps), fullhed, '-', label=f'Final')
 
 
   ax_err[1].legend()#
