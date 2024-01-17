@@ -56,7 +56,7 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
   eta = jnp.mean(exp_works, axis = 0)
 
   traj_min = trajectories.min()
-  traj_max = trajectories.max()
+  traj_max = trajectories.max() + 1e-3
   bin_width = (traj_max-traj_min)/bins
 
 
@@ -274,7 +274,7 @@ def optimize_landscape(
                             key) 
     
     logging.info("Creating landscape.")
-    new_landscape = energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
+    new_landscape = energy_reconstruction(jnp.cumsum(works, axis = 1), trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
     landscapes.append(new_landscape)
 
     positions, energies = new_landscape
@@ -339,7 +339,7 @@ def optimize_landscape(
                             key) 
   
   logging.info("Creating landscape.")
-  new_landscape = energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
+  new_landscape = energy_reconstruction(jnp.cumsum(works, axis = 1), trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
   landscapes.append(new_landscape)
   
   return landscapes, coeffs
