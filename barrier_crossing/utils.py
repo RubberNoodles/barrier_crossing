@@ -8,6 +8,8 @@ from dataclasses import dataclass
 import barrier_crossing.energy as bc_energy
 import barrier_crossing.simulate as bc_simulate
 
+from argparse import ArgumentParser
+
 ShiftFn = space.ShiftFn
 Array = util.Array
 
@@ -115,3 +117,19 @@ class GDParameters(MDParameters):
       return bc_energy.V_biomolecule_geiger(k_s, self.epsilon, self.sigma)
     else:
       return bc_energy.V_biomolecule_geiger(self.k_s, self.epsilon, self.sigma)
+
+class SimulationArgParser(ArgumentParser):
+    def to_param_set(self, param_set):
+        param_set.end_time = self.end_time
+        param_set.k_s = self.k_s
+        
+def parse_args():
+    parser = SimulationArgParser()
+    
+    parser.add_argument('--end_time', type=float, help='Length of the simulation in seconds.')
+    parser.add_argument('--k_s', type = float, help = "Trap stiffness k_s.")
+    parser.add_argument('--batch_size', type = int, help = "Number of trajectories to simulate in parallel.")
+    parser.parse_args()
+    
+    return parser
+    
