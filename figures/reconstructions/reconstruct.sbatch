@@ -33,6 +33,5 @@ echo "Installation complete. Releasing Lock. Running code..."
 
 mv "../lock" "../deleteme" && rm "../deleteme"
 
-python3 reconstruct.py "$1" "$2" "$3" "$4" "$5"
-
+python3 reconstruct.py --landscape_name "$1" --param_suffix "$2" --end_time "$3" --k_s "$4" --batch_size "$5"
 deactivate

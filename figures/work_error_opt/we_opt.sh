@@ -27,5 +27,7 @@ echo "Installation complete. Releasing Lock. Running code..."
 
 mv "../lock" "../deleteme" && rm "../deleteme"
 
-python3 we_opt.py "$1" "$2"
+python3 iterative.py --landscape_name "$1" --param_suffix "$2" --end_time "$3" --k_s "$4"
+
+deactivate
 # python3 plotting.py

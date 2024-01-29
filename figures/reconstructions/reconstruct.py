@@ -12,6 +12,7 @@ import barrier_crossing.protocol as bc_protocol
 import barrier_crossing.simulate as bc_simulate
 import barrier_crossing.optimize as bc_optimize
 import barrier_crossing.iterate_landscape as bc_landscape
+from barrier_crossing.utils import parse_args
 
 import jax.numpy as jnp
 import jax.random as random
@@ -21,20 +22,11 @@ import matplotlib.pyplot as plt
 # from figures.params import * # global variables;
 
 if __name__ == "__main__":
-  landscape_name = str(sys.argv[1])
-  landscape_path = landscape_name.replace(" ", "_").replace(".", "_").lower()
-  param_name = str(sys.argv[2])
-  k_s = float(sys.argv[3])
-  end_time = float(sys.argv[4])
-  batch_size_sc_rec = int(sys.argv[5])
-  
-  p = importlib.import_module(f"figures.param_set.params_{param_name}")
-  p.param_set.k_s = k_s
-  p.param_set.end_time = end_time
+  args, p  = parse_args()
   sim_cut_steps = p.param_set.simulation_steps // 2
   
-  
-  parent_dir = f"output_data/{landscape_path}/"
+  path = args.landscape_name.replace(" ", "_").replace(".", "_").lower()
+  parent_dir = f"output_data/{path}/"
   if not os.path.isdir(parent_dir):
     os.mkdir(parent_dir)
   if not os.path.isdir(parent_dir+"plotting"):
@@ -73,18 +65,18 @@ if __name__ == "__main__":
   ax_protocol = fig_pro.add_subplot(1, 1, 1)
   ax_hist = fig_hist.add_subplot(1,1,1)
 
-  ax_protocol.set_title(f"{landscape_name} Protocols")
+  ax_protocol.set_title(f"{args.landscape_name} Protocols")
   ax_protocol.set_xlabel("Timestep")
   ax_protocol.set_ylabel("Position")
-  ax_reconstruct.set_title(f"{landscape_name} Energy Reconstructions | kₛ = { p.param_set.k_s} | end_time = { p.param_set.end_time }")
+  ax_reconstruct.set_title(f"{args.landscape_name} Energy Reconstructions | kₛ = { args.k_s} | end_time = { args.end_time }")
   ax_reconstruct.set_xlabel("Position")
   ax_reconstruct.set_ylabel("Energy")
-  ax_hist.set_title(f"{landscape_name} Dissipated Work Distribution | kₛ = { p.param_set.k_s} | end_time = { p.param_set.end_time }")
+  ax_hist.set_title(f"{args.landscape_name} Dissipated Work Distribution | kₛ = { args.k_s} | end_time = { args.end_time }")
   ax_hist.set_xlabel("Dissipated Work")
 
   no_trap = p.param_set.energy_fn(0.)
   time_vec = jnp.linspace(-20,20, 1000)
-  if "triple" in landscape_name.lower():
+  if "triple" in args.landscape_name.lower():
     time_vec = jnp.linspace(-12,12, 1000)
   ax_reconstruct.plot(time_vec, jnp.squeeze(no_trap(time_vec.reshape(1,1,1000))) - no_trap([[p.r0_init]]), label = "Original", color = 'k')
 
@@ -127,7 +119,7 @@ if __name__ == "__main__":
     bins = 70
 
     total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
-        batch_size_sc_rec, simulate_fwd, key)
+        args.batch_size, simulate_fwd, key)
     
     # work distribution data
     mean_work = batch_works.mean()
@@ -145,8 +137,8 @@ if __name__ == "__main__":
         bins, 
         trap_fn, 
         p.param_set.simulation_steps, 
-        batch_size_sc_rec, 
-        p.param_set.k_s, 
+        args.batch_size, 
+        args.k_s, 
         p.beta)
   
     landscape = (midpoints, energies)
@@ -224,8 +216,8 @@ if __name__ == "__main__":
   ax_hist.legend()
   ax_protocol.legend()
   ax_reconstruct.legend()
-  fig_hist.savefig(parent_dir + f"plotting/work_distribution_k{k_s}_t{end_time}_b{batch_size_sc_rec}.png")
-  fig_rec.savefig(parent_dir + f"plotting/reconstructions_k{k_s}_t{end_time}_b{batch_size_sc_rec}.png")
+  fig_hist.savefig(parent_dir + f"plotting/work_distribution_k{args.k_s}_t{args.end_time}_b{args.batch_size}.png")
+  fig_rec.savefig(parent_dir + f"plotting/reconstructions_k{args.k_s}_t{args.end_time}_b{args.batch_size}.png")
   fig_pro.savefig(parent_dir + f"plotting/protocol.png")
 
   with open(parent_dir + "/landscape_data.pkl", "wb") as f:
