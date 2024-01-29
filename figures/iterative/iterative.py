@@ -1,7 +1,5 @@
 import time
 import pickle
-import sys
-import importlib
 import os
 
 import jax.numpy as jnp
@@ -13,18 +11,13 @@ import matplotlib.pyplot as plt
 import barrier_crossing.protocol as bc_protocol
 import barrier_crossing.optimize as bc_optimize
 import barrier_crossing.iterate_landscape as bc_landscape
+from barrier_crossing.utils import parse_args
 
 if __name__ == "__main__":
+  args, p = parse_args()
   
-  landscape_name = str(sys.argv[1])
-  param_name = str(sys.argv[2])
-  p = importlib.import_module(f"figures.param_set.params_{param_name}")
   
-  p.param_set.k_s = float(sys.argv[3])
-  p.param_set.end_time = float(sys.argv[4])
-  rec_batch_size = int(sys.argv[5])
-  
-  path = f"output_data/{landscape_name.replace(' ', '_').replace('.', '_').lower()}/"
+  path = f"output_data/{args.landscape_name.replace(' ', '_').replace('.', '_').lower()}/"
   if not os.path.isdir(path):
     os.mkdir(path)
 
@@ -47,7 +40,7 @@ if __name__ == "__main__":
   # e_energies = jnp.array(pos_e)[:,1] * scale
 
   # The plot on the energy function underneath will be coarse-grained due to few sample points.
-  #energy_custom_plot = bc_energy.V_biomolecule_reconstructed(p.k_s, e_positions, e_energies)
+  #energy_custom_plot = bc_energy.V_biomolecule_recoargs.k_s, e_positions, e_energies)
   # Protocol Coefficients
   # lin_coeffs = jnp.array([-1.14278407e-07,  3.33333325e+00,  5.03512065e-10,  2.32704592e-10,
   #       9.57856017e-10, -2.86552310e-10,  1.17483601e-09, -4.50110560e-10,
@@ -80,7 +73,7 @@ if __name__ == "__main__":
   #   fwd = True,
   #   custom = energy_fn)
 
-  max_iter = 8
+  max_iter = 1
   opt_steps_landscape = 300 # 1000 + 
   bins = 100
   opt_batch_size = 5000 # 10k + 
@@ -110,12 +103,12 @@ if __name__ == "__main__":
                       bins,
                       p.param_set.simulation_steps,
                       opt_batch_size,
-                      rec_batch_size,
+                      args.batch_size, # number of trajectories for reconstruction
                       opt_steps_landscape, 
                       optimizer,
                       p.r0_init, p.r0_final,
-                      p.param_set.k_s, p.beta,
-                      savefig = f"{landscape_name}"
+                      args.k_s, p.beta,
+                      savefig = f"{args.landscape_name}"
   )
   positions = jnp.array(landscapes[-1][0])
 
@@ -144,8 +137,8 @@ if __name__ == "__main__":
   plt.legend()
   plt.xlabel("Position (x)")
   plt.ylabel("Free Energy (G)")
-  plt.title(f"Iteratively Reconstructing Landscape; {landscape_name}; {p.param_set.end_time}")
-  plt.savefig(path + f"reconstruct_landscapes_{p.param_set.k_s}_{p.param_set.end_time}_{rec_batch_size}.png")
+  plt.title(f"Iteratively Reconstructing Landscape; {args.landscape_name}; {args.end_time}")
+  plt.savefig(path + f"reconstruct_landscapes_{args.k_s}_{args.end_time}_{args.batch_size}.png")
   
   plt.figure(figsize = (8,8))
   trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
@@ -155,11 +148,11 @@ if __name__ == "__main__":
       plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps-1)), label = f"Iteration {i}")
   plt.xlabel("Simulation Step")
   plt.ylabel("Position (x)")
-  plt.title(f"Protocols Over Iteration; {p.param_set.end_time}")
+  plt.title(f"Protocols Over Iteration; {args.end_time}")
   plt.legend()
-  plt.savefig(path + f"opt_protocol_evolution_{p.param_set.k_s}_{p.param_set.end_time}_{rec_batch_size}.png")
+  plt.savefig(path + f"opt_protocol_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
   
-  with open(path + f"coeffs__{p.param_set.k_s}_{p.param_set.end_time}_{rec_batch_size}.pkl", "wb") as f:
+  with open(path + f"coeffs__{args.k_s}_{args.end_time}_{args.batch_size}.pkl", "wb") as f:
     pickle.dump(coeffs, f)
 
 print(p.param_set)

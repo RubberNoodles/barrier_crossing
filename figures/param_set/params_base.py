@@ -8,7 +8,7 @@
 import jax.numpy as jnp
 from jax_md import space
 
-import barrier_crossing.param as bc_params
+import barrier_crossing.utils as bc_params
 
 N = 1
 dim = 1
@@ -42,13 +42,12 @@ kappa_l=6.38629/(beta*x_m**2) # Ebarrier ~ 2,5 kT
 kappa_r=kappa_l #pN/nm; 
 Neq = 1000
 
-# end_time = 1e-6 # Langevin
-# dt = 1e-9
-end_time = 1e-4 # Brownian
-dt = 3e-7 # needs to be 1e-7 to avoid drift...
-
+end_time = 2e-6 # Langevin
+dt = 4e-9
+#end_time = 3e-4 # Brownian
+#dt = 3e-7 # needs to be 1e-7 to avoid drift...
 # Megan's is 0.4
-k_s = 0.4 # stiffness; 
+k_s = 1.0 # stiffness; 
 
 sc_params = bc_params.SCParameters( N = N,
                                     dim = dim,

@@ -7,6 +7,9 @@ from dataclasses import dataclass
 
 import barrier_crossing.energy as bc_energy
 import barrier_crossing.simulate as bc_simulate
+import importlib
+
+from argparse import ArgumentParser
 
 ShiftFn = space.ShiftFn
 Array = util.Array
@@ -115,3 +118,27 @@ class GDParameters(MDParameters):
       return bc_energy.V_biomolecule_geiger(k_s, self.epsilon, self.sigma)
     else:
       return bc_energy.V_biomolecule_geiger(self.k_s, self.epsilon, self.sigma)
+
+
+        
+def parse_args():
+  """Parse arguments for running various simulations
+
+  Returns:
+      args: Namespace of arguments parsed by ArgumentParser()
+      p: Parameter set loaded at param_set.params_`param_name`.py
+  """
+  parser = ArgumentParser()
+  parser.add_argument("--landscape_name", type = str, help = "Name of underlying landscape (e.g. 25KT Sivak & Crooks).")
+  parser.add_argument("--param_suffix", type = str, help = "Suffix of parameter set inside figures/param_set directory.")
+  parser.add_argument('--end_time', type=float, help='Length of the simulation in seconds.')
+  parser.add_argument('--k_s', type = float, help = "Trap stiffness k_s.")
+  parser.add_argument('--batch_size', type = int, default = None, help = "Number of trajectories to simulate in parallel for RECONSTRUCTION.")
+  args = parser.parse_args()
+  
+  param_name = args.param_suffix
+  p = importlib.import_module(f"figures.param_set.params_{param_name}")
+  p.param_set.k_s = args.k_s
+  p.param_set.end_time = args.end_time
+  return args, p
+  

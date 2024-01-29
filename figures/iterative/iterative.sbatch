@@ -52,4 +52,6 @@ mv "lock" "deleteme" && rm "deleteme"
 
 #python3 "./iterative.py" ${SLURM_ARRAY_TASK_ID}
 
-python3 iterative.py "$1" "$2" "$3" "$4" "$5"
+python3 iterative.py --landscape_name "$1" --param_suffix "$2" --end_time "$3" --k_s "$4" --batch_size "$5"
+
+deactivate

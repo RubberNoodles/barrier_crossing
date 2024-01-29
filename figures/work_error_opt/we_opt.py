@@ -1,11 +1,10 @@
 # Optimize coefficients for work and error distributions.
 import pickle
-import sys
 import os
-import importlib
 
 import barrier_crossing.protocol as bc_protocol
 import barrier_crossing.optimize as bc_optimize
+from barrier_crossing.utils import parse_args
 
 import jax.numpy as jnp
 
@@ -25,11 +24,10 @@ def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   ax.plot(xs, mn, label=label)
 
 if __name__ == "__main__":
-  landscape_name = str(sys.argv[1])
-  param_name = str(sys.argv[2])
-  p = importlib.import_module(f"figures.param_set.params_{param_name}")
+  args, p = parse_args()
   
-  path = f"output_data/{landscape_name.replace(' ', '_').replace('.', '_').lower()}/"
+  
+  path = f"output_data/{args.landscape_name.replace(' ', '_').replace('.', '_').lower()}/"
   if not os.path.isdir(path):
     os.mkdir(path)
   
@@ -131,7 +129,7 @@ if __name__ == "__main__":
 
 
   ax_work[1].legend()#
-  ax_work[1].set_title(f'{landscape_name} Schedule Evolution')
+  ax_work[1].set_title(f'{args.landscape_name} Schedule Evolution')
 
   plt.savefig(path+"work_optimization.png")
   
@@ -160,7 +158,7 @@ if __name__ == "__main__":
 
 
   ax_err[1].legend()#
-  ax_err[1].set_title(f'{landscape_name} Schedule Evolution')
+  ax_err[1].set_title(f'{args.landscape_name} Schedule Evolution')
 
   plt.savefig(path + "error_optimization.png")
 
