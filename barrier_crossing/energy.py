@@ -1,5 +1,5 @@
-import collections
-from typing import Any, Callable, TypeVar, Union, Tuple, Dict, Optional
+from typing import Callable, TypeVar, Tuple
+from abc import ABC, abstractmethod
 
 import jax.numpy as jnp
 from jax import random, lax, jit
@@ -9,8 +9,6 @@ from tensorflow_probability.substrates import jax as tfp
 tfd = tfp.distributions
 
 from jax_md import util
-
-from barrier_crossing.protocol import make_trap_fxn, make_trap_fxn_rev
 
 
 # Typing
@@ -63,7 +61,7 @@ def brownian(energy_or_force,
     gamma: A float specifying the friction coefficient between the particles
       and the solvent.
   Returns:
-    Tuple of `init_fn` to initialize the simulator and `apply_fn` to move orward one step
+    Tuple of `init_fn` to initialize the simulator and `apply_fn` to move forward one step
       in time.
     [1] E. Carlon, M. Laleman, S. Nomidis. "Molecular Dynamics Simulation."
         http://itf.fys.kuleuven.be/~enrico/Teaching/molecular_dynamics_2015.pdf
@@ -78,7 +76,7 @@ def brownian(energy_or_force,
 
   def _dist(state, t, **kwargs):
     nu = jnp.float32(1) / (state.mass * gamma)
-    F = force_fn(state.position, t=t, **kwargs)
+    F = force_fn(state.position, **kwargs)
     mean =  F * nu * dt
     variance = jnp.float32(2) * T_schedule(t) * dt * nu
     return tfd.Normal(mean, jnp.sqrt(variance))
@@ -237,70 +235,57 @@ def nvt_langevin(energy_or_force_fn: Callable[..., Array],
   return init_fn, step_fn
 
 
-# 2016 Sivak and Crooks energy landscape. [ ] TODO: Full Citations.
-def V_biomolecule_sivak(kappa_l, kappa_r, x_m, delta_E, k_s, beta):
-  """Returns:
-      Function that takes arguments of `position` and `trap_position` to output the total
-        energy of the system for those parameters."""
-  def total_energy(position, r0=0.0, **unused_kwargs):
-      x = position[0][0]
-      Em = -(1./beta)*jnp.log(jnp.exp(-0.5*beta*kappa_l*(x+x_m)**2)+jnp.exp(-(0.5*beta*kappa_r*(x-x_m)**2+beta*delta_E)))
-      #moving harmonic potential:
-      Es = k_s/2 * (x-r0) ** 2
-      return Em + Es
-  return total_energy
-
-# 2010 Geiger and Dellago energy landscape.
-def V_biomolecule_geiger(k_s, epsilon, sigma):
-  """Returns:
-    Function that takes arguments of `position` and `trap_position` to output the total
-      energy of the system for those parameters."""
-  def total_energy(position, r0=0.0, **unused_kwargs):
-      x = position[0][0]
-      #underlying energy landscape:
-      # 1/beta * log(e^(-0.5 beta kappa_1 (x + x_m)^2) + )
-      Em = epsilon * (1 - (x/sigma - 1)**2)**2 + (epsilon/2)*((x/sigma) - 1)
-      #moving harmonic potential:
-      Es = k_s/2 * (x-r0) ** 2
-      return Em + Es
-  return total_energy
-
-def V_biomolecule_reconstructed(k_s, positions, energies):
-  """Returns a function that takes position and outputs the free energy of 
-  a particle on a reconstructed landscape. 
+class PotentialLandscape(ABC):
+  """Abstract Class for potential energy landscape code. Children determine specific landscape shape 
+  depending on parameter sets."""
+    
+  @abstractmethod
+  def molecule_energy(self, x):
+    pass
   
-  Args:
-    positions: Array[Floats]. An array of particle positions
-    energies: Array[Floats]
-      Same shape as positions, and the i-th value of the array is equal to
-    the free energy of a particle at the i-th position.
+  def total_energy(self, position, k_s, r0=0.0, **unused_kwargs):
+    """Find energy based on trap stiffness k_s, trap position r0, and molecule position."""
+    x = jnp.float32(jnp.squeeze(position))
+    trap_energy = k_s/2 * (x- r0) ** 2
+    return trap_energy + self.molecule_energy(x)
+
+class SivakLandscape(PotentialLandscape):
+  def __init__(self, kappa_l, kappa_r, x_m, delta_E, beta):
+    self.kappa_l = kappa_l
+    self.kappa_r = kappa_r
+    self.x_m = x_m
+    self.delta_E = delta_E
+    self.beta = beta
+
+  def molecule_energy(self, x):
+    first_well = jnp.exp(-0.5*self.beta*self.kappa_l*(x+self.x_m)**2)
+    second_well =  jnp.exp( -(0.5*self.beta*self.kappa_r*(x-self.x_m)**2 +self.beta*self.delta_E))
+    return -(1./self.beta)*jnp.log(first_well+second_well)
+
+class GeigerLandscape(PotentialLandscape):
+  def __init__(self, epsilon, sigma):
+    self.epsilon = epsilon
+    self.sigma = sigma
+    
+  def molecule_energy(self, x):
+    return self.epsilon * (1 - (x/self.sigma - 1)**2)**2 + (self.epsilon/2)*((x/self.sigma) - 1)
   
-  Returns: Callable[particle_position, r0 = trap_position]
+class ReconstructedLandscape(PotentialLandscape):
+  """Assuming a particle at positions[i] has energies[i], interpolate between in order
+  to build an potential energy function.
   """
-  # Assuming a particle at positions[i] has G = energies[i]
-
-  start = positions[0]
-  end = positions[-1]
-  dx = positions[1]-positions[0]
-
-  def total_energy(particle_position, r0 = 0., **unused_kwargs):
-    x = particle_position[0][0]
+  
+  def __init__(self, positions, energies):
+    self.positions = positions
+    self.energies = energies
+  
+  def molecule_energy(self, x):
+    start = self.positions[0]
+    dx = self.positions[1]-self.positions[0]
+    
     bin_num = (x-start)/dx
     bin_num = bin_num.astype(int)
 
     # interpolate
     t = (x-(bin_num * dx + start))/dx
-    Em = t * energies[bin_num+1] + (1-t) * energies[bin_num]
-  
-    # moving harmonic potential
-    Es = k_s/2 * (x-r0) ** 2
-    return Em + Es
-  return total_energy
-
-# Currently unused
-def V_simple_spring(r0,k,box_size):
-  def spring_energy(position, **unused_kwargs):
-    dR=(position[0][0]-r0)
-    return k/2 * dR ** 2
-  return spring_energy
-
+    return t * self.energies[bin_num+1] + (1-t) * self.energies[bin_num]

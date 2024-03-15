@@ -39,32 +39,41 @@ class MDParameters:
   k_s: float
   end_time: float
   dt: float
-  
-  
   Neq: int
-    
-  def energy_fn(self, k_s, custom = None):
-    # Energy function output to be overridden by subclasses.
+
+
+  @property
+  def landscape(self):
+    # Landscape output to be overridden by subclasses.
     pass
   
   @property
   def simulation_steps(self):
     return int(self.end_time/self.dt)
   
+  def energy_fn(self, no_trap = False):
+    if "custom" in self.__dict__.keys():
+      return self.custom
+    else:
+      if no_trap:
+        return lambda position, **kwargs: self.landscape.total_energy(position, k_s = 0., r0 = 0., **kwargs)
+      else:
+        return self.landscape.total_energy
+  
   def set_energy_fn(self, custom):
     self.custom = custom
   
-  def simulate_fn(self, trap_fn, key, regime = "langevin", fwd = True, custom = None, **kwargs):
+  def simulate_fn(self, trap_fn, ks_trap_fn,  key, regime = "langevin", fwd = True, custom = None, **kwargs):
     init_pos = self.init_position_fwd if fwd else self.init_position_rev
     energy_fn = custom if custom else self.energy_fn() # Primarily for plotting/iterative procedure
     
     self.__dict__.update(kwargs)
-    
-    
+
     if regime.strip().lower() == "langevin":
       return bc_simulate.simulate_langevin_harmonic( energy_fn,
                                                      init_pos,
                                                      trap_fn,
+                                                     ks_trap_fn,
                                                      self.simulation_steps,
                                                      self.Neq,
                                                      self.shift,
@@ -79,6 +88,7 @@ class MDParameters:
       return bc_simulate.simulate_brownian_harmonic( energy_fn,
                                                      init_pos,
                                                      trap_fn,
+                                                     ks_trap_fn,
                                                      self.simulation_steps,
                                                      self.Neq,
                                                      self.shift,
@@ -119,30 +129,18 @@ class SCParameters(MDParameters):
   kappa_l: float
   kappa_r: float
   
-  def energy_fn(self, k_s = None):
-    if "custom" in self.__dict__.keys():
-      return self.custom
-    if k_s or k_s == 0.:
-      return bc_energy.V_biomolecule_sivak(self.kappa_l, self.kappa_r, self.x_m, self.delta_E, k_s, self.beta)
-    else:
-      return bc_energy.V_biomolecule_sivak(self.kappa_l, self.kappa_r, self.x_m, self.delta_E, self.k_s, self.beta)
-  
-  
-  
+  @property
+  def landscape(self):
+    return bc_energy.SivakLandscape(self.kappa_l, self.kappa_r, self.x_m, self.delta_E, self.beta)
+
 @dataclass
 class GDParameters(MDParameters):
   epsilon: float
   sigma: float
   
-  def energy_fn(self, k_s = None):
-    if "custom" in self.__dict__.keys():
-      return self.custom
-    if k_s or k_s == 0.:
-      return bc_energy.V_biomolecule_geiger(k_s, self.epsilon, self.sigma)
-    else:
-      return bc_energy.V_biomolecule_geiger(self.k_s, self.epsilon, self.sigma)
-
-
+  @property
+  def landscape(self):
+    return bc_energy.GeigerLandscape(self.epsilon, self.sigma)
         
 def parse_args():
   """Parse arguments for running various simulations
