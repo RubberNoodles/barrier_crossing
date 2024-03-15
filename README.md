@@ -1,6 +1,8 @@
 # Barrier Crossing
 _By: Megan Engel, Oliver Cheng, Zofia Adamska_
 
+# Old branch for backward compatibility with Pre-2024 Code.
+
 ## Reconstructing Free Energy Landscapes using Jarzynski Identity
 
 Made with Python 3.9.10
