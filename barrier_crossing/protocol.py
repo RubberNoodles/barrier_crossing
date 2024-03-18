@@ -121,7 +121,7 @@ def trap_sum(simulation_steps, cut, trap1, trap2):
     return positions[0]
   return Get_r0
 
-def trap_sum_rev(timevec, simulation_steps, cut, trap1, trap2): 
+def trap_sum_rev(simulation_steps, cut, trap1, trap2): 
   """
   Make a trap function out of two "pieces" : trap1 and trap2.
   This is the reverse direction, so
@@ -135,3 +135,4 @@ def trap_sum_rev(timevec, simulation_steps, cut, trap1, trap2):
     #return jnp.array(positions).flatten()
     return positions[0]
   return Get_r0
+

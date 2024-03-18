@@ -81,7 +81,8 @@ def brownian(energy_or_force,
     variance = jnp.float32(2) * T_schedule(t) * dt * nu
     return tfd.Normal(mean, jnp.sqrt(variance))
   
-  def init_fn(key, R, mass=jnp.float32(1)):
+  def init_fn(key, R, mass=jnp.float32(1), **unused_kwargs):
+    # print(f"WARNING: Unused kwargs with keys: {list(unused_kwargs.keys())}; continuing...")
     state = BrownianState(R, mass, key, 0.)
     state = simulate.canonicalize_mass(state)
     return state
@@ -157,7 +158,7 @@ def stochastic_step(state: NVTLangevinState, dt:float, kT: float, gamma: float):
 def nvt_langevin(energy_or_force_fn: Callable[..., Array],
                  shift_fn: ShiftFn,
                  dt: float,
-                 kT: float,
+                 T_schedule: float,
                  gamma: float=0.1,
                  center_velocity: bool=True,
                  **sim_kwargs) -> Simulator:
@@ -184,9 +185,9 @@ def nvt_langevin(energy_or_force_fn: Callable[..., Array],
       `R` and `dR` should be ndarrays of shape `[n, spatial_dimension]`.
     dt: Floating point number specifying the timescale (step size) of the
       simulation.
-    kT: Floating point number specifying the temperature in units of Boltzmann
+    T_schedule: Floating point number specifying the temperature in units of Boltzmann
       constant. To update the temperature dynamically during a simulation one
-      should pass `kT` as a keyword argument to the step function.
+      should pass `T_schedule` as a keyword argument to the step function.
     gamma: A float specifying the friction coefficient between the particles
       and the solvent.
     center_velocity: A boolean specifying whether or not the center of mass
@@ -203,26 +204,26 @@ def nvt_langevin(energy_or_force_fn: Callable[..., Array],
 
   @jit
   def init_fn(key, R, mass=f32(1.0), **kwargs):
-    _kT = kwargs.pop('kT', kT)
+    _T_schedule = kwargs.pop('T_schedule', T_schedule)
     key, split = random.split(key)
     force = force_fn(R, **kwargs)
     state = NVTLangevinState(R, None, force, mass, key, 0)
     #print(state.position)
     state = simulate.canonicalize_mass(state)
     #print(state.position)
-    return simulate.initialize_momenta(state, split, _kT)
+    return simulate.initialize_momenta(state, split, _T_schedule)
 
   @jit
   def step_fn(state, **kwargs):
     _dt = kwargs.pop('dt', dt)
-    _kT = kwargs.pop('kT', kT)
+    _T_schedule = kwargs.pop('T_schedule', T_schedule)
     dt_2 = _dt / 2
 
     #key, split = random.split(state.rng)
 
     state = simulate.momentum_step(state, dt_2)
     state = simulate.position_step(state, shift_fn, dt_2, **kwargs)
-    state = simulate.stochastic_step(state, _dt, _kT, gamma)
+    state = simulate.stochastic_step(state, _dt, _T_schedule, gamma)
     state = simulate.position_step(state, shift_fn, dt_2, **kwargs)
     state = state.set(force=force_fn(state.position, **kwargs))
     state = simulate.momentum_step(state, dt_2)
