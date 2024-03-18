@@ -11,7 +11,7 @@ import barrier_crossing.protocol as bc_protocol
 
 import jax.numpy as jnp
 
-
+import matplotlib.pyplot as plt
 
 import importlib
 
@@ -63,7 +63,7 @@ class MDParameters:
   def set_energy_fn(self, custom):
     self.custom = custom
   
-  def simulate_fn(self, trap_fn, ks_trap_fn,  key, regime = "langevin", fwd = True, custom = None, **kwargs):
+  def simulate_fn(self, trap_fn, ks_trap_fn,  key, regime = "brownian", fwd = True, custom = None, **kwargs):
     init_pos = self.init_position_fwd if fwd else self.init_position_rev
     energy_fn = custom if custom else self.energy_fn() # Primarily for plotting/iterative procedure
     
@@ -109,18 +109,26 @@ class MDParameters:
 
   def __getstate__(self):
     return_dict = copy.deepcopy(self.__dict__)
-    if return_dict["fn"]:
-      print("WARNING: Shift function cannot be pickled. Continuing...")
-      return_dict["fn"] = None
+    if "shift" in return_dict.keys():
+      if return_dict["shift"]:
+        print("WARNING: Shift function cannot be pickled. Continuing...")
+        return_dict["shift"] = None
     return return_dict
   
   def __setstate__(self, d):
-    if d["fn"] == None:
-      print("WARNING: Shift function inferred as space.free(). Manually change if this was unintended.")
-      d["fn"] = space.free()
-    
+    if "shift" in d.keys():
+      if d["shift"] == None:
+        print("WARNING: Shift function inferred as space.free(). Manually change if this was unintended.")
+        d["shift"] = space.free()
+      
     self.__dict__ == d
 
+  @classmethod
+  def copy(cls, obj):
+    """Manual copy"""
+    return cls(**obj.__dict__)
+    
+    
 @dataclass
 class SCParameters(MDParameters):
   D: float
@@ -185,34 +193,105 @@ def copy_dir_coeffs(parent_dir, path, coeff_dir, coeff_files):
           print(f"{err} occurred. Coefficients {coeff_type} not copied. Continuing...")
 
 
-
-def make_trap_from_file(file_name, coeff_dir, p: MDParameters):
-  if file_name == "linear":
-      coeff = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.param_set.simulation_steps, degree = 12, y_intercept = p.r0_init)
-  else:
-    if "lr" in file_name:
-      path = file_name
-    else:
-      path = coeff_dir + file_name
-    try:
-      with open(path, "rb") as f:
-        coeff = jnp.array(pickle.load(f))
-    except FileNotFoundError:
-      print(f"In order to run this code, you need a file of coefficients called {coeff_dir+file_name}")
-      raise
-  time_vec = jnp.arange(p.param_set.simulation_steps)
-  if file_name == "split.pkl":
-    sim_cut_steps = p.param_set.simulation_steps // 2
-    # We are going to only look at gradient values for the second set of coefficients
-    _a = bc_protocol.make_trap_fxn( jnp.arange(sim_cut_steps), coeff[0], p.r0_init, p.r0_cut)
-    _b = bc_protocol.make_trap_fxn( jnp.arange(p.param_set.simulation_steps - sim_cut_steps), coeff[1], p.r0_cut, p.r0_final)
-    trap_fn = bc_protocol.trap_sum(p.param_set.simulation_steps, sim_cut_steps, _a, _b)
-    
-  elif "lr" in file_name:
-    time = jnp.linspace(0, p.param_set.simulation_steps, coeff.shape[0])
-    positions = jnp.vstack((time, coeff)).T
-    trap_fn = bc_protocol.make_custom_trap_fxn(time_vec, positions, p.r0_init, p.r0_final)  
-  else:
-    trap_fn = bc_protocol.make_trap_fxn(time_vec, coeff, p.r0_init, p.r0_final)
+def find_coeff_file(model_info, args):
+  """Helper function for reconstruct.py"""
+  if model_info == "linear":
+    return None, None
+  dir_name = "../work_error_opt/output_data/" + "_".join([args.landscape_name.replace(' ', '_').replace('.', '_').lower(), f"t{args.end_time}", f"ks{args.k_s}"]) +"/"
+  #dir_name = "figures/work_error_opt/output_data/" + "_".join([args.landscape_name.replace(' ', '_').replace('.', '_').lower(), f"t{args.end_time}", f"ks{args.k_s}"]) +"/"
   
-  return trap_fn, coeff
+  model_type = model_info[0]
+  if "lr" in model_info:
+    dir_name = "/"
+    file_name = model_info[0]
+    return dir_name, file_name
+  mode = model_info[1]
+  
+  
+  if model_type == "joint":
+    coeff_searches = {
+      "position":[f"joint_{mode}_position"], 
+      "stiffness": [f"joint_{mode}_stiffness"]
+      }
+  
+  else:
+    coeff_searches = {f"{mode}":[f"{model_type}_{mode}"]}
+  if "split" in model_info:
+    for key, search in coeff_searches.items():
+      coeff_searches[key] = [search[0] + "_split_1", search[0] + "_split_2"]
+  
+  coeff_searches = { key: [search + ".pkl" for search in searches] for key, searches in coeff_searches.items()}
+  return dir_name, coeff_searches
+  
+def make_constant_trap(model, val):
+  _tmp_1 = model.init_pos
+  _tmp_2 = model.final_pos
+  model.init_pos = val
+  model.final_pos = val
+  constant_trap = model.protocol(jnp.concatenate([jnp.array([val]), jnp.zeros(12)]))[0]
+  model.init_pos = _tmp_1
+  model.final_post = _tmp_2
+  
+  return constant_trap
+
+def make_trap_from_file(dir_name, file_names, position_protocol_maker, stiffness_protocol_maker, p):
+  """Helper function to output list containing [position_trap, stiffness_trap], in that order"""
+  params = position_protocol_maker.params
+  
+  constant_stiffness_schedule = make_constant_trap(stiffness_protocol_maker, params.k_s)
+  traps = [position_protocol_maker.protocol(position_protocol_maker.coeffs)[0], constant_stiffness_schedule]
+  sim_cut_steps = params.simulation_steps//2
+  
+  if file_names is None: # For linear trap
+    return traps
+      
+  if "position" in file_names.keys():
+    for file_name in file_names["position"]:
+      
+      path = dir_name + file_name
+      try:
+        with open(path, "rb") as f:
+          coeff = jnp.array(pickle.load(f))    
+      except FileNotFoundError as e:
+        # figures/work_error_opt/output_data/double_well_10kt_barrier_brownian_tNone_ksNone/joint_rev_position.pkl
+        print(f"In order to run this code, you need a file of coefficients at {dir_name+file_name}")
+        raise e
+      
+      if "split_1" in file_name:
+        traps[0] = [bc_protocol.make_trap_fxn( jnp.arange(sim_cut_steps), coeff, p.r0_init, p.r0_cut)]
+      elif "split_2" in file_name:
+        traps[0].append(bc_protocol.make_trap_fxn( jnp.arange(params.simulation_steps - sim_cut_steps), coeff, p.r0_cut, p.r0_final))
+      else:
+        traps[0] = position_protocol_maker.protocol(coeff)[0]
+  if "stiffness" in file_names.keys():
+    for file_name in file_names["stiffness"]:
+      path = dir_name + file_name
+      try:
+        with open(path, "rb") as f:
+            coeff = jnp.array(pickle.load(f))    
+      except FileNotFoundError as e:
+        print(f"In order to run this code, you need a file of coefficients at `{dir_name+file_name}`.")
+        raise e
+      
+      if "split_1" in file_name:
+        traps[1] = [bc_protocol.make_trap_fxn( jnp.arange(sim_cut_steps), coeff, p.ks_init, p.ks_cut)]
+      elif "split_2" in file_name:
+        traps[1].append(bc_protocol.make_trap_fxn( jnp.arange(params.simulation_steps - sim_cut_steps), coeff, p.ks_cut, p.ks_final))
+      else:
+        traps[1] = stiffness_protocol_maker.protocol(coeff)[0]
+          
+  for i in range(0,2):
+    if isinstance(traps[i], list):
+      traps[i] = bc_protocol.trap_sum(params.simulation_steps, sim_cut_steps, traps[i][0], traps[i][1])
+  
+  return traps
+        
+
+def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
+  stddev = jnp.std(x, axis)
+  mn = jnp.mean(x, axis)
+  xs = jnp.arange(mn.shape[0]) * dt
+
+  ax.fill_between(xs,
+                  mn + n * stddev, mn - n * stddev, alpha=.3)
+  ax.plot(xs, mn, label=label)
