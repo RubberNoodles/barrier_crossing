@@ -53,7 +53,7 @@ class MDParameters:
   
   def energy_fn(self, no_trap = False):
     if "custom" in self.__dict__.keys():
-      return self.custom
+      return self.custom.total_energy
     else:
       if no_trap:
         return lambda position, **kwargs: self.landscape.total_energy(position, k_s = 0., r0 = 0., **kwargs)

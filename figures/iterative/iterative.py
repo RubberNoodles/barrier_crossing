@@ -9,10 +9,11 @@ import jax.example_libraries.optimizers as jopt
 import matplotlib.pyplot as plt
 
 import barrier_crossing.protocol as bc_protocol
-import barrier_crossing.optimize as bc_optimize
-import barrier_crossing.iterate_landscape as bc_landscape
+import barrier_crossing.train as bct
+import barrier_crossing.iterate_landscape as bcl
+import barrier_crossing.models as bcm
 from barrier_crossing.utils import parse_args
-
+    
 if __name__ == "__main__":
   args, p = parse_args()
   
@@ -20,17 +21,11 @@ if __name__ == "__main__":
   path = f"output_data/{args.landscape_name.replace(' ', '_').replace('.', '_').lower()}/"
   if not os.path.isdir(path):
     os.mkdir(path)
-
-  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.param_set.simulation_steps, degree = 12, y_intercept = p.r0_init)
-  trap_fn_fwd = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  trap_fn_rev = bc_protocol.make_trap_fxn_rev(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  
-    
   # If triple well, we need to do something different
   # bh_index = int(sys.argv[1]) # For testing multiple landscapes
   # kappa_l_list = [ x/(p.beta*x_m**2) for x in [4., 5., 6.38629, 7., 8., 8.5, 9., 10.]]
   # kappa_l = kappa_l_list[bh_index-1]
-  # kappa_r=kappa_l*10  
+  # kappa_r = kappa_l * 10  
   
   
   # scale_arr = [2 + i/2 for i in range(8)]
@@ -47,25 +42,24 @@ if __name__ == "__main__":
   #       1.21933308e-09, -4.65200489e-10,  7.08764991e-10, -1.05334935e-10,
   #       6.99122538e-10]) # Slightly shifted
 
-  lin_coeffs = bc_protocol.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.param_set.simulation_steps, degree = 12, y_intercept = p.r0_init)
-  
-  # Trap Functions. Reverse mode trap functions are for when we compute Jarzynski error with reverse protocol trajectories.
-  trap_fn_fwd = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  trap_fn_rev = bc_protocol.make_trap_fxn_rev(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
-  
-  true_simulation_fwd = lambda trap_fn: lambda keys: p.param_set.simulate_fn(
+  position_model = bcm.ScheduleModel(p.param_set, p.r0_init, p.r0_final, mode = "fwd")
+  stiffness_model = bcm.ScheduleModel(p.param_set, p.ks_init, p.ks_final, mode = "fwd")
+
+  true_simulation_fwd = lambda trap_fn, ks_fn: lambda keys: p.param_set.simulate_fn(
     trap_fn, 
+    ks_fn,
     keys, 
     regime = "brownian",
     fwd = True)
-  
-  simulate_grad_rev = lambda energy_fn: lambda trap_fn, keys: p.param_set.simulate_fn(
+
+  sim_no_E = lambda energy_fn: lambda trap_fn, ks_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
+    ks_fn,
     keys, 
     regime = "brownian",
     fwd = False,
     custom = energy_fn)
-  
+
   # simulate_grad_fwd = lambda energy_fn: lambda trap_fn, keys: p.param_set.simulate_fn(
   #   trap_fn, 
   #   keys, 
@@ -73,43 +67,65 @@ if __name__ == "__main__":
   #   fwd = True,
   #   custom = energy_fn)
 
-  max_iter = 1
-  opt_steps_landscape = 300 # 1000 + 
-  bins = 100
-  opt_batch_size = 5000 # 10k + 
+  max_iter = 2
+  opt_steps_landscape = 5 # 1000 + 
+  bins = 75
+  opt_batch_size = 50 # 10k + 
 
-  grad_no_E = lambda num_batches, energy_fn: bc_optimize.estimate_gradient_rev(
+  grad_no_E = lambda model, simulate_fn: lambda num_batches: loss.estimate_gradient_rev(
       num_batches,
-      simulate_grad_rev(energy_fn),
-      p.r0_init, p.r0_final, p.param_set.simulation_steps,
-      p.beta)
+      simulate_fn,
+      model)
 
-  # grad_no_E = lambda num_batches, energy_fn: bc_optimize.estimate_gradient_work(
+  # grad_no_E = lambda num_batches, energy_fn: bct.estimate_gradient_work(
   #     num_batches,
   #     simulate_grad_fwd(energy_fn),
   #     p.r0_init, p.r0_final, p.param_set.simulation_steps)
+  reconstruct_fn = lambda batch_works, trajectories, position_fn, stiffness_fn, batch_size: \
+    bcl.energy_reconstruction(batch_works, 
+                              trajectories, 
+                              bins, 
+                              position_fn, 
+                              stiffness_fn, 
+                              p.param_set.simulation_steps,
+                              batch_size, 
+                              p.beta)
 
   lr = jopt.polynomial_decay(0.1, opt_steps_landscape, 0.001)
   optimizer = jopt.adam(lr)
 
+  train_fn = lambda model, grad_fn, key: bct.train(model, optimizer, grad_fn, key, batch_size = opt_batch_size, num_epochs = opt_steps_landscape)
+
+
   key = random.PRNGKey(int(time.time()))
-  
-  landscapes, coeffs = bc_landscape.optimize_landscape(
-                      true_simulation_fwd,
-                      lin_coeffs, # First reconstruction; should one reconstruct with forward or reverse simulations? Does it matter?
-                      grad_no_E,
-                      key,
-                      max_iter,
-                      bins,
-                      p.param_set.simulation_steps,
-                      opt_batch_size,
-                      args.batch_size, # number of trajectories for reconstruction
-                      opt_steps_landscape, 
-                      optimizer,
-                      p.r0_init, p.r0_final,
-                      args.k_s, p.beta,
-                      savefig = f"{args.landscape_name}"
-  )
+  landscapes, coeffs, losses = bcl.optimize_landscape(
+    max_iter,
+    args.batch_size,
+    position_model,
+    stiffness_model,
+    true_simulation_fwd,
+    sim_no_E,
+    grad_no_E,
+    reconstruct_fn,
+    train_fn,
+    key)
+  # landscapes, coeffs = bcl.optimize_landscape(
+  #                     true_simulation_fwd,
+  #                     lin_coeffs, # First reconstruction; should one reconstruct with forward or reverse simulations? Does it matter?
+  #                     grad_no_E,
+  #                     key,
+  #                     max_iter,
+  #                     bins,
+  #                     p.param_set.simulation_steps,
+  #                     opt_batch_size,
+  #                     args.batch_size, # number of trajectories for reconstruction
+  #                     opt_steps_landscape, 
+  #                     optimizer,
+  #                     p.r0_init, p.r0_final,
+  #                     args.k_s, p.beta,
+  #                     savefig = f"{args.landscape_name}",
+  #                     num_reconstructions = 500
+  # )
   positions = jnp.array(landscapes[-1][0])
 
   plt.figure(figsize = (10,10))
@@ -121,11 +137,12 @@ if __name__ == "__main__":
   
   pos_vec = jnp.reshape(positions, (positions.shape[0], 1, 1))
   for j in range(positions.shape[0]):
-    min_pos, _ = bc_landscape.find_min_pos(energy_plot, -12., -8.)
+    min_pos, _ = bcl.find_min_pos(energy_plot, -12., -8.)
     true_E.append(energy_plot(pos_vec[j])-float(energy_plot([[min_pos]])))
   plt.plot(positions, true_E, label = "True Landscape")
 
   for num, (positions, energies) in enumerate(landscapes):
+    
     min_e = jnp.min(energies[jnp.where((positions > -12) & (positions < -8))])
     if num == 0:
       label = "Linear"
@@ -141,16 +158,17 @@ if __name__ == "__main__":
   plt.savefig(path + f"reconstruct_landscapes_{args.k_s}_{args.end_time}_{args.batch_size}.png")
   
   plt.figure(figsize = (8,8))
-  trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), lin_coeffs, p.r0_init, p.r0_final)
+  trap_fn = position_model.protocol(position_model.coef_hist[0])[0]
   plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps-1)), label = "Linear Protocol")
-  for i, coeff in enumerate(coeffs):
-      trap_fn = bc_protocol.make_trap_fxn(jnp.arange(p.param_set.simulation_steps), coeff, p.r0_init, p.r0_final)
+  for i, coeff in enumerate(coeffs["position"]):
+      trap_fn = position_model.protocol(coeff)[0]
       plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps-1)), label = f"Iteration {i}")
   plt.xlabel("Simulation Step")
   plt.ylabel("Position (x)")
   plt.title(f"Protocols Over Iteration; {args.end_time}")
   plt.legend()
   plt.savefig(path + f"opt_protocol_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
+  
   
   with open(path + f"coeffs__{args.k_s}_{args.end_time}_{args.batch_size}.pkl", "wb") as f:
     pickle.dump(coeffs, f)

@@ -79,9 +79,14 @@ class ScheduleModel:
     self._coeffs = new
     self.coef_hist.append(new)
   
-  def pop_hist(self, remove = True):
+  def pop_hist(self, reset = True):
     history = copy.deepcopy(self.coef_hist)
-    if remove: self.coef_hist = []
+    if reset: 
+      self.coef_hist = []
+      self.coeffs = bcp.linear_chebyshev_coefficients(self.init_pos, 
+                                                      self.final_pos, 
+                                                      self.params.simulation_steps, 
+                                                      y_intercept = self.init_pos)
     return history
   
   @property
@@ -179,8 +184,18 @@ class JointModel(ScheduleModel):
         
     return protocol_arr
 
-  def switch_trap(self):
+  def pop_hist(self, reset = True):
     hist = []
+    self.coef_hist = []
+    for model in self.models:
+      hist.append(model.pop_hist(reset = reset))
+    
+    return hist
+  
+  def switch_trap(self, reset = True):
+    hist = []
+    if reset:
+      self.coef_hist = []
     for model in self.models:
       if isinstance(model, SplitModel):
         hist.append(model.switch_trap())
@@ -192,9 +207,6 @@ class JointModel(ScheduleModel):
   
   def __call__(self, timestep):
     return [model(timestep) for model in self.models]
-  
-  
-    
   
 class SplitModel(ScheduleModel):
   def __init__(self, p: MDParameters, init_pos, cut_pos, final_pos, total_sim_steps, coeffs = None, mode = "fwd", num = 1):
@@ -259,7 +271,9 @@ class SplitModel(ScheduleModel):
       new_c = bcp.linear_chebyshev_coefficients(self.init_pos, self.final_pos, self.rem_steps, y_intercept = self.init_pos)
       self.lin_trap = make_lin(t, lin_c, self.lin_bound, self.cut_pos)
     
+    
     self.coeffs = new_c
+    self.coef_hist.pop(0)
     return history
   
   def protocol(self, coeffs):

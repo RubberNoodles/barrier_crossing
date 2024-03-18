@@ -26,6 +26,7 @@ import barrier_crossing.models as bcm
 
 
 def train(model: bcm.ScheduleModel, optimizer, batch_grad_fn, key, batch_size = 3000, num_epochs = 500): 
+  
   state = optimizer.init_fn(model.coeffs)
   losses = []
   grad_fn = batch_grad_fn(batch_size)
