@@ -29,13 +29,15 @@ Install the [JAX library with GPU](https://github.com/google/jax#installation), 
 
 **NOTE:** For users without a GPU, install JAX with CPU instead.
 
+
+All figures found in the paper were produced using the codes available in the `figures` directory. See the corresponding `README.md` for more information. Figures can be re-run with specific parameters. For example, run
+```
+python3 we_opt.py --landscape_name "Double Well 10kT Barrier Brownian" --param_suffix 10kt --k_s 0.4 --end_time 0.0001 --batch_size 3000
+```
+
 ## Package Overview
 
-This sections describes the individual files that are a part of this package contained in the `barrier_crossing` folder.
-
-## Figures
-
-All figures found in the paper were produced using the codes available in the `figures` directory. See the corresponding `README.md` for more information.
+This section describes the individual files that are a part of this package contained in the `barrier_crossing` folder.
 
 ### `energy.py`
 Implements the potential energy functions for molecular dynamics simulations. Currently contains `brownian` and `langevin` corresponding to their respective

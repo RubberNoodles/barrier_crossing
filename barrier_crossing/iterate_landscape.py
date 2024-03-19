@@ -1,7 +1,16 @@
+"""
+Module to reconstruct landscapes
+Example:
+    Examples can be given using either the ``Example`` or ``Examples``
+    sections. Sections support any reStructuredText formatting, including
+    literal blocks::
+
+        $ python example_google.py
+"""
+
 import copy
 import tqdm
 from typing import Callable
-import code
 
 import matplotlib.pyplot as plt
 
@@ -11,11 +20,9 @@ import jax.numpy as jnp
 import jax
 import jax.random as random
 
-# from barrier_crossing.energy import V_biomolecule_reconstructed
+from barrier_crossing.models import ScheduleModel
 from barrier_crossing.energy import ReconstructedLandscape
-from barrier_crossing.protocol import make_trap_fxn
 from barrier_crossing.simulate import batch_simulate_harmonic
-from barrier_crossing.train import train
 
 def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   stddev = jnp.std(x, axis)
@@ -60,6 +67,7 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, ks_trap_fn, simula
   
   exp_works = jnp.exp( - beta * works)
   eta = jnp.mean(exp_works, axis = 0)
+  t = jnp.arange(simulation_steps)
 
   traj_min = trajectories.min()
   traj_max = trajectories.max() + 1e-3
@@ -67,7 +75,7 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, ks_trap_fn, simula
   
   traj_mask = jnp.squeeze(jnp.floor(bins * ((trajectories-traj_min)/(traj_max - traj_min))))
 
-  traj_bins = traj_mask.astype(int) + jnp.outer(jnp.ones(batch_size), jnp.arange(simulation_steps)) * bins
+  traj_bins = traj_mask.astype(int) + jnp.outer(jnp.ones(batch_size), t) * bins
   midpoints = jnp.array([traj_min + (i+0.5) * bin_width for i in range(bins)])
 
   bin_arr = onp.zeros(bins * simulation_steps)
@@ -78,8 +86,8 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, ks_trap_fn, simula
   numerator = bin_arr.reshape(simulation_steps, bins).T @ jnp.reciprocal(eta)
   # u(z,t): at each timestep and midpoint, we have a deflection energy
   vectorized_trap = jax.vmap(trap_fn)
-  repeat_trap_positions = jnp.tile(vectorized_trap(jnp.arange(simulation_steps)), (bins, 1))
-  deflect = jnp.exp(-beta * ks_trap_fn(0) * 0.5 * jnp.square( repeat_trap_positions.T - midpoints).T)
+  repeat_trap_positions = jnp.tile(vectorized_trap(t), (bins, 1))
+  deflect = jnp.exp(-beta * ks_trap_fn(t) * 0.5 * jnp.square( repeat_trap_positions.T - midpoints).T)
   
   denominator = deflect @ jnp.reciprocal(eta)
   energies = -(1/beta) * jnp.log(jnp.divide(numerator, denominator))
@@ -217,26 +225,52 @@ def landscape_diff(ls_1, ls_2):
   #assert(ls_1.shape == ls_2.shape)
   return jnp.linalg.norm(jnp.array(ls_2[1])-jnp.array(ls_1[1]))
 
-def interpolate_inf(energies):
-    def nan_helper(y):
-        return onp.isinf(y), lambda z: z.nonzero()[0]
-    energies = onp.array(energies)
-    nans, x= nan_helper(energies)
-    energies[nans]= onp.interp(x(nans), x(~nans), energies[~nans])
+def interpolate_inf(energy):
+  energy = onp.array(energy)
+  nans = onp.isinf(energy)
+  x= lambda z: z.nonzero()[0]
+  energy[nans]= onp.interp(x(nans), x(~nans), energy[~nans])
+  return jnp.array(energy)
 
-    return jnp.array(energies)
-
-def optimize_landscape(max_iter, 
-                       reconstruct_batch_size,
-                       position_model, 
-                       stiffness_model,
-                       true_simulation,
-                       guess_simulation_no_E,
-                       grad_fn_unf,
-                       reconstruct_fn,
-                       train_fn,                
+def optimize_landscape(max_iter: int, 
+                       reconstruct_batch_size: int,
+                       position_model: ScheduleModel, 
+                       stiffness_model: ScheduleModel,
+                       true_simulation: Callable,
+                       guess_simulation_no_E: Callable,
+                       grad_fn_unf: Callable,
+                       reconstruct_fn: Callable,
+                       train_fn: Callable,                
                        key,
                        num_reconstructions=3):
+  """
+  Iteratively reconstruct a de novo energy landscape from simulated trajectories. Optimize a protocol
+  with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
+  to create a protocol that will allow for more accurate reconstructions.
+  
+  Args:
+    max_iter: Number of iterations.
+    position_model, stiffness_model: ScheduleModel which will be iteratively optimized.
+    true_simulation: Callable(trap_schedule) -> Callable(keys) 
+      -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
+        Function that simulates moving the particle along the given trap_schedule given a de novo
+      energy function.
+    guess_simulation_no_E: Callable(energy_fn) -> SimulationFn. At each iteration, this simulate function will
+      be endowed with the reconstructed "guess" for an energy function that is computed from HS reconstructions.
+    grad_fn_no_E: Callable(batch_size, energy_fn) -> Callable(coeffs, seed, *args)
+      Function that takes input of arbitrary energy function. Intended to be used as follows
+      ``grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)``
+    reconstruct_fn: Callable(batch_cum_works, trajectories, trap_functions, rng) -> Array[Positions, Energies]. Using
+      HS formalism and outputs from a batch simulation, compute the "guess" for the free energy landscape.
+    train_fn: Callable(model, grad_fn, key) -> Array[losses]. Compute training loop on model with loss function specified
+      by `grad_fn`.
+    key: rng
+    
+  Returns:
+    ``landscapes``: List of landscapes length ``max_iter``.
+    ``coeffs``: List of Chebyshev coefficients that are optimal at each iteration. 
+    ``losses``: List of length `num_iter` with loss arrays for each optimization iteration.
+  """
   old_landscape = None
   new_landscape = None
   landscapes = []
@@ -247,8 +281,8 @@ def optimize_landscape(max_iter,
   losses = {"position": [], "stiffness": []}
   coeffs = {"position": [], "stiffness": []}
   
-  position_sched = position_model.protocol(position_model.coeffs)[0]
-  stiffness_sched = stiffness_model.protocol(stiffness_model.coeffs)[0]
+  position_sched = position_model.protocol(position_model.coeffs)
+  stiffness_sched = stiffness_model.protocol(stiffness_model.coeffs)
   trap_fns = [position_sched, stiffness_sched]
   
   for iter_num in tqdm.trange(max_iter, desc="Optimize Landscape: "):
@@ -272,6 +306,7 @@ def optimize_landscape(max_iter,
     if jnp.isinf(all_es).any():
         print("Infinities found in energy reconstruction. Continuing through interpolation...")
         energies = interpolate_inf(energies) 
+    
     new_landscape = (mid, energies)
     landscapes.append(new_landscape)
     
@@ -286,11 +321,11 @@ def optimize_landscape(max_iter,
     
     guess_sim_fn = guess_simulation_no_E(energy_fn_guess)
     
-    simulate_fn = lambda stiffness_trap, key: guess_sim_fn(position_model.protocol(position_model.coef_hist[0])[0], stiffness_trap, key)
+    simulate_fn = lambda stiffness_trap, key: guess_sim_fn(position_model.protocol(position_model.coef_hist[0]), stiffness_trap, key)
     grad_fn = grad_fn_unf(position_model, simulate_fn)
     losses_position = train_fn(position_model, grad_fn, key)
     
-    simulate_fn = lambda position_trap, key: guess_sim_fn(position_trap, stiffness_model.protocol(stiffness_model.coef_hist[0])[0], key)
+    simulate_fn = lambda position_trap, key: guess_sim_fn(position_trap, stiffness_model.protocol(stiffness_model.coef_hist[0]), key)
     grad_fn = grad_fn_unf(stiffness_model, simulate_fn)
     losses_stiffness = train_fn(stiffness_model, grad_fn, key)
     
@@ -304,148 +339,11 @@ def optimize_landscape(max_iter,
     position_model.mode = "fwd"
     stiffness_model.mode = "fwd"
     
-    position_sched = position_model.protocol(position_model.coeffs)[0]
-    stiffness_sched = stiffness_model.protocol(stiffness_model.coeffs)[0]
+    position_sched = position_model.protocol(position_model.coeffs)
+    stiffness_sched = stiffness_model.protocol(stiffness_model.coeffs)
     
     trap_fns = [position_sched, stiffness_sched]
     
     iter_num += 1
     
   return landscapes, coeffs, losses
-
-# def optimize_landscape(
-#                       simulate_fn,
-#                       init_coeffs,
-#                       grad_fn_no_E,
-#                       key,
-#                       max_iter,
-#                       bins,
-#                       simulation_steps,
-#                       opt_batch_size,
-#                       reconstruct_batch_size,
-#                       opt_steps,
-#                       optimizer,
-#                       r0_init,
-#                       r0_final,
-#                       k_s,
-#                       beta,
-#                       savefig = False,
-#                       num_reconstructions = 200):
-#   """Iteratively reconstruct a de novo energy landscape from simulated trajectories. Optimize a protocol
-#   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
-#   to create a protocol that will allow for more accurate reconstructions.
-  
-#   Args:
-#     simulate_fn: Callable(trap_schedule) -> Callable(keys) 
-#       -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
-#         Function that simulates moving the particle along the given trap_schedule given a de novo
-#       energy function.
-#     init_coeffs: Array[] Chebyshev coefficients of trap.
-#     grad_fn_no_E: Callable(batch_size, energy_fn) -> Callable(coeffs, seed, *args)
-#         Function that takes input of arbitrary energy function. Intended to be used as follows
-#       ``grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)``
-#     key: rng
-#     max_iter: Integer specifying number of iterations of reconstruction.
-#     bins: Integer specifying number of checkpoints/locations we try to estimate the energy landscape at.
-  
-#   Returns:
-#     ``landscapes``: List of landscapes length ``max_iter``.
-#     ``coeffs``: List of Chebyshev coefficients that are optimal at each iteration. 
-#   """
-
-#   old_landscape = None
-#   new_landscape = None
-
-#   landscapes = []
-#   coeffs = []
-
-#   iter_num = 0
-#   diff = 1e10 # large number
-
-#   trap_fn = make_trap_fxn(jnp.arange(simulation_steps), init_coeffs, r0_init, r0_final)
-  
-#   for iter_num in tqdm.trange(max_iter, position=2, desc="Optimize Landscape: "):
-#     if new_landscape:
-#       old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1])) # TODO
-    
-#     es = []
-#     for _ in tqdm.trange(num_reconstructions, position = 3, desc = "Reconstructing Landscapes"):
-#         key, _ = random.split(key)
-        
-#         _, (trajectories, works, _) = batch_simulate_harmonic(reconstruct_batch_size,
-#                                 simulate_fn(trap_fn),
-#                                 key) 
-        
-#         # energy_reconstruction(jnp.cumsum(works, axis = 1), trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta)
-#         mid, e = energy_reconstruction(jnp.cumsum(works, axis = 1), trajectories, trap_fn)
-#         es.append(e)
-#     all_es = jnp.vstack(es)
-    
-#     energies = jnp.mean(all_es, axis = 0)
-#     if jnp.isinf(all_es).any():
-#         print("Infinities found in energy reconstruction. Continuing through interpolation...")
-#         energies = interpolate_inf(energies) 
-#     new_landscape = (mid, energies)
-#     landscapes.append(new_landscape)
-
-#     positions, energies = new_landscape
-    
-#     energy_fn_guess = V_biomolecule_reconstructed(k_s, jnp.array(positions), jnp.array(energies))
-    
-#     # Optimize a protocol with this new landscape
-#     # error_samples = find_error_samples(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
-    
-#     grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)
-   
-#     init_trap_coeffs = init_coeffs
-    
-#     coeffs_, _, losses = optimize_protocol(init_trap_coeffs, grad_fxn, optimizer, opt_batch_size, opt_steps)
-
-#     if savefig:
-#       _, ax = plt.subplots(1, 2, figsize=[24, 12])
-
-#       #avg_loss = jnp.mean(jnp.array(losses), axis = 0)
-#       plot_with_stddev(losses.T, ax=ax[0])
-
-#       # ax[0].set_title(f'Jarzynski Error over Optimization; Short trap; STD error sampling; {batch_size}; {opt_steps}.')
-#       ax[0].set_title(f"Iterative Iter Num {iter_num}")
-#       ax[0].set_xlabel('Number of Optimization Steps')
-#       ax[0].set_ylabel('Error')
-
-#       trap_fn = make_trap_fxn(jnp.arange(simulation_steps), init_trap_coeffs, r0_init, r0_final)
-#       init_sched = trap_fn(jnp.arange(simulation_steps))
-#       ax[1].plot(jnp.arange(simulation_steps), init_sched, label='Initial guess')
-
-#       for i, (_, coeff) in enumerate(coeffs_):
-#         print_per = max(1, int(opt_steps/5))
-#         if i% print_per == 0 and i!=0:
-#           trap_fn = make_trap_fxn(jnp.arange(simulation_steps),coeff,r0_init,r0_final)
-#           full_sched = trap_fn(jnp.arange(simulation_steps))
-#           ax[1].plot(jnp.arange(simulation_steps), full_sched, '-', label=f'Step {i}')
-
-#       # Plot final estimate:
-#       trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs_[-1][1],r0_init,r0_final)
-#       full_sched = trap_fn(jnp.arange(simulation_steps))
-#       ax[1].plot(jnp.arange(simulation_steps), full_sched, '-', label=f'Final')
-
-
-#       ax[1].legend()#
-#       ax[1].set_title('Schedule evolution')
-#       plt.savefig(f"losses_iter{iter_num}_{savefig}.png")
-
-#     final_coeff = coeffs_[-1][1]
-#     coeffs.append(final_coeff)
-    
-#     trap_fn = make_trap_fxn(jnp.arange(simulation_steps), final_coeff, r0_init, r0_final)
-    
-#     if iter_num > 0:
-#       diff = landscape_diff(old_landscape, new_landscape) # take the norm of the difference
-      
-#     iter_num += 1
-    
-# #   _, (trajectories, works, _) = batch_simulate_harmonic(reconstruct_batch_size,
-# #                             simulate_fn(trap_fn),
-# #                             key) 
-#   return landscapes, coeffs
-    
-    

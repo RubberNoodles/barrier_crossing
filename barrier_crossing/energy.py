@@ -1,3 +1,11 @@
+"""
+This module is for base simulators as well as landscape classes. Base simulators are
+primarily forked from https://github.com/jax-md/jax-md/blob/main/jax_md/simulate.py.
+
+Energy functions provide functionality for retrieving potential energy (and hence force)
+based on position and trap state.
+"""
+
 from typing import Callable, TypeVar, Tuple
 from abc import ABC, abstractmethod
 
@@ -26,7 +34,7 @@ InitFn = Callable[..., T]
 ApplyFn = Callable[[T], T]
 Simulator = Tuple[InitFn, ApplyFn]
 
-"""##Custom Brownian simulator
+"""Custom Brownian simulator
 
 This is a modification of the JAX-MD Brownian simulator that also returns the log probability of any trajectory that runs. This is needed in order to compute gradients correctly (eq'n 12 in my arXiv paper)
 """
