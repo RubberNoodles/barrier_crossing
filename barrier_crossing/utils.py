@@ -1,17 +1,15 @@
-### Create datastructures to collect molecular dynamics simulation parameters
-### for different simulation regimes
-
+"""Create datastructures to collect molecular dynamics simulation parameters for different simulation regimes.
+Also provide helper functions such as `find_coeff_files` for IO."""
 from jax_md import space, util
 
 from dataclasses import dataclass
 
-import barrier_crossing.energy as bc_energy
-import barrier_crossing.simulate as bc_simulate
-import barrier_crossing.protocol as bc_protocol
+import barrier_crossing.energy as bce
+import barrier_crossing.simulate as bcs
+import barrier_crossing.protocol as bcp
+import barrier_crossing.models as bcm
 
 import jax.numpy as jnp
-
-import matplotlib.pyplot as plt
 
 import importlib
 
@@ -70,7 +68,7 @@ class MDParameters:
     self.__dict__.update(kwargs)
 
     if regime.strip().lower() == "langevin":
-      return bc_simulate.simulate_langevin_harmonic( energy_fn,
+      return bcs.simulate_langevin_harmonic( energy_fn,
                                                      init_pos,
                                                      trap_fn,
                                                      ks_trap_fn,
@@ -85,7 +83,7 @@ class MDParameters:
                                                      )
       
     elif regime.strip().lower() == "brownian":
-      return bc_simulate.simulate_brownian_harmonic( energy_fn,
+      return bcs.simulate_brownian_harmonic( energy_fn,
                                                      init_pos,
                                                      trap_fn,
                                                      ks_trap_fn,
@@ -139,7 +137,7 @@ class SCParameters(MDParameters):
   
   @property
   def landscape(self):
-    return bc_energy.SivakLandscape(self.kappa_l, self.kappa_r, self.x_m, self.delta_E, self.beta)
+    return bce.SivakLandscape(self.kappa_l, self.kappa_r, self.x_m, self.delta_E, self.beta)
 
 @dataclass
 class GDParameters(MDParameters):
@@ -148,8 +146,10 @@ class GDParameters(MDParameters):
   
   @property
   def landscape(self):
-    return bc_energy.GeigerLandscape(self.epsilon, self.sigma)
+    return bce.GeigerLandscape(self.epsilon, self.sigma)
         
+### IO HELPER FUNCTIONS ###
+
 def parse_args():
   """Parse arguments for running various simulations
 
@@ -201,10 +201,10 @@ def find_coeff_file(model_info, args):
   #dir_name = "figures/work_error_opt/output_data/" + "_".join([args.landscape_name.replace(' ', '_').replace('.', '_').lower(), f"t{args.end_time}", f"ks{args.k_s}"]) +"/"
   
   model_type = model_info[0]
-  if "lr" in model_info:
-    dir_name = "/"
+  if "lr" in model_type:
+    dir_name = ""
     file_name = model_info[0]
-    return dir_name, file_name
+    return dir_name, {"position": [file_name]}
   mode = model_info[1]
   
   
@@ -228,7 +228,7 @@ def make_constant_trap(model, val):
   _tmp_2 = model.final_pos
   model.init_pos = val
   model.final_pos = val
-  constant_trap = model.protocol(jnp.concatenate([jnp.array([val]), jnp.zeros(12)]))[0]
+  constant_trap = model.protocol(jnp.concatenate([jnp.array([val]), jnp.zeros(12)]))
   model.init_pos = _tmp_1
   model.final_post = _tmp_2
   
@@ -239,7 +239,7 @@ def make_trap_from_file(dir_name, file_names, position_protocol_maker, stiffness
   params = position_protocol_maker.params
   
   constant_stiffness_schedule = make_constant_trap(stiffness_protocol_maker, params.k_s)
-  traps = [position_protocol_maker.protocol(position_protocol_maker.coeffs)[0], constant_stiffness_schedule]
+  traps = [position_protocol_maker.protocol(position_protocol_maker.coeffs), constant_stiffness_schedule]
   sim_cut_steps = params.simulation_steps//2
   
   if file_names is None: # For linear trap
@@ -256,13 +256,16 @@ def make_trap_from_file(dir_name, file_names, position_protocol_maker, stiffness
         # figures/work_error_opt/output_data/double_well_10kt_barrier_brownian_tNone_ksNone/joint_rev_position.pkl
         print(f"In order to run this code, you need a file of coefficients at {dir_name+file_name}")
         raise e
-      
-      if "split_1" in file_name:
-        traps[0] = [bc_protocol.make_trap_fxn( jnp.arange(sim_cut_steps), coeff, p.r0_init, p.r0_cut)]
+      if "lr" in file_name:
+        even = jnp.linspace(0, params.simulation_steps, coeff.shape[0])
+        traps[0] = bcp.make_custom_trap_fxn(jnp.arange(params.simulation_steps), jnp.vstack([even, coeff]).T, p.r0_init, p.r0_final)
+      elif "split_1" in file_name:
+        traps[0] = [bcp.make_trap_fxn( jnp.arange(sim_cut_steps), coeff, p.r0_init, p.r0_cut)]
       elif "split_2" in file_name:
-        traps[0].append(bc_protocol.make_trap_fxn( jnp.arange(params.simulation_steps - sim_cut_steps), coeff, p.r0_cut, p.r0_final))
+        traps[0].append(bcp.make_trap_fxn( jnp.arange(params.simulation_steps - sim_cut_steps), coeff, p.r0_cut, p.r0_final))
       else:
-        traps[0] = position_protocol_maker.protocol(coeff)[0]
+        traps[0] = position_protocol_maker.protocol(coeff)
+  
   if "stiffness" in file_names.keys():
     for file_name in file_names["stiffness"]:
       path = dir_name + file_name
@@ -274,24 +277,14 @@ def make_trap_from_file(dir_name, file_names, position_protocol_maker, stiffness
         raise e
       
       if "split_1" in file_name:
-        traps[1] = [bc_protocol.make_trap_fxn( jnp.arange(sim_cut_steps), coeff, p.ks_init, p.ks_cut)]
+        traps[1] = [bcp.make_trap_fxn( jnp.arange(sim_cut_steps), coeff, p.ks_init, p.ks_cut)]
       elif "split_2" in file_name:
-        traps[1].append(bc_protocol.make_trap_fxn( jnp.arange(params.simulation_steps - sim_cut_steps), coeff, p.ks_cut, p.ks_final))
+        traps[1].append(bcp.make_trap_fxn( jnp.arange(params.simulation_steps - sim_cut_steps), coeff, p.ks_cut, p.ks_final))
       else:
-        traps[1] = stiffness_protocol_maker.protocol(coeff)[0]
+        traps[1] = stiffness_protocol_maker.protocol(coeff)
           
   for i in range(0,2):
     if isinstance(traps[i], list):
-      traps[i] = bc_protocol.trap_sum(params.simulation_steps, sim_cut_steps, traps[i][0], traps[i][1])
+      traps[i] = bcp.trap_sum(params.simulation_steps, sim_cut_steps, traps[i][0], traps[i][1])
   
   return traps
-        
-
-def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
-  stddev = jnp.std(x, axis)
-  mn = jnp.mean(x, axis)
-  xs = jnp.arange(mn.shape[0]) * dt
-
-  ax.fill_between(xs,
-                  mn + n * stddev, mn - n * stddev, alpha=.3)
-  ax.plot(xs, mn, label=label)

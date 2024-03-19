@@ -1,3 +1,7 @@
+"""
+This module contains models derived from `protocol.py`. Derived objects originate from `ScheduleModel`,
+providing functionality for gradient descent JAX optimization.
+"""
 import jax.numpy as jnp
 import copy
 
@@ -5,10 +9,12 @@ import barrier_crossing.protocol as bcp
 from barrier_crossing.utils import MDParameters
 
 class ScheduleModel:
-
+  """
+  Model designed for JAX optimization. Stores coefficients of schedule as optimizeable weights.
+  To retrieve protocol, one can call the model directly (backwards compatibility) or receive a protocol
+  as an object using `model.protocol(coeffs)`
+  """
   def __init__(self, p: MDParameters, init_pos, final_pos, coeffs = None, mode = "fwd"):
-    t = jnp.arange(p.simulation_steps)
-    
     if coeffs is None:
       # Initalize at linear 
       coeffs = bcp.linear_chebyshev_coefficients(init_pos, final_pos, p.simulation_steps, y_intercept = init_pos)
@@ -34,9 +40,10 @@ class ScheduleModel:
     new_obj = cls(p, init_pos, final_pos, mode)
     new_obj.init_pos = init_pos
     new_obj.final_pos = final_pos
-    new_obj._protocol_fwd = bcp.make_custom_trap_fxn(t, positions, init_pos, final_pos)
-    new_obj._protocol_rev = bcp.make_custom_trap_fxn_rev(t, positions, init_pos, final_pos)
-    
+    even = jnp.linspace(0, p.simulation_steps, positions.shape[0])
+    ttp = jnp.vstack([even, positions]).T
+    new_obj._protocol_fwd = bcp.make_custom_trap_fxn(t, ttp, init_pos, final_pos)
+    new_obj._protocol_rev = bcp.make_custom_trap_fxn_rev(t, ttp, init_pos, final_pos)
     new_obj.mode = mode
     new_obj.__check_mode()
     new_obj.can_grad = False
@@ -99,7 +106,7 @@ class ScheduleModel:
       raise TypeError(f"Expected class of type or inherited from type MDParamters, got {type(new)}")
     self._params = new
   
-  def protocol(self, coeffs):
+  def protocol(self, coeffs, train = False):
     """Returns Callable: timestep -> trap_position"""
     if not self.can_grad:
       return [self._protocol_fwd] if self.mode == "fwd" else [self._protocol_rev]
@@ -109,13 +116,24 @@ class ScheduleModel:
       trap_fn = bcp.make_trap_fxn(t, coeffs, self.init_pos, self.final_pos)
     elif self.mode == "rev":
       trap_fn =  bcp.make_trap_fxn_rev(t, coeffs, self.init_pos, self.final_pos)
-    return [trap_fn]
+    
+    if train:
+      return [trap_fn]
+    else:
+      return trap_fn
   
   def __call__(self, timestep):
-    return self.protocol(self.coeffs)[0](timestep)
+    if self.can_grad:
+      return self.protocol(self.coeffs)(timestep)
+    else:
+      return self._protocol_fwd(timestep) if self.mode == "fwd" else self._protocol_rev(timestep)
   
   
 class JointModel(ScheduleModel):
+  """
+  Model for optimizing several models jointly. Gradient descent steps happen simultaneously.
+  All derived methods return parent output placed in list.
+  """
   def __init__(self, p: MDParameters, *models):
     self._params = p
     self.models = models
@@ -169,8 +187,11 @@ class JointModel(ScheduleModel):
       model.params = new
     self._params = new
   
-  def protocol(self, coeffs):
+  def protocol(self, coeffs, train = False):
     """Returns tuple containing protocols of interest"""
+    if train is True:
+      assert self.can_grad
+    
     len_array = list(map(len, self._coeffs))
     protocol_arr = []
     if coeffs.shape[0] != sum(len_array):
@@ -180,7 +201,7 @@ class JointModel(ScheduleModel):
       for i, model in enumerate(self.models):
         c = coeffs[split: split+len_array[i]]
         split += len_array[i]
-        protocol_arr.append(model.protocol(c)[0])
+        protocol_arr.append(model.protocol(c))
         
     return protocol_arr
 
@@ -209,6 +230,11 @@ class JointModel(ScheduleModel):
     return [model(timestep) for model in self.models]
   
 class SplitModel(ScheduleModel):
+  """
+  WIP Model for optimizing a portion of the protocol while keeping a different part constant.
+
+  TODO: Allow functionality for more than two portions.
+  """
   def __init__(self, p: MDParameters, init_pos, cut_pos, final_pos, total_sim_steps, coeffs = None, mode = "fwd", num = 1):
     if num == 1:
       super().__init__(p, init_pos, cut_pos, coeffs, mode)
@@ -283,9 +309,9 @@ class SplitModel(ScheduleModel):
       # print("WARNING: For plotting uses only.")
       trap_sum = bcp.trap_sum
     if self.num == 1:
-      total_trap = trap_sum(self.total_sim_steps, self._params.simulation_steps, super().protocol(coeffs)[0], self.lin_trap)
+      total_trap = trap_sum(self.total_sim_steps, self._params.simulation_steps, super().protocol(coeffs), self.lin_trap)
     else:
-      total_trap = trap_sum(self.total_sim_steps,self.total_sim_steps - self._params.simulation_steps, self.lin_trap, super().protocol(coeffs)[0])
+      total_trap = trap_sum(self.total_sim_steps,self.total_sim_steps - self._params.simulation_steps, self.lin_trap, super().protocol(coeffs))
       
     return [total_trap]
   
