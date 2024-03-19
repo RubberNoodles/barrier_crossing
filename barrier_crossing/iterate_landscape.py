@@ -1,11 +1,7 @@
 """
-Module to reconstruct landscapes
-Example:
-    Examples can be given using either the ``Example`` or ``Examples``
-    sections. Sections support any reStructuredText formatting, including
-    literal blocks::
-
-        $ python example_google.py
+Module to reconstruct landscapes with optimized algorithm. In addition, helper
+code to classify landscape reconstruction quality, as well as `optimize_landscape`
+code for iterative reconstruction.
 """
 
 import copy
@@ -169,10 +165,10 @@ def find_max(landscape, init, final):
   return max
 
 
-def landscape_discrepancies(ls, true_ls, true_max, r_min, r_max):
+def landscape_discrepancies(ls, true_ls, first_well, r_min, r_max):
 
   """
-  Aligns landscape (ls) with true_ls and finds distance between
+  Aligns landscape (ls) with first well and finds distance between
   the landscape and true_ls at each midpoint specified for ls.
 
   Inputs: landscape in the form (midpoints, energies) and 
@@ -186,8 +182,11 @@ def landscape_discrepancies(ls, true_ls, true_max, r_min, r_max):
   """
 
   # Find difference at max point to align landscapes
-  ls_max = find_max(ls, r_min, r_max)
-  diff = true_max - ls_max
+  
+  no_trap_rec_fn = ReconstructedLandscape(*ls).molecule_energy
+  first_well_guess, _ = find_min_pos(no_trap_rec_fn, -10, 0)
+  
+  diff = first_well - first_well_guess
  
   # only consider points in range (min, max)
   midpoints = []
@@ -198,10 +197,8 @@ def landscape_discrepancies(ls, true_ls, true_max, r_min, r_max):
       energies.append(ls[1][i] + diff)
   
   discrepancies = []
-  x = 0
-  for energy in energies:
-    discrepancies.append(abs(true_ls(midpoints[x]) -energy))
-    x += 1
+  for midpoints, energy in zip(midpoints, energies):
+    discrepancies.append(abs(true_ls(midpoints) - energy))
   
   return discrepancies
 
@@ -242,7 +239,7 @@ def optimize_landscape(max_iter: int,
                        reconstruct_fn: Callable,
                        train_fn: Callable,                
                        key,
-                       num_reconstructions=3):
+                       num_reconstructions=100):
   """
   Iteratively reconstruct a de novo energy landscape from simulated trajectories. Optimize a protocol
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 

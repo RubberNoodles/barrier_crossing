@@ -42,10 +42,10 @@ if __name__ == "__main__":
     fwd = False,
     custom = energy_fn)
   
-  max_iter = 2
-  opt_steps_landscape = 5 # 1000 + 
+  max_iter = 8
+  opt_steps_landscape = 1000 # 1000 + 
   bins = 75
-  opt_batch_size = 50 # 10k + 
+  opt_batch_size = 10000 # 10k + 
 
   grad_no_E = lambda model, simulate_fn: lambda num_batches: loss.estimate_gradient_rev(
       num_batches,
@@ -114,15 +114,27 @@ if __name__ == "__main__":
   
   plt.figure(figsize = (8,8))
   trap_fn = position_model.protocol(position_model.coef_hist[0])
-  plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps-1)), label = "Linear Protocol")
+  plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Linear Protocol")
   for i, coeff in enumerate(coeffs["position"]):
       trap_fn = position_model.protocol(coeff)
-      plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps-1)), label = f"Iteration {i}")
+      plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = f"Iteration {i}")
   plt.xlabel("Simulation Step")
   plt.ylabel("Position (x)")
   plt.title(f"Protocols Over Iteration; {args.end_time}")
   plt.legend()
-  plt.savefig(path + f"opt_protocol_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
+  plt.savefig(path + f"opt_position_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
+  
+  plt.figure(figsize = (8,8))
+  trap_fn = stiffness_model.protocol(stiffness_model.coef_hist[0])
+  plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Linear Protocol")
+  for i, coeff in enumerate(coeffs["stiffness"]):
+      trap_fn = stiffness_model.protocol(coeff)
+      plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = f"Iteration {i}")
+  plt.xlabel("Simulation Step")
+  plt.ylabel("Stiffness (pN/nm)")
+  plt.title(f"Protocols Over Iteration; {args.end_time}")
+  plt.legend()
+  plt.savefig(path + f"opt_stiffness_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
   
   
   with open(path + f"coeffs__{args.k_s}_{args.end_time}_{args.batch_size}.pkl", "wb") as f:
