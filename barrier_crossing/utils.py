@@ -254,7 +254,9 @@ def make_trap_from_file(dir_name, file_names, position_protocol_maker, stiffness
       except FileNotFoundError as e:
         # figures/work_error_opt/output_data/double_well_10kt_barrier_brownian_tNone_ksNone/joint_rev_position.pkl
         print(f"In order to run this code, you need a file of coefficients at {dir_name+file_name}")
-        raise e
+        print(e)
+        return None
+      
       if "lr" in file_name:
         even = jnp.linspace(0, params.simulation_steps, coeff.shape[0])
         traps[0] = bcp.make_custom_trap_fxn(jnp.arange(params.simulation_steps), jnp.vstack([even, coeff]).T, p.r0_init, p.r0_final)
@@ -273,7 +275,8 @@ def make_trap_from_file(dir_name, file_names, position_protocol_maker, stiffness
             coeff = jnp.array(pickle.load(f))    
       except FileNotFoundError as e:
         print(f"In order to run this code, you need a file of coefficients at `{dir_name+file_name}`.")
-        raise e
+        print(e)
+        return None
       
       if "split_1" in file_name:
         traps[1] = [bcp.make_trap_fxn( jnp.arange(sim_cut_steps), coeff, p.ks_init, p.ks_cut)]
