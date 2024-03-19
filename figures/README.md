@@ -9,7 +9,7 @@ commands, or with native Python. The following is a description of each director
 other outputs can be found in the `/output_data` directory of each folder. `old` contains old outputs that are saved and 
 may be helpful reference.
 
-All tests will take the parameters in `params.py` in order to maintain consistency. Change these values at your own peril.
+All tests will take the parameters in the `param_set` directory in order to maintain consistency. Change these values at your own peril.
 
 Before running SLURM batch scripts, one should must install the following dependencies:
 ```
