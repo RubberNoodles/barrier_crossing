@@ -1,4 +1,7 @@
-
+"""
+Simulator functions following structure in JAX-MD, except including more parameters
+to track during gradient descent.
+"""
 import jax
 import jax.numpy as jnp
 from typing import Callable
