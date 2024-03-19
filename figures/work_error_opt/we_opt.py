@@ -1,11 +1,11 @@
-# Optimize coefficients for work and error distributions.
+# Optimize coefficients based on work, 
 import pickle
 import os
 import code
 
 import barrier_crossing.protocol as bcp
 import barrier_crossing.train as bct
-import barrier_crossing.loss as bcl
+import barrier_crossing.loss as loss
 import barrier_crossing.models as bcm
 from barrier_crossing.utils import parse_args
 
@@ -15,7 +15,6 @@ import jax.example_libraries.optimizers as jopt
 
 import matplotlib.pyplot as plt
 
-# from figures.params import * # global variables;
 
 def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   stddev = jnp.std(x, axis)
@@ -39,7 +38,7 @@ def plot_and_save_optimization(losses, models, names, opt_steps, path, figsize =
     ax[0].set_xlabel('Number of Optimization Steps')
     ax[0].set_ylabel('Error')
     # I should pass in model
-    trap_fn = model.protocol(model.coef_hist[0])[0]
+    trap_fn = model.protocol(model.coef_hist[0])
     init_sched = trap_fn(t)
     ax[1].plot(t, init_sched, label='Initial guess')
 
@@ -47,7 +46,7 @@ def plot_and_save_optimization(losses, models, names, opt_steps, path, figsize =
     
     for i, coeff in enumerate(model.coef_hist):
       if i% per_5 == 0 and i!=0:
-        trap_fn = model.protocol(coeff)[0]
+        trap_fn = model.protocol(coeff)
         sched = trap_fn(t)
         ax[1].plot(t, sched, '-', label=f'Step {i}')
 
@@ -138,14 +137,14 @@ if __name__ == "__main__":
     
     if mode == "fwd":
       default_trap = bcp.make_trap_fxn(t, lin_coeffs, p.r0_init, p.r0_final)
-      grad_fn = lambda num_batches: bcl.estimate_gradient_work(
+      grad_fn = lambda num_batches: loss.estimate_gradient_work(
       num_batches,
       simulate_fn,
       model)
       
     else:
       default_trap = bcp.make_trap_fxn_rev(t, lin_coeffs, p.r0_init, p.r0_final)
-      grad_fn = lambda num_batches: bcl.estimate_gradient_rev(
+      grad_fn = lambda num_batches: loss.estimate_gradient_rev(
       num_batches,
       simulate_fn,
       model)

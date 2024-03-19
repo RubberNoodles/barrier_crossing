@@ -1,20 +1,13 @@
-# Given coefficients (pickled); reconstruct and determine
-# forward simulation and reconstructions statistics.
+# Given coefficients (pickled); reconstruct and determine accuracy of reconstructions.
 
-### TODO: This needs to be modularized
-### Compute Free energy std and stuff.
-import time
-import pickle
+### TODO: Compute Free energy std.
 import tqdm
-import os
-import code
 
-import barrier_crossing.energy as bc_energy
-import barrier_crossing.protocol as bc_protocol
-import barrier_crossing.simulate as bc_simulate
-import barrier_crossing.train as bc_optimize
-import barrier_crossing.iterate_landscape as bc_landscape
+import barrier_crossing.energy as bce
+import barrier_crossing.simulate as bcs
+import barrier_crossing.iterate_landscape as bcl
 import barrier_crossing.models as bcm
+
 from barrier_crossing.utils import parse_args, make_trap_from_file, find_coeff_file
 
 import jax.numpy as jnp
@@ -53,24 +46,21 @@ if __name__ == "__main__":
     "Work; Joint": ["joint","rev"],
     "Error; Position": ["position","rev"],
     "Error; Stiffness": ["stiffness","rev"],
-    "Error; Joint": ["joint","rev"],
-    "Split; Position": ["position","fwd", "split"],
-    "Split; Stiffness": ["stiffness","fwd", "split"],
-    "Split; Joint": ["joint","fwd", "split"],
-    "Split; Position": ["position","rev", "split"],
-    "Split; Stiffness": ["stiffness","rev", "split"],
-    "Split; Joint": ["joint","rev", "split"],
-    # "Work Optimized": "work.pkl",
-    # "Jarzynski Error":  "error.pkl",
-    #"Split Error": "split.pkl",
-    "Near Equilibrium": near_eq_file
+    # "Error; Joint": ["joint","rev"],
+    # "Split; Position": ["position","fwd", "split"],
+    # "Split; Stiffness": ["stiffness","fwd", "split"],
+    # "Split; Joint": ["joint","fwd", "split"],
+    # "Split; Position": ["position","rev", "split"],
+    # "Split; Stiffness": ["stiffness","rev", "split"],
+    # "Split; Joint": ["joint","rev", "split"],
+    "Near Equilibrium": [near_eq_file] if near_eq_file else None
     }
   
   psm = bcm.ScheduleModel(p.param_set, p.r0_init, p.r0_final)
   ssm = bcm.ScheduleModel(p.param_set, p.ks_init, p.ks_final)
   
   plot_data = {}
-  plot_color_list = ['b', 'g', 'r' ,'c', 'm', 'y', 'k', 'w']
+  plot_color_list = ['b', 'g', 'r' ,'c', 'm', 'y', 'k', 'w'] * 2
   kde_colors = []
   plt.rc('font', size = 16)
   plt.subplots_adjust(right=0.8)
@@ -112,7 +102,7 @@ if __name__ == "__main__":
   ax_reconstruct.plot(time_vec, jnp.squeeze(no_trap_fn(time_vec.reshape(1,1,1000))) - no_trap_fn(p.r0_init), label = "Original", color = 'k')
 
   for ind, (trap_name, model_args) in enumerate(model_types.items()):
-    if not model_args:
+    if model_args is None:
       continue
     dir_name, coeff_files = find_coeff_file(model_args, args)
     trap_fns = make_trap_from_file(dir_name, coeff_files, psm, ssm, p)
@@ -127,35 +117,27 @@ if __name__ == "__main__":
       keys, 
       regime = "brownian",
       fwd = True)
-
-    #simulate_fwd = lambda keys: simulate_fwd_grad(trap_fn, keys)
-
     
-    batch_size_grad = 2000
     bins = 70
-    print(f"Parameters: {p.param_set.simulation_steps}, {p.param_set.end_time}, {p.param_set.dt}")
-    
-    total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
+    total_work, (batch_trajectories, batch_works, _) = bcs.batch_simulate_harmonic(
         args.batch_size, simulate_fwd, key)
-    
     # work distribution data
     mean_work = batch_works.mean()
     tail = total_work.mean() - total_work.min()
-    #w_diss = jnp.cumsum(batch_works, axis = -1)[:, -1] - p.param_set.delta_E
     
     # Dissipated work = Work Used - Free Energy Difference
     energy_sivak = p.param_set.energy_fn()
     w_diss = total_work - (energy_sivak(p.r0_final, k_s = 0.) - energy_sivak(p.r0_init, k_s = 0.)) 
     
     
-    # reconstructions stats
-    reconstructions = 10
+    reconstructions = 100
     es = []
     for i in tqdm.tqdm(range(reconstructions)):
         key, split = random.split(key)
-        total_work, (batch_trajectories, batch_works, _) = bc_simulate.batch_simulate_harmonic(
+        total_work, (batch_trajectories, batch_works, _) = bcs.batch_simulate_harmonic(
         args.batch_size, simulate_fwd, key)
-        midpoints, E = bc_landscape.energy_reconstruction(
+        
+        midpoints, E = bcl.energy_reconstruction(
             jnp.cumsum(batch_works, axis=1), 
             batch_trajectories, 
             bins, 
@@ -166,33 +148,58 @@ if __name__ == "__main__":
         es.append(E)
         
     es = jnp.array(es)
-    energies = bc_landscape.interpolate_inf(jnp.mean(es, axis = 0))
+    energies = bcl.interpolate_inf(jnp.mean(es, axis = 0))
     
     landscape = (midpoints, energies)
     
-    # print(f"{trap_name}: W_diss: {w_diss.mean()}, tail: {tail}")
-    # print(landscape)
     try:
-      disc = bc_landscape.landscape_discrepancies(landscape, no_trap_fn, no_trap_fn(0.), -10., 10.)
+      disc = bcl.landscape_discrepancies(landscape, no_trap_fn, no_trap_fn(0.), -10., 10.)
       bias = max(disc)
     except:
-      f"FAILURE: {trap_name} simulations failed. Continuing..."
+      print(f"FAILURE: {trap_name} simulations failed. Continuing...")
       continue
     
-    no_trap_rec_fn = bc_energy.ReconstructedLandscape(midpoints, energies).molecule_energy
+    no_trap_rec_fn = bce.ReconstructedLandscape(midpoints, energies).molecule_energy
     
-    first_well_pos, _ = bc_landscape.find_min_pos(no_trap_rec_fn, -10, 10)
-    # max_rec = bc_landscape.find_max(landscape, -10., 10.)
+    first_well_pos, _ = bcl.find_min_pos(no_trap_rec_fn, -10, 10)
     
+    batch_size_grad = 2000
     difference = no_trap_rec_fn(first_well_pos)
     energies_aligned = energies - difference
     es_aligned = es - difference
-    # stats at extension values 
-    extensions = [-10,-5,0] # temporary
-    disc_samples = bc_landscape.landscape_discrepancies_samples(no_trap_rec_fn, no_trap_fn, extensions)
-    disc_samples = jnp.array(disc_samples)
-    mean_disc_samples = disc_samples.mean()
-    bias_samples = disc_samples.max()
+    
+    color = plot_color_list[ind]
+    ax_hist.axvline(x = w_diss.mean(), color = color)
+    ax_hist.hist(w_diss, weights=jnp.ones(len(w_diss)) / len(w_diss), bins = 50, label = trap_name, alpha = 0.7, color = color)
+    kde_data[trap_name] = w_diss
+    ax_kde.axvline(x = w_diss.mean(), color = color)
+    kde_colors.append(plot_color_list[ind])
+    ax_position.plot(t * p.param_set.dt / (10**(-6)), trap_fns[0](t), label = trap_name, color = color)
+    ax_stiffness.plot(t * p.param_set.dt / (10**(-6)), trap_fns[1](t), label = trap_name, color = color)
+    plot_with_stddev(midpoints, es_aligned, label = trap_name, ax = ax_reconstruct, color = color)
+    #ax_reconstruct.plot(midpoints, energies_aligned, label = trap_name, color = color)
+    print(f"Plotting complete for {trap_name}")
+  sns.kdeplot(data = kde_data, palette = kde_colors, legend=True, ax = ax_kde)
+  ax_hist.legend()
+  ax_position.legend()
+  ax_stiffness.legend()
+  ax_reconstruct.legend()
+  fig_hist.savefig(parent_dir + f"work_distribution_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
+  fig_rec.savefig(parent_dir + f"reconstructions_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
+  fig_pro.savefig(parent_dir + f"protocols_t{args.end_time}_k{args.k_s}.png", bbox_inches = "tight")
+  fig_kde.savefig(parent_dir + f"kde_dist_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
+
+
+
+
+
+# TODO: Table comparison of protocols --> Important graph to have! --> Adjust for different protocols etc
+
+    # extensions = [-10,-5,0] # temporary
+    # disc_samples = bcl.landscape_discrepancies_samples(no_trap_rec_fn, no_trap_fn, extensions)
+    # disc_samples = jnp.array(disc_samples)
+    # mean_disc_samples = disc_samples.mean()
+    # bias_samples = disc_samples.max()
 
     # loss values 
     # if file_name == "split.pkl":
@@ -240,36 +247,3 @@ if __name__ == "__main__":
     #     }
     #   }
     #code.interact(local = locals())
-    color = plot_color_list[ind]
-    ax_hist.axvline(x = w_diss.mean(), color = color)
-    ax_hist.hist(w_diss, weights=jnp.ones(len(w_diss)) / len(w_diss), bins = 50, label = trap_name, alpha = 0.7, color = color)
-    kde_data[trap_name] = w_diss
-    ax_kde.axvline(x = w_diss.mean(), color = color)
-    kde_colors.append(plot_color_list[ind])
-    ax_position.plot(t * p.param_set.dt / (10**(-6)), trap_fns[0](t), label = trap_name, color = color)
-    ax_stiffness.plot(t * p.param_set.dt / (10**(-6)), trap_fns[1](t), label = trap_name, color = color)
-    plot_with_stddev(midpoints, es_aligned, label = trap_name, ax = ax_reconstruct, color = color)
-    #ax_reconstruct.plot(midpoints, energies_aligned, label = trap_name, color = color)
-  
-  sns.kdeplot(data = kde_data, palette = kde_colors, legend=True, ax = ax_kde)
-  ax_hist.legend()
-  ax_position.legend()
-  ax_stiffness.legend()
-  ax_reconstruct.legend()
-  fig_hist.savefig(parent_dir + f"work_distribution_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
-  fig_rec.savefig(parent_dir + f"reconstructions_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
-  fig_pro.savefig(parent_dir + f"protocols_t{args.end_time}_k{args.k_s}.png", bbox_inches = "tight")
-  fig_kde.savefig(parent_dir + f"kde_dist_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
-  # with open(parent_dir + "/landscape_data.pkl", "wb") as f:
-  #   for trap_name, data in plot_data.items():
-  #       pass # not sure how to do this right now but there is an error    
-  #       # pickle.dump(plot_data, f)
-  #       # AttributeError: Can't pickle local object 'make_trap_fxn.<locals>.Get_r0'
-  #       # plot_data[trap_name]["trap"] = 
-  #   #pickle.dump(plot_data, f)
-
-
-
-
-
-# TODO: Table comparison of protocols --> Important graph to have! --> Adjust for different protocols etc
