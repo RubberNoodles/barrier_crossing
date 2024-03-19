@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import barrier_crossing.energy as bce
 import barrier_crossing.simulate as bcs
 import barrier_crossing.protocol as bcp
-import barrier_crossing.models as bcm
 
 import jax.numpy as jnp
 
@@ -215,7 +214,7 @@ def find_coeff_file(model_info, args):
       }
   
   else:
-    coeff_searches = {f"{mode}":[f"{model_type}_{mode}"]}
+    coeff_searches = {f"{model_type}":[f"{model_type}_{mode}"]}
   if "split" in model_info:
     for key, search in coeff_searches.items():
       coeff_searches[key] = [search[0] + "_split_1", search[0] + "_split_2"]
@@ -286,5 +285,4 @@ def make_trap_from_file(dir_name, file_names, position_protocol_maker, stiffness
   for i in range(0,2):
     if isinstance(traps[i], list):
       traps[i] = bcp.trap_sum(params.simulation_steps, sim_cut_steps, traps[i][0], traps[i][1])
-  
   return traps
