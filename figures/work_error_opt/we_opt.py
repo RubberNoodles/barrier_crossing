@@ -37,7 +37,7 @@ def plot_and_save_optimization(losses, models, names, opt_steps, path, figsize =
     ax[0].set_title(f'{name}')
     ax[0].set_xlabel('Number of Optimization Steps')
     ax[0].set_ylabel('Error')
-    # I should pass in model
+    # I should pass in the model
     trap_fn = model.protocol(model.coef_hist[0])
     init_sched = trap_fn(t)
     ax[1].plot(t, init_sched, label='Initial guess')
@@ -115,11 +115,12 @@ if __name__ == "__main__":
   },
   {
     "name": "Joint", "model": bcm.JointModel(p.param_set, models[6]["model"], models[7]["model"])
-  }]
+  }
+  ]
 
   batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
   num_epochs = 1000 # Number of gradient descent steps to take.
-  lr = jopt.polynomial_decay(0.03, num_epochs, 0.0003)
+  lr = jopt.polynomial_decay(0.1, num_epochs, 0.001)
   optimizer = jopt.adam(lr)
   
   train_fn = lambda model, grad_fn: bct.train(model, optimizer, grad_fn, key, batch_size = batch_size, num_epochs = num_epochs)
@@ -134,8 +135,8 @@ if __name__ == "__main__":
     fwd = True if mode == "fwd" else False
     
     simulate_fn = None # To be defined later
-    
-    if mode == "fwd":
+    is_split = isinstance(model, bcm.SplitModel) or isinstance(model.models[0], bcm.SplitModel)
+    if fwd:
       default_trap = bcp.make_trap_fxn(t, lin_coeffs, p.r0_init, p.r0_final)
       grad_fn = lambda num_batches: loss.estimate_gradient_work(
       num_batches,
@@ -149,16 +150,17 @@ if __name__ == "__main__":
       simulate_fn,
       model)
     
+    param_set = split_param_set if is_split else p.param_set
     if model_dict["name"] == "Position":
-      simulate_fn = lambda trap_fn, keys: p.param_set.simulate_fn(
+      simulate_fn = lambda trap_fn, keys: param_set.simulate_fn(
       trap_fn, 
-      p.param_set.k_s,
+      param_set.k_s,
       keys, 
       regime = "brownian",
       fwd = fwd)
       
     elif model_dict["name"] == "Stiffness":
-      simulate_fn = lambda trap_fn, keys: p.param_set.simulate_fn(
+      simulate_fn = lambda trap_fn, keys: param_set.simulate_fn(
       default_trap, 
       trap_fn,
       keys, 
@@ -166,7 +168,7 @@ if __name__ == "__main__":
       fwd = fwd)
     
     elif model_dict["name"] == "Joint":
-      simulate_fn = lambda trap_fn, ks_fn, keys: p.param_set.simulate_fn(
+      simulate_fn = lambda trap_fn, ks_fn, keys: param_set.simulate_fn(
       trap_fn,
       ks_fn,
       keys, 
@@ -181,16 +183,18 @@ if __name__ == "__main__":
       
     losses = train_fn(model, grad_fn)
     
-    if isinstance(model, bcm.SplitModel) or isinstance(model.models[0], bcm.SplitModel):
+    if is_split:
       split_1_names = [name + ["split_1"] for name in names]
       
       plot_and_save_optimization(losses, model.models, split_1_names, num_epochs, path)
       
       model.switch_trap()
-      
+      split_param_set.end_time *= 2
       losses = train_fn(model, grad_fn)
       split_2_names = [name + ["split_2"] for name in names]
       plot_and_save_optimization(losses, model.models, split_2_names, num_epochs, path)
+      split_param_set.end_time /= 2
+      model.switch_trap()
       
     else:
       plot_and_save_optimization(losses, model.models, names, num_epochs, path)

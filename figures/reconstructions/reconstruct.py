@@ -1,6 +1,4 @@
 # Given coefficients (pickled); reconstruct and determine accuracy of reconstructions.
-
-### TODO: Compute Free energy std.
 import tqdm
 
 import barrier_crossing.energy as bce
@@ -12,6 +10,8 @@ from barrier_crossing.utils import parse_args, make_trap_from_file, find_coeff_f
 
 import jax.numpy as jnp
 import jax.random as random
+import pandas as pd
+import os
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -46,6 +46,9 @@ if __name__ == "__main__":
   parent_dir = f"output_data/{path}/"
   coeff_dir = parent_dir + "coeffs/"
   
+  if not os.path.isdir(parent_dir):
+    os.mkdir(parent_dir)
+    
   if "2_5kt" in path:
     near_eq_file = "2.5kt_lr_opt.pkl"
   elif "10kt" in path:
@@ -61,12 +64,12 @@ if __name__ == "__main__":
     "Error; Position": ["position","rev"],
     "Error; Stiffness": ["stiffness","rev"],
     "Error; Joint": ["joint","rev"],
-    "Split; Position": ["position","fwd", "split"],
-    "Split; Stiffness": ["stiffness","fwd", "split"],
-    "Split; Joint": ["joint","fwd", "split"],
-    "Split; Position": ["position","rev", "split"],
-    "Split; Stiffness": ["stiffness","rev", "split"],
-    "Split; Joint": ["joint","rev", "split"],
+    "Split Work; Position": ["position","fwd", "split"],
+    "Split Work; Stiffness": ["stiffness","fwd", "split"],
+    "Split Work; Joint": ["joint","fwd", "split"],
+    "Split Error; Position": ["position","rev", "split"],
+    "Split Error; Stiffness": ["stiffness","rev", "split"],
+    "Split Error; Joint": ["joint","rev", "split"],
     "Near Equilibrium": [near_eq_file] if near_eq_file else None
     }
   
@@ -74,7 +77,7 @@ if __name__ == "__main__":
   ssm = bcm.ScheduleModel(p.param_set, p.ks_init, p.ks_final)
   
   plot_data = {}
-  plot_color_list = ['b', 'g', 'r' ,'c', 'm', 'y', 'k', 'w'] * 2
+  plot_color_list = ['b', 'g', 'r' ,'c', 'm', 'y', 'k'] * 2
   kde_colors = []
   plt.rc('font', size = 16)
   plt.subplots_adjust(right=0.8)
@@ -82,12 +85,14 @@ if __name__ == "__main__":
   fig_pro = plt.figure(figsize = (14, 7))
   fig_hist = plt.figure(figsize = (7,7))
   fig_kde = plt.figure(figsize = (7,7))
+  fig_table = plt.figure(figsize = (8,8))
   
   ax_reconstruct = fig_rec.add_subplot(1, 1, 1)
   ax_position = fig_pro.add_subplot(1, 2, 1)
   ax_stiffness = fig_pro.add_subplot(1, 2, 2)
   ax_hist = fig_hist.add_subplot(1,1,1)
   ax_kde = fig_kde.add_subplot(1,1,1)
+  ax_table = fig_table.add_subplot(1,1,1)
 
   fig_pro.suptitle(f"{args.landscape_name}")
   
@@ -107,15 +112,20 @@ if __name__ == "__main__":
   ax_kde.set_title(f"{args.landscape_name} Dissipated Work Distribution")
   ax_kde.set_xlabel("Dissipated Work (W)")
   ax_kde.set_ylabel("p(W)")
+  ax_table.set_title("Free Energy Reconstruction Results")
   kde_data = {}
   plot_ranking = []
   
   no_trap_energy_fn = p.param_set.energy_fn(no_trap = True)
-  time_vec = jnp.linspace(-20,20, 1000)
   if "triple" in args.landscape_name.lower():
     time_vec = jnp.linspace(-12,12, 1000)
+    ax_reconstruct.set_xlim(-12,12)  
+  else:
+    time_vec = jnp.linspace(-20,20, 1000)
+    ax_reconstruct.set_xlim(-20,20)  
   ax_reconstruct.plot(time_vec, jnp.squeeze(no_trap_energy_fn(time_vec.reshape(1,1,1000))) - no_trap_energy_fn(p.r0_init), label = "Original", color = 'k')
-
+  ax_reconstruct.set_ylim(-5,45)
+  
   for ind, (trap_name, model_args) in enumerate(model_types.items()):
     if model_args is None:
       continue
@@ -197,10 +207,19 @@ if __name__ == "__main__":
     #ax_reconstruct.plot(midpoints, energies_aligned, label = trap_name, color = color)
     print(f"Plotting complete for {trap_name}")
   
+  table_data = pd.DataFrame([{"Trap": pr["trap_name"], "Bias": pr["loss"]} for pr in plot_ranking])
+  cell_text = []
+  for row in range(len(table_data)):
+      cell_text.append(table_data.iloc[row])
+  
+  table_line = ax_table.table(cellText=cell_text, colLabels=table_data.columns, loc='center')
+  table_line.scale(1, 2)
+  ax_table.axis('off')
+  
   plot_ranking.sort(key = lambda d: d["loss"], reverse = False)
   plot_top = min(len(plot_ranking), plot_top)
   to_remove = plot_ranking[plot_top:]
-  
+
   to_remove.sort(key = lambda d: d["kde_color_ind"], reverse = True)
   
   for plot_dict in to_remove:
@@ -219,7 +238,7 @@ if __name__ == "__main__":
   fig_rec.savefig(parent_dir + f"reconstructions_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
   fig_pro.savefig(parent_dir + f"protocols_t{args.end_time}_k{args.k_s}.png", bbox_inches = "tight")
   fig_kde.savefig(parent_dir + f"kde_dist_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
-
+  fig_table.savefig(parent_dir + f"table_t{args.end_time}_k{args.k_s}_b{args.batch_size}.png", bbox_inches = "tight")
 
 
 

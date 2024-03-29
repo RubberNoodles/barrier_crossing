@@ -285,7 +285,6 @@ class SplitModel(ScheduleModel):
       self.init_pos = _tmp
       
       lin_c = bcp.linear_chebyshev_coefficients(self.cut_pos, self.lin_bound, self.rem_steps, y_intercept = self.cut_pos)
-      new_c = bcp.linear_chebyshev_coefficients(self.init_pos, self.final_pos, self.rem_steps, y_intercept = self.init_pos)
       self.lin_trap = make_lin(t, lin_c, self.cut_pos, self.lin_bound)
       
     else:
@@ -294,26 +293,35 @@ class SplitModel(ScheduleModel):
       self.lin_bound = self.init_pos
       self.init_pos = _tmp
       lin_c = bcp.linear_chebyshev_coefficients(self.lin_bound, self.cut_pos, self.rem_steps, y_intercept = self.lin_bound)
-      new_c = bcp.linear_chebyshev_coefficients(self.init_pos, self.final_pos, self.rem_steps, y_intercept = self.init_pos)
       self.lin_trap = make_lin(t, lin_c, self.lin_bound, self.cut_pos)
+      
     
+    new_c = bcp.linear_chebyshev_coefficients(self.init_pos, self.final_pos, self._params.simulation_steps , y_intercept = self.init_pos)
     
     self.coeffs = new_c
     self.coef_hist.pop(0)
     return history
   
-  def protocol(self, coeffs):
+  def protocol(self, coeffs, train = False):
     if self.mode == "rev":
       trap_sum = bcp.trap_sum_rev
     elif self.mode == "fwd":
       # print("WARNING: For plotting uses only.")
       trap_sum = bcp.trap_sum
+    
+    
     if self.num == 1:
-      total_trap = trap_sum(self.total_sim_steps, self._params.simulation_steps, super().protocol(coeffs), self.lin_trap)
+      train_protocol = super().protocol(coeffs)
+      total_trap = trap_sum(self.total_sim_steps, self.rem_steps, train_protocol, self.lin_trap)
     else:
-      total_trap = trap_sum(self.total_sim_steps,self.total_sim_steps - self._params.simulation_steps, self.lin_trap, super().protocol(coeffs))
-      
-    return [total_trap]
+      self._params.end_time /= 2
+      train_protocol = super().protocol(coeffs)
+      total_trap = trap_sum(self.total_sim_steps,self.total_sim_steps - self.rem_steps, self.lin_trap, train_protocol)
+      self._params.end_time *= 2
+    if train:
+      return [total_trap]
+    else:
+      return total_trap
   
   def single_protocol(self, coeffs):
     return super().protocol(coeffs)
