@@ -1,7 +1,7 @@
 import figures.param_set.params_base as p
 
 import jax.numpy as jnp
-import barrier_crossing.energy as bc_energy
+import barrier_crossing.energy as bce
 
 
 Neq = p.Neq
@@ -10,6 +10,9 @@ r0_init = p.r0_init
 r0_final = p.r0_final
 r0_cut = p.r0_cut
 beta = p.beta
+ks_init = p.ks_init
+ks_final = p.ks_final
+ks_cut = p.ks_cut
 
 param_set = p.sc_params
 
@@ -18,5 +21,5 @@ e_positions = jnp.array(pos_e)[:,0]
 e_energies = jnp.array(pos_e)[:,1] * 3.5
 
 
-energy_triple_well = bc_energy.V_biomolecule_reconstructed(p.k_s, e_positions, e_energies)
+energy_triple_well = bce.ReconstructedLandscape(e_positions, e_energies)
 param_set.set_energy_fn(energy_triple_well)
