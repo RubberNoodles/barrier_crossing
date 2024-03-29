@@ -50,12 +50,13 @@ class MDParameters:
   
   def energy_fn(self, no_trap = False):
     if "custom" in self.__dict__.keys():
-      return self.custom.total_energy
+      energy_fn = self.custom.total_energy
     else:
-      if no_trap:
-        return lambda position, **kwargs: self.landscape.total_energy(position, k_s = 0., r0 = 0., **kwargs)
-      else:
-        return self.landscape.total_energy
+      energy_fn = self.landscape.total_energy
+    if no_trap:
+      return lambda position, **kwargs: energy_fn(position, k_s = 0., r0 = 0., **kwargs)
+    else:
+      return energy_fn
   
   def set_energy_fn(self, custom):
     self.custom = custom
@@ -123,7 +124,13 @@ class MDParameters:
   @classmethod
   def copy(cls, obj):
     """Manual copy"""
-    return cls(**obj.__dict__)
+    custom = obj.__dict__.pop("custom", None)
+    if custom is not None:
+      new_cls = cls(**obj.__dict__)
+      new_cls.set_energy_fn(custom)
+      return new_cls
+    else:
+      return cls(**obj.__dict__)
     
     
 @dataclass
@@ -192,11 +199,12 @@ def copy_dir_coeffs(parent_dir, path, coeff_dir, coeff_files):
           print(f"{err} occurred. Coefficients {coeff_type} not copied. Continuing...")
 
 
-def find_coeff_file(model_info, args):
+def find_coeff_file(model_info, args, root_dir = None):
   """Helper function for reconstruct.py"""
   if model_info == "linear":
     return None, None
-  dir_name = "../work_error_opt/output_data/" + "_".join([args.landscape_name.replace(' ', '_').replace('.', '_').lower(), f"t{args.end_time}", f"ks{args.k_s}"]) +"/"
+  dir_name = root_dir if root_dir else "../work_error_opt/output_data/" 
+  dir_name += "_".join([args.landscape_name.replace(' ', '_').replace('.', '_').lower(), f"t{args.end_time}", f"ks{args.k_s}"]) +"/"
   #dir_name = "figures/work_error_opt/output_data/" + "_".join([args.landscape_name.replace(' ', '_').replace('.', '_').lower(), f"t{args.end_time}", f"ks{args.k_s}"]) +"/"
   
   model_type = model_info[0]
