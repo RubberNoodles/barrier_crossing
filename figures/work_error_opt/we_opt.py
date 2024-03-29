@@ -11,7 +11,8 @@ from barrier_crossing.utils import parse_args
 
 import jax.numpy as jnp
 import jax.random as random
-import jax.example_libraries.optimizers as jopt
+
+import optax
 
 import matplotlib.pyplot as plt
 
@@ -120,14 +121,15 @@ if __name__ == "__main__":
 
   batch_size = 5000 # Number of simulations/trajectories simulated. GPU optimized.
   num_epochs = 1000 # Number of gradient descent steps to take.
-  lr = jopt.polynomial_decay(0.1, num_epochs, 0.001)
-  optimizer = jopt.adam(lr)
+  learning_rate = optax.exponential_decay(0.1, num_epochs, 0.1, end_value = 0.01)
+  optimizer = optax.adam(learning_rate)
   
   train_fn = lambda model, grad_fn: bct.train(model, optimizer, grad_fn, key, batch_size = batch_size, num_epochs = num_epochs)
   
   lin_coeffs = bcp.linear_chebyshev_coefficients(p.r0_init, p.r0_final, p.param_set.simulation_steps, y_intercept = p.r0_init)
   # Trap Functions. Reverse mode trap functions are for when we compute Jarzynski error with reverse protocol trajectories.
   t = jnp.arange(p.param_set.simulation_steps)
+  
   
   for model_dict in models:
     model = model_dict["model"]

@@ -3,10 +3,12 @@
 import time
 import pickle
 import os
+import code
 
 import jax.numpy as jnp
 import jax.random as random
-import jax.example_libraries.optimizers as jopt
+
+import optax
 
 import matplotlib.pyplot as plt
 
@@ -24,8 +26,9 @@ if __name__ == "__main__":
   if not os.path.isdir(path):
     os.mkdir(path)
 
-  position_model = bcm.ScheduleModel(p.param_set, p.r0_init, p.r0_final, mode = "fwd")
-  stiffness_model = bcm.ScheduleModel(p.param_set, p.ks_init, p.ks_final, mode = "fwd")
+  position_model = bcm.ScheduleModel(p.param_set, p.r0_init, p.r0_final, mode = "rev")
+  #stiffness_model = bcm.ScheduleModel(p.param_set, p.ks_init, p.ks_final, mode = "rev")
+  stiffness_model = bcm.ScheduleModel(p.param_set, args.k_s, args.k_s, mode = "rev")
 
   true_simulation_fwd = lambda trap_fn, ks_fn: lambda keys: p.param_set.simulate_fn(
     trap_fn, 
@@ -42,10 +45,10 @@ if __name__ == "__main__":
     fwd = False,
     custom = energy_fn)
   
-  max_iter = 8
+  max_iter = 20
   opt_steps_landscape = 1000 # 1000 + 
   bins = 75
-  opt_batch_size = 10000 # 10k + 
+  opt_batch_size = 5000 # 10k + 
 
   grad_no_E = lambda model, simulate_fn: lambda num_batches: loss.estimate_gradient_rev(
       num_batches,
@@ -62,8 +65,8 @@ if __name__ == "__main__":
                               batch_size, 
                               p.beta)
 
-  lr = jopt.polynomial_decay(0.1, opt_steps_landscape, 0.001)
-  optimizer = jopt.adam(lr)
+  learning_rate = optax.exponential_decay(0.1, opt_steps_landscape, 0.1, end_value = 0.01)
+  optimizer = optax.adam(learning_rate)
 
   train_fn = lambda model, grad_fn, key: bct.train(model, optimizer, grad_fn, key, batch_size = opt_batch_size, num_epochs = opt_steps_landscape)
 
@@ -79,10 +82,12 @@ if __name__ == "__main__":
     grad_no_E,
     reconstruct_fn,
     train_fn,
-    key)
+    key,
+    num_reconstructions = 100)
   
   positions = jnp.array(landscapes[-1][0])
 
+  # code.interact(local = locals())
   ### PLOTTING ###
   
   plt.figure(figsize = (10,10))
@@ -98,11 +103,17 @@ if __name__ == "__main__":
 
   for num, (positions, energies) in enumerate(landscapes):
     
-    min_e = jnp.min(energies[jnp.where((positions > -12) & (positions < -8))])
+    try:
+      min_e = jnp.min(energies[jnp.where((positions > -15) & (positions < 0))])
+    except:
+      print(f"FAILURE: Position x Energies on iteration {num} failed; continuing...")
+      continue
     if num == 0:
       label = "Linear"
     elif num == len(landscapes)-1:
       label = "Final Landscape"
+    elif num % (max_iter//5) != 0:
+      continue
     else:
       label = f"Iteration {num}"
     plt.plot(positions, energies - min_e, label = label)
@@ -116,28 +127,37 @@ if __name__ == "__main__":
   trap_fn = position_model.protocol(position_model.coef_hist[0])
   plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Linear Protocol")
   for i, coeff in enumerate(coeffs["position"]):
-      trap_fn = position_model.protocol(coeff)
-      plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = f"Iteration {i}")
+    if i == 0:
+      label = "Linear"
+    elif i == len(landscapes)-1:
+      label = "Final Protocol"
+    elif i % (max_iter//5) != 0:
+      continue
+    else:
+      label = f"Iteration {i}"
+    trap_fn = position_model.protocol(coeff)
+    plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = label)
   plt.xlabel("Simulation Step")
   plt.ylabel("Position (x)")
   plt.title(f"Protocols Over Iteration; {args.end_time}")
   plt.legend()
   plt.savefig(path + f"opt_position_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
   
-  plt.figure(figsize = (8,8))
-  trap_fn = stiffness_model.protocol(stiffness_model.coef_hist[0])
-  plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Linear Protocol")
-  for i, coeff in enumerate(coeffs["stiffness"]):
-      trap_fn = stiffness_model.protocol(coeff)
-      plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = f"Iteration {i}")
-  plt.xlabel("Simulation Step")
-  plt.ylabel("Stiffness (pN/nm)")
-  plt.title(f"Protocols Over Iteration; {args.end_time}")
-  plt.legend()
-  plt.savefig(path + f"opt_stiffness_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
+  # plt.figure(figsize = (8,8))
+  # trap_fn = stiffness_model.protocol(stiffness_model.coef_hist[0])
+  # plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Linear Protocol")
+  # for i, coeff in enumerate(coeffs["stiffness"]):
+  #     trap_fn = stiffness_model.protocol(coeff)
+  #     plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = f"Iteration {i}")
+  # plt.xlabel("Simulation Step")
+  # plt.ylabel("Stiffness (pN/nm)")
+  # plt.title(f"Protocols Over Iteration; {args.end_time}")
+  # plt.legend()
+  # plt.savefig(path + f"opt_stiffness_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
   
   
   with open(path + f"coeffs__{args.k_s}_{args.end_time}_{args.batch_size}.pkl", "wb") as f:
     pickle.dump(coeffs, f)
 
+print(f"Task Iterative for {args.landscape_name} completed.")
 print(p.param_set)
