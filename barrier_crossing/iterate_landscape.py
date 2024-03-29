@@ -184,10 +184,10 @@ def landscape_discrepancies(ls, true_ls, first_well, r_min, r_max):
   # Find difference at max point to align landscapes
   
   no_trap_rec_fn = ReconstructedLandscape(*ls).molecule_energy
-  first_well_guess, _ = find_min_pos(no_trap_rec_fn, -10, 0)
-  
+  first_well_guess = no_trap_rec_fn(r_min)
+
   diff = first_well - first_well_guess
- 
+    
   # only consider points in range (min, max)
   midpoints = []
   energies = []
@@ -195,10 +195,11 @@ def landscape_discrepancies(ls, true_ls, first_well, r_min, r_max):
     if r_min <= ls[0][i] <= r_max:
       midpoints.append(ls[0][i])
       energies.append(ls[1][i] + diff)
-  
+      
+    
   discrepancies = []
-  for midpoints, energy in zip(midpoints, energies):
-    discrepancies.append(abs(true_ls(midpoints) - energy))
+  for midpoint, energy in zip(midpoints, energies):
+    discrepancies.append(abs(true_ls(midpoint) - energy))
   
   return discrepancies
 
