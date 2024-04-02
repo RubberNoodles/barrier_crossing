@@ -6,6 +6,9 @@ r0_init = p.r0_init
 r0_final = p.r0_final
 r0_cut = p.r0_cut
 beta = p.beta
+ks_init = p.ks_init
+ks_final = p.ks_final
+ks_cut = p.ks_cut
 
 param_set = p.sc_params
 

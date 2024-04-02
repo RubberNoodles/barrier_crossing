@@ -5,7 +5,7 @@ import os
 import importlib
 
 import barrier_crossing.protocol as bc_protocol
-import barrier_crossing.optimize as bc_optimize
+import barrier_crossing.train as bc_optimize
 
 import jax.numpy as jnp
 

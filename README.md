@@ -18,8 +18,10 @@ git clone git@github.com:RubberNoodles/barrier_crossing.git
 cd barrier_crossing
 ```
 
-Download all the general Python dependencies. Building with virtual environment highly recommended: `python3 -m venv bc_env;source bc_env/bin/activate`:
+Download all the general Python dependencies.
 ```
+python3 -m venv bc_env
+source bc_env/bin/activate
 pip3 install --upgrade pip
 pip3 install -r requirements.txt
 ```
@@ -27,28 +29,40 @@ Install the [JAX library with GPU](https://github.com/google/jax#installation), 
 
 **NOTE:** For users without a GPU, install JAX with CPU instead.
 
+
+All figures found in the paper were produced using the codes available in the `figures` directory. See the corresponding `README.md` for more information. Figures can be re-run with specific parameters. For example, run
+```
+python3 we_opt.py --landscape_name "Double Well 10kT Barrier Brownian" --param_suffix 10kt --k_s 0.4 --end_time 0.0001 --batch_size 3000
+```
+
 ## Package Overview
 
-This sections describes the individual files that are a part of this package contained in the `barrier_crossing` folder.
+This section describes the individual files that are a part of this package contained in the `barrier_crossing` folder.
 
 ### `energy.py`
-Implements the potential energy functions for molecular dynamics simulations. Currently contains `brownian(...)` to describe Brownian motion, as well as
-code for two double well landscapes (Geiger & Dellago 2010) and (Sivak & Crooks 2016).
+Implements the potential energy functions for molecular dynamics simulations. Currently contains `brownian` and `langevin` corresponding to their respective
+dynamics. In addition, classes for (Geiger & Dellago 2010) and (Sivak & Crooks 2016) landscapes are available.
 
 ### `protocol.py`
 Functions to create a protocol/schedule described by Chebyshev polynomials. 
 
+### `models.py`
+Building off of `protocol.py`, creates models designed to be optimized under JAX transformations and AD. Provides functionality for single protocol, joint protocol, and split protocol optimizations.
+
 ### `simulate.py`
-Contains `simulate_brownian_harmonic` and `batch_simulate_harmonic` functions in order to simulate a Brownian particle moving over a given free energy landscape dragged by a harmonic trap with schedule specified by Chebyshev polynomials. Use `batch_simulate_harmonic` in order to run a simulating functing such as `simulate_brownian_harmonic` in large batches to replicate running large batches of experiments to find different trajectories.
+Using `brownian` and `langevin` simulators, creates simple functions for invoking large batches of simulations, analagous to running large batches of experiments to sample rare trajectories
 
-### `optimize.py`
-Several different loss functions that one could choose from. The main ones coming from 
+### `loss.py`
+Loss functions according to modern statistical mechanics theory. For example: dissipated work, reverse Jarzynski Loss, loss sampled across reaction coordinates. Uses JAX transformations (jit/vmap) for performance.
 
-Training loop using Jarzynski equality error for a single energy difference or multiple energy differences across the landscape (Geiger & Dellago 2010, Engel 2022, Jarzynski 1997), or work used to drag the particle over the landscape as a loss function.
+### `train.py`
+Training loop to optimize models from `models.py`.
 
 ### `iterate_landscape.py`
-Iteratively attempt to reconstruct a black box landscape by looping over two tasks: based on a protocol for pulling the molecule, take a large number of simulations to reconstruct an energy landscape. Using this energy landscape, optimize a protocol to use to once again simulate and reconstruct.
+Contains vectorized code to run reconstructions in O(`simulation_steps` * `bins`).
 
-## Figures
+Also includes code to iteratively attempt to reconstruct a black box landscape by looping over two tasks: based on a protocol for pulling the molecule, take a large number of simulations to reconstruct an energy landscape. Using this energy landscape, optimize a protocol to use to once again simulate and reconstruct.
 
-All figures found in the paper were produced using the codes available in the `figures` directory. See the `README.md` for more information.
+### `utils.py`
+
+Utility functions for the rest of the package, including code to help parse IO for figures.

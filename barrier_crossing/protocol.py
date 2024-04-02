@@ -1,3 +1,8 @@
+"""
+Helper functions to create schedules. Protocols/Schedules parameterized by Chebyshev polynomials.
+
+Both forward and reverse mode schedules supported.
+"""
 import typing
 
 import scipy.special as sps
@@ -83,7 +88,7 @@ def make_trap_fxn_rev(time_vec,coeffs,r0_init,r0_final):
   
 def make_custom_trap_fxn(time_vec, timestep_trap_position, r0_init, r0_final):
   """Create trap function. Return Callable to interpolate between 
-  (time, position)` pairs of `time_trap_position
+  (time, position)` pairs of `time_trap_position`
   
   Note that custom trap functions CANNOT be optimized.
   """
@@ -121,7 +126,7 @@ def trap_sum(simulation_steps, cut, trap1, trap2):
     return positions[0]
   return Get_r0
 
-def trap_sum_rev(timevec, simulation_steps, cut, trap1, trap2): 
+def trap_sum_rev(simulation_steps, cut, trap1, trap2): 
   """
   Make a trap function out of two "pieces" : trap1 and trap2.
   This is the reverse direction, so
@@ -135,3 +140,4 @@ def trap_sum_rev(timevec, simulation_steps, cut, trap1, trap2):
     #return jnp.array(positions).flatten()
     return positions[0]
   return Get_r0
+

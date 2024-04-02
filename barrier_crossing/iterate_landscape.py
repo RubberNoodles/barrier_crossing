@@ -1,6 +1,12 @@
+"""
+Module to reconstruct landscapes with optimized algorithm. In addition, helper
+code to classify landscape reconstruction quality, as well as `optimize_landscape`
+code for iterative reconstruction.
+"""
+import code
 import copy
-import logging
 import tqdm
+from typing import Callable
 
 import matplotlib.pyplot as plt
 
@@ -8,11 +14,11 @@ import numpy as onp
 
 import jax.numpy as jnp
 import jax
+import jax.random as random
 
-from barrier_crossing.energy import V_biomolecule_reconstructed
-from barrier_crossing.protocol import make_trap_fxn
+from barrier_crossing.models import ScheduleModel
+from barrier_crossing.energy import ReconstructedLandscape
 from barrier_crossing.simulate import batch_simulate_harmonic
-from barrier_crossing.optimize import optimize_protocol
 
 def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
   stddev = jnp.std(x, axis)
@@ -25,7 +31,7 @@ def plot_with_stddev(x, label=None, n=1, axis=0, ax=plt, dt=1.):
                   alpha=.3)
   ax.plot(xs, mn, label=label)
   
-def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, batch_size, k_s, beta):
+def energy_reconstruction(works, trajectories, bins, trap_fn, ks_trap_fn, simulation_steps, batch_size, beta):
   """Outputs a (midpoints, free_energies) tuple for reconstructing 
   free-energy landscapes according to formalism by Hummer & Szabo 2001.
 
@@ -48,21 +54,24 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
   1. G. Hummer and A. Szabo. Free energy reconstruction from nonequilibrium single-molecule pulling experiments.
     Proceedings of the National Academy of Sciences of the United States of America, 98(7):3658–3661, Mar 2001.
   """
+  if not isinstance(ks_trap_fn, Callable):
+    _tmp = ks_trap_fn
+    ks_trap_fn = lambda step: _tmp
   
   if works.shape != (batch_size, simulation_steps):
     raise ValueError(f"Array `works` should be of shape ({batch_size, simulation_steps}), got ({works.shape}) instead.")
   
   exp_works = jnp.exp( - beta * works)
   eta = jnp.mean(exp_works, axis = 0)
+  t = jnp.arange(simulation_steps)
 
   traj_min = trajectories.min()
   traj_max = trajectories.max() + 1e-3
   bin_width = (traj_max-traj_min)/bins
-
-
+  
   traj_mask = jnp.squeeze(jnp.floor(bins * ((trajectories-traj_min)/(traj_max - traj_min))))
 
-  traj_bins = traj_mask.astype(int) + jnp.outer(jnp.ones(batch_size), jnp.arange(simulation_steps)) * bins
+  traj_bins = traj_mask.astype(int) + jnp.outer(jnp.ones(batch_size), t) * bins
   midpoints = jnp.array([traj_min + (i+0.5) * bin_width for i in range(bins)])
 
   bin_arr = onp.zeros(bins * simulation_steps)
@@ -70,16 +79,14 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, simulation_steps, 
   onp.add.at(bin_arr, traj_bins.astype(int), exp_works)
 
   bin_arr = bin_arr / batch_size
-
+  numerator = bin_arr.reshape(simulation_steps, bins).T @ jnp.reciprocal(eta)
   # u(z,t): at each timestep and midpoint, we have a deflection energy
   vectorized_trap = jax.vmap(trap_fn)
-  repeat_trap_positions = jnp.tile(vectorized_trap(jnp.arange(simulation_steps)), (bins, 1))
-  deflect = jnp.exp(-beta * k_s * 0.5 * jnp.square( repeat_trap_positions.T - midpoints).T)
-
-  numerator = bin_arr.reshape(simulation_steps, bins).T @ jnp.reciprocal(eta)
+  repeat_trap_positions = jnp.tile(vectorized_trap(t), (bins, 1))
+  deflect = jnp.exp(-beta * ks_trap_fn(t) * 0.5 * jnp.square( repeat_trap_positions.T - midpoints).T)
+  
   denominator = deflect @ jnp.reciprocal(eta)
   energies = -(1/beta) * jnp.log(jnp.divide(numerator, denominator))
-
   return jnp.array(midpoints), jnp.array(energies)
 
 def find_max_pos(landscape, barrier_pos):
@@ -91,7 +98,7 @@ def find_max_pos(landscape, barrier_pos):
   """
   max = 0
   for position in range(barrier_pos-5,barrier_pos+5,1): # maximum expected at around 0
-    if landscape([[position]]) > landscape([[max]]):
+    if landscape(position) > landscape(max):
       max = position
   return max
 
@@ -105,10 +112,10 @@ def find_min_pos(landscape, min_1_guess, min_2_guess):
   min1 = min_1_guess
   min2 = min_2_guess
   for position in jnp.linspace(min_1_guess-3,min_1_guess+3,100):
-    if landscape([[position]]) < landscape([[min1]]):
+    if landscape(position) < landscape(min1):
       min1 = position
   for position2 in jnp.linspace(min_2_guess-3, min_2_guess+3, 100):
-    if landscape([[position2]]) < landscape([[min2]]):
+    if landscape(position2) < landscape(min2):
       min2 = position2
   return (min1, min2)
 
@@ -130,12 +137,12 @@ def landscape_error(ls, true_ls, r0_init, r0_final, barrier_pos):
   """
   barrier_pos = find_max_pos(ls, barrier_pos)
   min1, min2 = find_min_pos(ls,r0_init,r0_final)
-  first_well_depth = ls([[barrier_pos]])-ls([[min1]])
-  second_well_depth = ls([[barrier_pos]]) - ls([[min2]])
+  first_well_depth = ls(barrier_pos)-ls(min1)
+  second_well_depth = ls(barrier_pos) - ls(min2)
   delta_E = abs(first_well_depth - second_well_depth)
-  first_well_true = true_ls([[barrier_pos]])-true_ls([[r0_init]])
-  second_well_true = true_ls([[barrier_pos]])-true_ls([[r0_final]])
-  delta_E_true = abs(true_ls([[r0_init]])-true_ls([[r0_final]]))
+  first_well_true = true_ls(barrier_pos)-true_ls(r0_init)
+  second_well_true = true_ls(barrier_pos)-true_ls(r0_final)
+  delta_E_true = abs(true_ls(r0_init)-true_ls(r0_final))
   first_well_error = 100*abs(first_well_true - first_well_depth)/first_well_true
   second_well_error = 100*abs(second_well_true - second_well_depth)/second_well_true
   delta_E_error = 100*abs(delta_E_true - delta_E)/delta_E_true
@@ -158,10 +165,10 @@ def find_max(landscape, init, final):
   return max
 
 
-def landscape_discrepancies(ls, true_ls, true_max, r_min, r_max):
+def landscape_discrepancies(ls, true_ls, first_well, r_min, r_max):
 
   """
-  Aligns landscape (ls) with true_ls and finds distance between
+  Aligns landscape (ls) with first well and finds distance between
   the landscape and true_ls at each midpoint specified for ls.
 
   Inputs: landscape in the form (midpoints, energies) and 
@@ -175,9 +182,12 @@ def landscape_discrepancies(ls, true_ls, true_max, r_min, r_max):
   """
 
   # Find difference at max point to align landscapes
-  ls_max = find_max(ls, r_min, r_max)
-  diff = true_max - ls_max
- 
+  
+  no_trap_rec_fn = ReconstructedLandscape(*ls).molecule_energy
+  first_well_guess = no_trap_rec_fn(r_min)
+
+  diff = first_well - first_well_guess
+    
   # only consider points in range (min, max)
   midpoints = []
   energies = []
@@ -185,12 +195,11 @@ def landscape_discrepancies(ls, true_ls, true_max, r_min, r_max):
     if r_min <= ls[0][i] <= r_max:
       midpoints.append(ls[0][i])
       energies.append(ls[1][i] + diff)
-  
+      
+    
   discrepancies = []
-  x = 0
-  for energy in energies:
-    discrepancies.append(abs(true_ls([[midpoints[x]]]) -energy))
-    x += 1
+  for midpoint, energy in zip(midpoints, energies):
+    discrepancies.append(abs(true_ls(midpoint) - energy))
   
   return discrepancies
 
@@ -205,7 +214,7 @@ def landscape_discrepancies_samples(ls, true_ls, error_samples):
   """
   discrepancies = []
   for r in error_samples:
-    discrepancies.append(abs(true_ls([[r]]) - ls([[r]])))
+    discrepancies.append(abs(true_ls(r) - ls(r)))
   return discrepancies
 
 
@@ -214,134 +223,127 @@ def landscape_diff(ls_1, ls_2):
   #assert(ls_1.shape == ls_2.shape)
   return jnp.linalg.norm(jnp.array(ls_2[1])-jnp.array(ls_1[1]))
 
+def interpolate_inf(energy):
+  energy = onp.array(energy)
+  nans = onp.isinf(energy)
+  x= lambda z: z.nonzero()[0]
+  energy[nans]= onp.interp(x(nans), x(~nans), energy[~nans])
+  return jnp.array(energy)
 
-def optimize_landscape(
-                      simulate_fn,
-                      init_coeffs,
-                      grad_fn_no_E,
-                      key,
-                      max_iter,
-                      bins,
-                      simulation_steps,
-                      opt_batch_size,
-                      reconstruct_batch_size,
-                      opt_steps,
-                      optimizer,
-                      r0_init,
-                      r0_final,
-                      k_s,
-                      beta,
-                      savefig = False):
-  """Iteratively reconstruct a de novo energy landscape from simulated trajectories. Optimize a protocol
+def optimize_landscape(max_iter: int, 
+                       reconstruct_batch_size: int,
+                       position_model: ScheduleModel, 
+                       stiffness_model: ScheduleModel,
+                       true_simulation: Callable,
+                       guess_sim_pos: Callable,
+                       guess_sim_ks: Callable,
+                       grad_fn_pos_unf: Callable,
+                       grad_fn_ks_unf: Callable,
+                       reconstruct_fn: Callable,
+                       train_fn: Callable,                
+                       key,
+                       num_reconstructions=100):
+  """
+  Iteratively reconstruct a de novo energy landscape from simulated trajectories. Optimize a protocol
   with respect to reconstruction error (or a proxy such as average work used) on the reconstructed landscapes 
   to create a protocol that will allow for more accurate reconstructions.
   
   Args:
-    simulate_fn: Callable(trap_schedule) -> Callable(keys) 
+    max_iter: Number of iterations.
+    position_model, stiffness_model: ScheduleModel which will be iteratively optimized.
+    true_simulation: Callable(trap_schedule) -> Callable(keys) 
       -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
         Function that simulates moving the particle along the given trap_schedule given a de novo
       energy function.
-    init_coeffs: Array[] Chebyshev coefficients of trap.
+    guess_sim_pos/ks: Callable(energy_fn) -> SimulationFn. At each iteration, this simulate function will
+      be endowed with the reconstructed "guess" for an energy function that is computed from HS reconstructions.
     grad_fn_no_E: Callable(batch_size, energy_fn) -> Callable(coeffs, seed, *args)
-        Function that takes input of arbitrary energy function. Intended to be used as follows
+      Function that takes input of arbitrary energy function. Intended to be used as follows
       ``grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)``
+    reconstruct_fn: Callable(batch_cum_works, trajectories, trap_functions, rng) -> Array[Positions, Energies]. Using
+      HS formalism and outputs from a batch simulation, compute the "guess" for the free energy landscape.
+    train_fn: Callable(model, grad_fn, key) -> Array[losses]. Compute training loop on model with loss function specified
+      by `grad_fn`.
     key: rng
-    max_iter: Integer specifying number of iterations of reconstruction.
-    bins: Integer specifying number of checkpoints/locations we try to estimate the energy landscape at.
-  
+    
   Returns:
     ``landscapes``: List of landscapes length ``max_iter``.
     ``coeffs``: List of Chebyshev coefficients that are optimal at each iteration. 
+    ``losses``: List of length `num_iter` with loss arrays for each optimization iteration.
   """
-
   old_landscape = None
   new_landscape = None
-
   landscapes = []
-  coeffs = []
-
-  iter_num = 0
-  diff = 1e10 # large number
-
-  trap_fn = make_trap_fxn(jnp.arange(simulation_steps), init_coeffs, r0_init, r0_final)
   
-  for iter_num in tqdm.trange(max_iter, position=2, desc="Optimize Landscape: "):
+  iter_num = 0
+  
+  # Compute bias?
+  losses = {"position": [], "stiffness": []}
+  coeffs = {"position": [], "stiffness": []}
+  
+  position_sched = position_model.protocol(position_model.coeffs)
+  stiffness_sched = stiffness_model.protocol(stiffness_model.coeffs)
+  trap_fns = [position_sched, stiffness_sched]
+  
+  for iter_num in tqdm.trange(max_iter, desc="Optimize Landscape: "):
     if new_landscape:
-      old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1])) # TODO
-
-    _, (trajectories, works, _) = batch_simulate_harmonic(reconstruct_batch_size,
-                            simulate_fn(trap_fn),
-                            key) 
+      old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1]))
     
-    logging.info("Creating landscape.")
-    new_landscape = energy_reconstruction(jnp.cumsum(works, axis = 1), trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
+    es = []
+    for _ in tqdm.trange(num_reconstructions, position = 3, desc = "Reconstructing Landscapes"):
+      key, _ = random.split(key)
+      
+      _, (trajectories, works, _) = batch_simulate_harmonic(reconstruct_batch_size,
+                                true_simulation(*trap_fns),
+                                key) 
+      # lambda batch_works, trajectories, position_fn, stiffness_fn :energy_reconstruction(batch_works, trajectories, bins, position_fn, stiffness_fn, simulation_steps, reconstruct_batch_size, k_s, beta)
+      mid, e = reconstruct_fn(jnp.cumsum(works, axis = 1), trajectories, *trap_fns, reconstruct_batch_size)
+      es.append(e)
+    
+    all_es = jnp.vstack(es)
+    
+    energies = jnp.mean(all_es, axis = 0)
+    if jnp.isinf(all_es).any():
+        print("Infinities found in energy reconstruction. Continuing through interpolation...")
+        energies = interpolate_inf(energies) 
+    
+    new_landscape = (mid, energies)
     landscapes.append(new_landscape)
-
-    positions, energies = new_landscape
     
-    energy_fn_guess = V_biomolecule_reconstructed(k_s, jnp.array(positions), jnp.array(energies))
+    energy_fn_guess = ReconstructedLandscape(jnp.array(mid), jnp.array(energies)).total_energy
     
-    # Optimize a protocol with this new landscape
-    logging.info("Optimizing protocol from linear using reconstructed landscape.")
-    # error_samples = find_error_samples(energy_fn_guess, simulate_fn, trap_fn, simulation_steps, key, bins)
     
-    grad_fxn = lambda num_batches: grad_fn_no_E(num_batches, energy_fn_guess)
-   
-    init_trap_coeffs = init_coeffs
+    # train(model, optimizer, grad_fn, key, batch_size = batch_size, num_epochs = num_epochs)
+    position_model.pop_hist()
+    stiffness_model.pop_hist()
+    position_model.mode = "rev"
+    stiffness_model.mode = "fwd"
     
-    coeffs_, _, losses = optimize_protocol(init_trap_coeffs, grad_fxn, optimizer, opt_batch_size, opt_steps)
-
-    if savefig:
-      _, ax = plt.subplots(1, 2, figsize=[24, 12])
-
-      #avg_loss = jnp.mean(jnp.array(losses), axis = 0)
-      plot_with_stddev(losses.T, ax=ax[0])
-
-      # ax[0].set_title(f'Jarzynski Error over Optimization; Short trap; STD error sampling; {batch_size}; {opt_steps}.')
-      ax[0].set_title(f"Iterative Iter Num {iter_num}")
-      ax[0].set_xlabel('Number of Optimization Steps')
-      ax[0].set_ylabel('Error')
-
-      trap_fn = make_trap_fxn(jnp.arange(simulation_steps), init_trap_coeffs, r0_init, r0_final)
-      init_sched = trap_fn(jnp.arange(simulation_steps))
-      ax[1].plot(jnp.arange(simulation_steps), init_sched, label='Initial guess')
-
-      for i, (_, coeff) in enumerate(coeffs_):
-        print_per = max(1, int(opt_steps/5))
-        if i% print_per == 0 and i!=0:
-          trap_fn = make_trap_fxn(jnp.arange(simulation_steps),coeff,r0_init,r0_final)
-          full_sched = trap_fn(jnp.arange(simulation_steps))
-          ax[1].plot(jnp.arange(simulation_steps), full_sched, '-', label=f'Step {i}')
-
-      # Plot final estimate:
-      trap_fn = make_trap_fxn(jnp.arange(simulation_steps), coeffs_[-1][1],r0_init,r0_final)
-      full_sched = trap_fn(jnp.arange(simulation_steps))
-      ax[1].plot(jnp.arange(simulation_steps), full_sched, '-', label=f'Final')
-
-
-      ax[1].legend()#
-      ax[1].set_title('Schedule evolution')
-      plt.savefig(f"losses_iter{iter_num}_{savefig}.png")
-
-    final_coeff = coeffs_[-1][1]
-    coeffs.append(final_coeff)
+    guess_sim_pos_fn = guess_sim_pos(energy_fn_guess)
+    guess_sim_ks_fn = guess_sim_ks(energy_fn_guess)
     
-    trap_fn = make_trap_fxn(jnp.arange(simulation_steps), final_coeff, r0_init, r0_final)
+    simulate_stiffness_fn = lambda stiffness_trap, key: guess_sim_ks_fn(position_model.protocol(position_model.coeffs), stiffness_trap, key)
+    grad_fn = grad_fn_ks_unf(stiffness_model, simulate_stiffness_fn)
+    losses_stiffness = train_fn(stiffness_model, grad_fn, key)
     
-    if iter_num > 0:
-      diff = landscape_diff(old_landscape, new_landscape) # take the norm of the difference
-      logging.info(f"Difference between prior landscape: {diff:.4f}")
+    simulate_position_fn = lambda position_trap, key: guess_sim_pos_fn(position_trap, stiffness_model.protocol(stiffness_model.coeffs), key)
+    grad_fn = grad_fn_pos_unf(position_model, simulate_position_fn)
+    losses_position = train_fn(position_model, grad_fn, key)
 
+    losses["position"].append(losses_position)
+    losses["stiffness"].append(losses_stiffness)
+    
+    coeffs["position"].append(position_model.coeffs)
+    coeffs["stiffness"].append(stiffness_model.coeffs)
+    
+    position_model.mode = "fwd"
+    stiffness_model.mode = "fwd"
+    
+    position_sched = position_model.protocol(position_model.coeffs)
+    stiffness_sched = stiffness_model.protocol(stiffness_model.coeffs)
+    
+    trap_fns = [position_sched, stiffness_sched]
+    
     iter_num += 1
     
-  _, (trajectories, works, _) = batch_simulate_harmonic(reconstruct_batch_size,
-                            simulate_fn(trap_fn),
-                            key) 
-  
-  logging.info("Creating landscape.")
-  new_landscape = energy_reconstruction(jnp.cumsum(works, axis = 1), trajectories, bins, trap_fn, simulation_steps, reconstruct_batch_size, k_s, beta) # TODO: 
-  landscapes.append(new_landscape)
-  
-  return landscapes, coeffs
-    
-    
+  return landscapes, coeffs, losses

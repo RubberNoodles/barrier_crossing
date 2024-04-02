@@ -8,7 +8,7 @@
 import jax.numpy as jnp
 from jax_md import space
 
-import barrier_crossing.utils as bc_params
+import barrier_crossing.utils as bcu
 
 N = 1
 dim = 1
@@ -17,10 +17,17 @@ _, shift = space.free() # Defines how to move a particle by small distances dR.
 
 # ================= SIVAK & CROOKE =====================
 
+# Megan's is 0.4
+#k_s = 1.0 # stiffness; 
+k_s = 0.4 # stiffness; for 10kt
+
 # Harmonic Trap Parameters S&C
 r0_init = -10. #nm; initial trap position
 r0_final = 10. #nm; final trap position
 r0_cut = 0. #nm; where to split protocol
+ks_init = k_s
+ks_final = k_s
+ks_cut = (ks_init + ks_final)/2
 
 # Particle Parameters S&C
 mass = 1e-17 # g
@@ -42,14 +49,12 @@ kappa_l=6.38629/(beta*x_m**2) # Ebarrier ~ 2,5 kT
 kappa_r=kappa_l #pN/nm; 
 Neq = 1000
 
-end_time = 2e-6 # Langevin
-dt = 4e-9
-#end_time = 3e-4 # Brownian
-#dt = 3e-7 # needs to be 1e-7 to avoid drift...
-# Megan's is 0.4
-k_s = 1.0 # stiffness; 
+# end_time = 4e-6 # Langevin
+# dt = 2e-9
+end_time = 1e-4 # Brownian
+dt = 5e-7 # needs to be 1e-7 to avoid drift...
 
-sc_params = bc_params.SCParameters( N = N,
+sc_params = bcu.SCParameters( N = N,
                                     dim = dim,
                                     shift = shift,
                                     k_s = k_s,
@@ -68,4 +73,3 @@ sc_params = bc_params.SCParameters( N = N,
                                     end_time = end_time,
                                     Neq = Neq,
 )
-
