@@ -27,8 +27,8 @@ if __name__ == "__main__":
     os.mkdir(path)
 
   position_model = bcm.ScheduleModel(p.param_set, p.r0_init, p.r0_final, mode = "rev")
-  #stiffness_model = bcm.ScheduleModel(p.param_set, p.ks_init, p.ks_final, mode = "rev")
-  stiffness_model = bcm.ScheduleModel(p.param_set, args.k_s, args.k_s, mode = "rev")
+  stiffness_model = bcm.ScheduleModel(p.param_set, p.ks_init, p.ks_final, mode = "rev")
+  #stiffness_model = bcm.ScheduleModel(p.param_set, pks, mode = "rev")
 
   true_simulation_fwd = lambda trap_fn, ks_fn: lambda keys: p.param_set.simulate_fn(
     trap_fn, 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     regime = "brownian",
     fwd = True)
 
-  sim_no_E = lambda energy_fn: lambda trap_fn, ks_fn, keys: p.param_set.simulate_fn(
+  sim_pos_no_E = lambda energy_fn: lambda trap_fn, ks_fn, keys: p.param_set.simulate_fn(
     trap_fn, 
     ks_fn,
     keys, 
@@ -45,12 +45,25 @@ if __name__ == "__main__":
     fwd = False,
     custom = energy_fn)
   
-  max_iter = 20
+  sim_ks_no_E = lambda energy_fn: lambda trap_fn, ks_fn, keys: p.param_set.simulate_fn(
+    trap_fn, 
+    ks_fn,
+    keys, 
+    regime = "brownian",
+    fwd = True,
+    custom = energy_fn)
+  
+  max_iter = 10
   opt_steps_landscape = 1000 # 1000 + 
   bins = 75
-  opt_batch_size = 5000 # 10k + 
+  opt_batch_size = 1000 # 10k + 
 
-  grad_no_E = lambda model, simulate_fn: lambda num_batches: loss.estimate_gradient_rev(
+  grad_pos_no_E = lambda model, simulate_fn: lambda num_batches: loss.estimate_gradient_rev(
+      num_batches,
+      simulate_fn,
+      model)
+  
+  grad_ks_no_E = lambda model, simulate_fn: lambda num_batches: loss.estimate_gradient_work(
       num_batches,
       simulate_fn,
       model)
@@ -78,8 +91,10 @@ if __name__ == "__main__":
     position_model,
     stiffness_model,
     true_simulation_fwd,
-    sim_no_E,
-    grad_no_E,
+    sim_pos_no_E,
+    sim_ks_no_E,
+    grad_pos_no_E,
+    grad_ks_no_E,
     reconstruct_fn,
     train_fn,
     key,
@@ -125,11 +140,9 @@ if __name__ == "__main__":
   
   plt.figure(figsize = (8,8))
   trap_fn = position_model.protocol(position_model.coef_hist[0])
-  plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Linear Protocol")
+  plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Initial")
   for i, coeff in enumerate(coeffs["position"]):
-    if i == 0:
-      label = "Linear"
-    elif i == len(landscapes)-1:
+    if i == len(landscapes)-1:
       label = "Final Protocol"
     elif i % (max_iter//5) != 0:
       continue
@@ -143,17 +156,23 @@ if __name__ == "__main__":
   plt.legend()
   plt.savefig(path + f"opt_position_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
   
-  # plt.figure(figsize = (8,8))
-  # trap_fn = stiffness_model.protocol(stiffness_model.coef_hist[0])
-  # plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Linear Protocol")
-  # for i, coeff in enumerate(coeffs["stiffness"]):
-  #     trap_fn = stiffness_model.protocol(coeff)
-  #     plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = f"Iteration {i}")
-  # plt.xlabel("Simulation Step")
-  # plt.ylabel("Stiffness (pN/nm)")
-  # plt.title(f"Protocols Over Iteration; {args.end_time}")
-  # plt.legend()
-  # plt.savefig(path + f"opt_stiffness_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
+  plt.figure(figsize = (8,8))
+  trap_fn = stiffness_model.protocol(stiffness_model.coef_hist[0])
+  plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = "Initial")
+  for i, coeff in enumerate(coeffs["stiffness"]):
+      if i == len(landscapes)-1:
+        label = "Final Protocol"
+      elif i % (max_iter//5) != 0:
+        continue
+      else:
+        label = f"Iteration {i}"
+      trap_fn = stiffness_model.protocol(coeff)
+      plt.plot(trap_fn(jnp.arange(p.param_set.simulation_steps)), label = label)
+  plt.xlabel("Simulation Step")
+  plt.ylabel("Stiffness (pN/nm)")
+  plt.title(f"Protocols Over Iteration; {args.end_time}")
+  plt.legend()
+  plt.savefig(path + f"opt_stiffness_evolution_{args.k_s}_{args.end_time}_{args.batch_size}.png")
   
   
   with open(path + f"coeffs__{args.k_s}_{args.end_time}_{args.batch_size}.pkl", "wb") as f:

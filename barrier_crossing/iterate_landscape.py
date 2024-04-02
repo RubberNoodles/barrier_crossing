@@ -3,7 +3,7 @@ Module to reconstruct landscapes with optimized algorithm. In addition, helper
 code to classify landscape reconstruction quality, as well as `optimize_landscape`
 code for iterative reconstruction.
 """
-
+import code
 import copy
 import tqdm
 from typing import Callable
@@ -235,8 +235,10 @@ def optimize_landscape(max_iter: int,
                        position_model: ScheduleModel, 
                        stiffness_model: ScheduleModel,
                        true_simulation: Callable,
-                       guess_simulation_no_E: Callable,
-                       grad_fn_unf: Callable,
+                       guess_sim_pos: Callable,
+                       guess_sim_ks: Callable,
+                       grad_fn_pos_unf: Callable,
+                       grad_fn_ks_unf: Callable,
                        reconstruct_fn: Callable,
                        train_fn: Callable,                
                        key,
@@ -253,7 +255,7 @@ def optimize_landscape(max_iter: int,
       -> final BrownianState, (Array[particle_position], Array[log probability], Array[work])
         Function that simulates moving the particle along the given trap_schedule given a de novo
       energy function.
-    guess_simulation_no_E: Callable(energy_fn) -> SimulationFn. At each iteration, this simulate function will
+    guess_sim_pos/ks: Callable(energy_fn) -> SimulationFn. At each iteration, this simulate function will
       be endowed with the reconstructed "guess" for an energy function that is computed from HS reconstructions.
     grad_fn_no_E: Callable(batch_size, energy_fn) -> Callable(coeffs, seed, *args)
       Function that takes input of arbitrary energy function. Intended to be used as follows
@@ -315,19 +317,19 @@ def optimize_landscape(max_iter: int,
     position_model.pop_hist()
     stiffness_model.pop_hist()
     position_model.mode = "rev"
-    stiffness_model.mode = "rev"
+    stiffness_model.mode = "fwd"
     
-    guess_sim_fn = guess_simulation_no_E(energy_fn_guess)
+    guess_sim_pos_fn = guess_sim_pos(energy_fn_guess)
+    guess_sim_ks_fn = guess_sim_ks(energy_fn_guess)
     
-    simulate_fn = lambda stiffness_trap, key: guess_sim_fn(position_model.protocol(position_model.coef_hist[0]), stiffness_trap, key)
-    grad_fn = grad_fn_unf(position_model, simulate_fn)
-    losses_position = train_fn(position_model, grad_fn, key)
-    
-    simulate_fn = lambda position_trap, key: guess_sim_fn(position_trap, stiffness_model.protocol(stiffness_model.coef_hist[0]), key)
-    grad_fn = grad_fn_unf(stiffness_model, simulate_fn)
+    simulate_stiffness_fn = lambda stiffness_trap, key: guess_sim_ks_fn(position_model.protocol(position_model.coeffs), stiffness_trap, key)
+    grad_fn = grad_fn_ks_unf(stiffness_model, simulate_stiffness_fn)
     losses_stiffness = train_fn(stiffness_model, grad_fn, key)
     
-    
+    simulate_position_fn = lambda position_trap, key: guess_sim_pos_fn(position_trap, stiffness_model.protocol(stiffness_model.coeffs), key)
+    grad_fn = grad_fn_pos_unf(position_model, simulate_position_fn)
+    losses_position = train_fn(position_model, grad_fn, key)
+
     losses["position"].append(losses_position)
     losses["stiffness"].append(losses_stiffness)
     
