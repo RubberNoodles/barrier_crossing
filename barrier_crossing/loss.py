@@ -49,7 +49,7 @@ def estimate_gradient_work(batch_size,
   return _estimate_gradient
 
 
-def single_estimate_rev(simulate_fn, model: bcm.ScheduleModel):
+def single_estimate_rev(simulate_fn, model: bcm.ScheduleModel, reg):
   assert model.mode == "rev", f"Reverse gradients must have `rev` mode, found {model.mode}"
   beta = model.params.beta
   
@@ -59,15 +59,18 @@ def single_estimate_rev(simulate_fn, model: bcm.ScheduleModel):
     
     total_work = works.sum()
     tot_log_prob = log_probs.sum()
-    summary = (positions, tot_log_prob, jnp.exp(beta*total_work))
-
-    gradient_estimator = (tot_log_prob) * jax.lax.stop_gradient(jnp.exp(beta * total_work)) + jax.lax.stop_gradient(beta * jnp.exp(beta*total_work)) * total_work
+    
+    diff = jnp.mean(jnp.square(coeffs)) # L2 norm regularization
+    
+    summary = (positions, tot_log_prob, jnp.exp(beta*total_work) + reg * diff)
+    gradient_estimator = reg * diff + (tot_log_prob) * jax.lax.stop_gradient(jnp.exp(beta * total_work)) + jax.lax.stop_gradient(beta * jnp.exp(beta*total_work)) * total_work
     return gradient_estimator, summary
   return _single_estimate 
 
 def estimate_gradient_rev(batch_size,
                           simulate_fn,
-                          model: bcm.ScheduleModel):
+                          model: bcm.ScheduleModel,
+                          reg = 0.1):
   """
   Find e^(beta ΔW) which is proportional to the error <(ΔF_(batch_size) - ΔF)> = variance of ΔF_(batch_size) (2010 Geiger and Dellago). 
   Compute the total gradient with forward trajectories and loss based on work used.
@@ -80,7 +83,7 @@ def estimate_gradient_rev(batch_size,
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
   mapped_estimate = jax.vmap(single_estimate_rev(simulate_fn,
-                          model), [None, 0])  
+                          model, reg), [None, 0])  
   @jax.jit 
   def _estimate_gradient(coeffs, seed):
     seeds = jax.random.split(seed, batch_size)
