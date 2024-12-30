@@ -7,6 +7,8 @@ import code
 import copy
 import tqdm
 from typing import Callable
+import pickle
+import os
 
 import matplotlib.pyplot as plt
 
@@ -16,7 +18,7 @@ import jax.numpy as jnp
 import jax
 import jax.random as random
 
-from barrier_crossing.models import ScheduleModel
+from barrier_crossing.models import ScheduleModel, JointModel
 from barrier_crossing.energy import ReconstructedLandscape
 from barrier_crossing.simulate import batch_simulate_harmonic
 
@@ -201,7 +203,7 @@ def landscape_discrepancies(ls, true_ls, first_well, r_min, r_max):
   for midpoint, energy in zip(midpoints, energies):
     discrepancies.append(abs(true_ls(midpoint) - energy))
   
-  return discrepancies
+  return jnp.array(discrepancies)
 
 
 def landscape_discrepancies_samples(ls, true_ls, error_samples):
@@ -230,18 +232,65 @@ def interpolate_inf(energy):
   energy[nans]= onp.interp(x(nans), x(~nans), energy[~nans])
   return jnp.array(energy)
 
+def plot_gradient_descent(losses, time_vec, model, name, save_dir): 
+  if not os.path.isdir(save_dir):
+    os.makedirs(save_dir) 
+    
+  
+  fig, ax = plt.subplots(1, 3, figsize=(13,5))
+  plot_with_stddev(losses.T, ax=ax[0])
+
+  # ax[0].set_title(f'Jarzynski Error over Optimization; Short trap; STD error sampling; {batch_size}; {num_epochs}.')
+  ax[0].set_title(f'{name}')
+  ax[0].set_xlabel('Number of Optimization Steps')
+  ax[0].set_ylabel('Error')
+  # I should pass in the model
+  if isinstance(model, JointModel):
+    position_model, stiffness_model = model.models 
+  else:
+    position_model = model
+    stiffness_model = ScheduleModel(model.params, model.params.k_s, model.params.k_s)
+    
+  models = [["Position", position_model], ["Stiffness", stiffness_model]]
+  for i, (name, model) in enumerate(models):
+    axs = ax[i + 1]
+    
+    trap_fn = model.protocol(model.coef_hist[0])
+    init_sched = trap_fn(time_vec)
+    axs.plot(time_vec, init_sched, label='Initial guess')
+
+    per_5 = 1000//5
+    
+    for i, coeff in enumerate(model.coef_hist):
+      if i% per_5 == 0 and i!=0:
+        trap_fn = model.protocol(coeff)
+        sched = trap_fn(time_vec)
+        axs.plot(time_vec, sched, '-', label=f'Step {i}')
+
+    # Plot final estimate:
+    final_sched = model(time_vec)
+    axs.plot(time_vec, final_sched, '-', label=f'Final')
+
+    axs.legend()
+    axs.set_title(f'{name} Schedule Evolution')
+  file_name = name.replace(' ', '_').lower()
+  fig.savefig(save_dir + file_name + ".png")
+  
+  with open(save_dir + file_name + ".pkl", "wb") as f:
+    pickle.dump(model.coeffs, f)
+
+  
 def optimize_landscape(max_iter: int, 
                        reconstruct_batch_size: int,
-                       position_model: ScheduleModel, 
-                       stiffness_model: ScheduleModel,
+                       model: ScheduleModel,
                        true_simulation: Callable,
-                       guess_sim_pos: Callable,
-                       guess_sim_ks: Callable,
-                       grad_fn_pos_unf: Callable,
-                       grad_fn_ks_unf: Callable,
+                       guess_sim: Callable,
+                       grad_fn_unf: Callable,
                        reconstruct_fn: Callable,
                        train_fn: Callable,                
                        key,
+                       plot_path = None, 
+                       param_str = None,
                        num_reconstructions=100):
   """
   Iteratively reconstruct a de novo energy landscape from simulated trajectories. Optimize a protocol
@@ -271,26 +320,32 @@ def optimize_landscape(max_iter: int,
     ``coeffs``: List of Chebyshev coefficients that are optimal at each iteration. 
     ``losses``: List of length `num_iter` with loss arrays for each optimization iteration.
   """
-  old_landscape = None
   new_landscape = None
   landscapes = []
   
   iter_num = 0
   
   # Compute bias?
-  losses = {"position": [], "stiffness": []}
-  coeffs = {"position": [], "stiffness": []}
+  losses = []
+  coeffs = []
   
-  position_sched = position_model.protocol(position_model.coeffs)
-  stiffness_sched = stiffness_model.protocol(stiffness_model.coeffs)
-  trap_fns = [position_sched, stiffness_sched]
+  # Two things, either position only, or joint
+  if isinstance(model, JointModel):
+    position_model, stiffness_model = model.models 
+  else:
+    position_model = model
+    stiffness_model = ScheduleModel(model.params, model.params.k_s, model.params.k_s)
+    
+  
+  position_mode = position_model.mode
+  stiffness_mode = stiffness_model.mode
+  
+  trap_fns = [position_model, stiffness_model]
   
   for iter_num in tqdm.trange(max_iter, desc="Optimize Landscape: "):
-    if new_landscape:
-      old_landscape = (copy.deepcopy(new_landscape[0]),copy.deepcopy(new_landscape[1]))
     
     es = []
-    for _ in tqdm.trange(num_reconstructions, position = 3, desc = "Reconstructing Landscapes"):
+    for _ in range(num_reconstructions):
       key, _ = random.split(key)
       
       _, (trajectories, works, _) = batch_simulate_harmonic(reconstruct_batch_size,
@@ -300,8 +355,7 @@ def optimize_landscape(max_iter: int,
       mid, e = reconstruct_fn(jnp.cumsum(works, axis = 1), trajectories, *trap_fns, reconstruct_batch_size)
       es.append(e)
     
-    all_es = jnp.vstack(es)
-    
+    all_es = jnp.vstack(es) 
     energies = jnp.mean(all_es, axis = 0)
     if jnp.isinf(all_es).any():
         print("Infinities found in energy reconstruction. Continuing through interpolation...")
@@ -316,28 +370,24 @@ def optimize_landscape(max_iter: int,
     # train(model, optimizer, grad_fn, key, batch_size = batch_size, num_epochs = num_epochs)
     position_model.pop_hist()
     stiffness_model.pop_hist()
-    position_model.mode = "rev"
-    stiffness_model.mode = "fwd"
+    position_model.mode = position_mode
+    stiffness_model.mode = stiffness_mode
     
-    guess_sim_pos_fn = guess_sim_pos(energy_fn_guess)
-    guess_sim_ks_fn = guess_sim_ks(energy_fn_guess)
-    
-    simulate_stiffness_fn = lambda stiffness_trap, key: guess_sim_ks_fn(position_model.protocol(position_model.coeffs), stiffness_trap, key)
-    grad_fn = grad_fn_ks_unf(stiffness_model, simulate_stiffness_fn)
-    losses_stiffness = train_fn(stiffness_model, grad_fn, key)
-    
-    simulate_position_fn = lambda position_trap, key: guess_sim_pos_fn(position_trap, stiffness_model.protocol(stiffness_model.coeffs), key)
-    grad_fn = grad_fn_pos_unf(position_model, simulate_position_fn)
-    losses_position = train_fn(position_model, grad_fn, key)
+    if isinstance(model, JointModel):
+      guess_sim_fn = guess_sim(energy_fn_guess)
+    else:
+      guess_sim_fn = lambda position_trap, keys: guess_sim(energy_fn_guess)(position_trap, stiffness_model, keys)
+    grad_fn = grad_fn_unf(model, guess_sim_fn)
+    loss= train_fn(model, grad_fn, key)
 
-    losses["position"].append(losses_position)
-    losses["stiffness"].append(losses_stiffness)
+    losses.append(loss)
+    coeffs.append(model.coeffs)
     
-    coeffs["position"].append(position_model.coeffs)
-    coeffs["stiffness"].append(stiffness_model.coeffs)
-    
-    position_model.mode = "fwd"
-    stiffness_model.mode = "fwd"
+    model.mode = "fwd"
+
+    if plot_path is not None: 
+      t = jnp.arange(position_model.params.simulation_steps)
+      plot_gradient_descent(loss, t, model, f"position_iter-{iter_num}", plot_path)
     
     position_sched = position_model.protocol(position_model.coeffs)
     stiffness_sched = stiffness_model.protocol(stiffness_model.coeffs)

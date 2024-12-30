@@ -7,8 +7,8 @@ import jax.numpy as jnp
 from barrier_crossing.protocol import make_trap_fxn_rev, trap_sum_rev
 import barrier_crossing.models as bcm
 
-def single_estimate_work(simulate_fn, model: bcm.ScheduleModel):
-  assert model.mode == "fwd", f"Reverse gradients must have `fwd` mode, found {model.mode}"
+def single_estimate_work(simulate_fn, model: bcm.ScheduleModel, reg):
+  assert model.mode == "fwd", f"Forward gradients must have `fwd` mode, found {model.mode}"
   
   @functools.partial(jax.value_and_grad, has_aux=True) #the 'aux' is the summary
   def _single_estimate(coeffs, seed): 
@@ -17,15 +17,19 @@ def single_estimate_work(simulate_fn, model: bcm.ScheduleModel):
     positions, log_probs, works = simulate_fn(*model.protocol(coeffs, train = True), seed)
     total_work = works.sum()
     tot_log_prob = log_probs.sum()
-    summary = (positions, tot_log_prob, total_work)
     
-    gradient_estimator = (tot_log_prob * jax.lax.stop_gradient(total_work) + total_work) 
+    diff = jnp.mean(jnp.square(coeffs))
+    
+    summary = (positions, tot_log_prob, total_work + reg * diff)
+    
+    
+    gradient_estimator = (tot_log_prob * jax.lax.stop_gradient(total_work) + total_work) + reg * diff
     
     return gradient_estimator, summary
   return _single_estimate 
 
 def estimate_gradient_work(batch_size,
-                          simulate_fn, model: bcm.ScheduleModel):
+                          simulate_fn, model: bcm.ScheduleModel, reg = 0.1):
   """Compute the total gradient with forward trajectories and loss based on work used.
   
     Args:
@@ -39,7 +43,7 @@ def estimate_gradient_work(batch_size,
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
   
-  mapped_estimate = jax.vmap(single_estimate_work(simulate_fn, model), [None, 0])
+  mapped_estimate = jax.vmap(single_estimate_work(simulate_fn, model, reg = 0.1), [None, 0])
 
   @jax.jit
   def _estimate_gradient(coeffs, seed):

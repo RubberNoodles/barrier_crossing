@@ -4,7 +4,7 @@ to track during gradient descent.
 """
 import jax
 import jax.numpy as jnp
-from typing import Callable
+from typing import Callable, Union
 
 from barrier_crossing.energy import brownian, nvt_langevin
 
@@ -44,9 +44,9 @@ def simulator(dynamics_simulator):
     
     if not isinstance(ks_trap_fn, Callable):
       # Constant trap
+      assert isinstance(ks_trap_fn, float)
       _tmp = ks_trap_fn
       ks_trap_fn = lambda step: _tmp
-    
     def equilibrate(init_state, Neq, apply, r0_init):
       @jax.jit
       def scan_eq(state, step):
@@ -118,7 +118,7 @@ def batch_simulate_harmonic(batch_size,
   seeds = jax.random.split(split, batch_size)
   trajectories, log_probs, works = mapped_sim(seeds) #seed is array with diff seed for each run.
 
-  total_works = jnp.sum(works, 1)
+  total_works = jnp.sum(works, axis = 1)
   
   return total_works, (trajectories, works, log_probs)
 
