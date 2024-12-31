@@ -1,5 +1,5 @@
 import figures.param_set.params_base as p
-import barrier_crossing.param as bc_params
+import barrier_crossing.utils as bc_params
 
 import jax.numpy as jnp
 
@@ -31,7 +31,7 @@ param_set = bc_params.GDParameters( N = p.N,
                                     dt = dt,
                                     end_time = 1.0,
                                     Neq = p.Neq,
-                                    simulation_steps = simulation_steps,
+                                    # simulation_steps = simulation_steps,
                                     epsilon = epsilon,
                                     sigma = sigma
 )

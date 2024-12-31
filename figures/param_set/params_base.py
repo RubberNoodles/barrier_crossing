@@ -19,7 +19,7 @@ _, shift = space.free() # Defines how to move a particle by small distances dR.
 
 # Megan's is 0.4
 #k_s = 1.0 # stiffness; 
-k_s = 0.4 # stiffness; for 10kt
+k_s = 1.0 # stiffness; for 10kt
 
 # Harmonic Trap Parameters S&C
 r0_init = -10. #nm; initial trap position
@@ -51,8 +51,8 @@ Neq = 1000
 
 # end_time = 4e-6 # Langevin
 # dt = 2e-9
-end_time = 1e-4 # Brownian
-dt = 5e-7 # needs to be 1e-7 to avoid drift...
+end_time = 3e-5 # Brownian
+dt = 1e-7 # needs to be 1e-7 to avoid drift...
 
 sc_params = bcu.SCParameters( N = N,
                                     dim = dim,
