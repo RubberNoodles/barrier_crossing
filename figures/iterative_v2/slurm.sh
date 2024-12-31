@@ -16,11 +16,15 @@ source ~/.bashrc
 imp
 source ../env/bin/activate
 
-barrier_heights=('2.5' "10" "20" "30" "40")
+barrier_heights=('2.5' "10" "20" "40")
+# barrier_heights=('2.5' "10" "20" "30" "40")
 landscapes=("triple_well" "double_well" "asymmetric")
-times=(0.00001 0.00005 0.0001 0.0002 0.0004)
-for t in "${times[@]}" do
+# landscapes=("triple_well")
+times=(0.00003 0.0001  0.0003)
+# times=(0.00001 0.00003 0.00005 0.0001 0.0002 0.0004 0.0008)
 
+for t in "${times[@]}" 
+do
     jobids=()
 
     export ITERATIVE_RESULT_DIR="results/$t"
@@ -34,6 +38,7 @@ for t in "${times[@]}" do
 
             echo "SLURM $jobid running: python3 train.py --landscape_name $landscape --param_suffix $barrier_height --end_time $t"
             echo "sbatch training.sbatch $landscape $barrier_height $t"
+            sleep 1
 
             jobids+=($jobid)
     done
@@ -47,11 +52,10 @@ for t in "${times[@]}" do
     done
     jobid_string="${jobid_string%?}"
 
-    echo $jobid_string
     file_dir="$ITERATIVE_RESULT_DIR/files"
 
     echo "sbatch -d afterok:$jobid_string -t 0-08:00 --mem-per-cpu=16000 plotting.sbatch $file_dir"
     sbatch -d "afterok:$jobid_string" -t 0-08:00 --mem-per-cpu=16000 plotting.sbatch $file_dir
-
+done
 echo "All slurm commands run, exiting."
 # Responsibiltiy of slurm to wait for all train to finish before running the reconstructions.

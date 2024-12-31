@@ -17,10 +17,11 @@ import optax
 import pickle
 
 BINS = 70
-MAX_ITER = 3
-TRAIN_BATCH_SIZE = 30
-NUM_EPOCHS = 10
-NUM_RECONSTRUCTIONS = 3
+MAX_ITER = 7
+TRAIN_BATCH_SIZE = 3000
+NUM_EPOCHS = 500
+NUM_RECONSTRUCTIONS = 100
+
 key = random.PRNGKey(1001)
 learning_rate = optax.exponential_decay(0.1, NUM_EPOCHS, 0.5, end_value = 0.001)
 OPTIMIZER = optax.adam(learning_rate)
@@ -89,7 +90,7 @@ def train_iterative_model(max_iter: int, model: bcm.ScheduleModel, name) -> bcm.
         new_model.coeffs = coef
     
     fig, (ax_landscapes, ax_protocol) = plt.subplots(1,2, figsize = (11,5))
-    plotting.plot_evolving(ax = ax_protocol, model = model, num = max_iter)
+    plotting.plot_evolving(ax = ax_protocol, model = new_model, num = max_iter)
     
     plotting.plot_landscapes(param_set, ax = ax_landscapes, landscapes = [it_landscapes], labels = ["Iterated Landscape"], iterated_index = 0)
     plotting.add_axes("landscape", ax = ax_landscapes)

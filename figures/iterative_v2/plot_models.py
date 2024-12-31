@@ -23,9 +23,9 @@ import seaborn as sns
 SEED = 1001
 results_dir = os.environ.get("ITERATIVE_RESULT_DIR", "results")
 MISC_SAVE_PATH = f"{results_dir}/misc_plots"
-BATCH_SIZE = 300
+BATCH_SIZE = 3000
 BINS = 70
-NUM_RECONSTRUCTIONS = 2
+NUM_RECONSTRUCTIONS = 100
 
 
 os.makedirs(MISC_SAVE_PATH, exist_ok = True)
@@ -142,7 +142,9 @@ if __name__ == "__main__":
     file_dir = args.file_dir
     
     df = load_data_from_result(file_dir)
+    df = df.reset_index()
     reconstruct_results = []
+    
     for index, lb_df in df.groupby(["landscape_name", "barrier_height"]):
         with open(lb_df.params_file.iloc[0], "rb") as f:
             param_set = pickle.load(f)
@@ -163,8 +165,9 @@ if __name__ == "__main__":
     
     make_df_names_nice(df)
     
+    
     for landscape_name, landscape_df in df.groupby("landscape_name"):
-        with open(lb_df.params_file.iloc[0], "rb") as f:
+        with open(landscape_df.params_file.iloc[0], "rb") as f:
             param_set = pickle.load(f)
         fig = plt.figure(figsize=(8,8))
         ax = fig.gca()
@@ -173,6 +176,6 @@ if __name__ == "__main__":
         plt.tight_layout()
         ax.set_xlabel("Barrier Height (kT)")
         ax.set_ylabel("Landscape Bias (kT)")
-        fig.savefig(f"{results_dir}/{landscape_name}kt.png")
+        fig.savefig(f"{results_dir}/{landscape_name}.png")
         
         
