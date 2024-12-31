@@ -1,15 +1,19 @@
 """Create datastructures to collect molecular dynamics simulation parameters for different simulation regimes.
 Also provide helper functions such as `find_coeff_files` for IO."""
 from jax_md import space, util
+import jax.random as random
 
 from dataclasses import dataclass
+
+import matplotlib.pyplot as plt
+from matplotlib.colors import TABLEAU_COLORS
 
 import barrier_crossing.energy as bce
 import barrier_crossing.simulate as bcs
 import barrier_crossing.protocol as bcp
-
 import jax.numpy as jnp
 
+from typing import Union, Callable, Iterable
 import importlib
 
 from argparse import ArgumentParser
@@ -61,7 +65,48 @@ class MDParameters:
   def set_energy_fn(self, custom):
     self.custom = custom
   
-  def simulate_fn(self, trap_fn, ks_trap_fn,  key, regime = "brownian", fwd = True, custom = None, **kwargs):
+  def simulate_fn(self, trap_fn: Union[Callable, bool], ks_trap_fn: Union[Callable, bool, float],  key, regime = "brownian", fwd = True, custom = None, **kwargs):
+    """>>> Simulator docstring: 
+    Simulation of particle being dragged by a moving harmonic trap. First equilibrate
+    system with Neq simulation steps, and pull particle over energy/force landscape.
+
+    Returns callable with the following specifications:
+      Args:
+        energy_fn: the function that governs particle energy.
+        init_position: [[f32]], initial position of the particle
+        trap_fn: Protocol for harmonic trap
+        simulation_steps: total # simulation steps
+        Neq: number of equilibration steps
+        shift: shift_fn governing the Brownian simulation
+        key: random key
+        dt: integration time step
+        temperature: simulation temperature in kT
+        mass: mass of particle in g
+        gamma: friction coefficient
+
+      Returns:
+        positions: particle positions (trajectory) for each simulation step.
+        log_probs: log probability of a particle being at each point on the trajectory.
+        works: total work required to drag the particle, from eq'n 17 in Jarzynski 2008
+    """
+    if not isinstance(ks_trap_fn, Callable):
+      assert isinstance(trap_fn, Callable)
+      ks_trap_fn = self.k_s if ks_trap_fn == False else ks_trap_fn
+    elif trap_fn is False:
+      assert isinstance(ks_trap_fn, Callable)
+      # Default to a linear trap
+      init_pos = self.init_position_fwd[0][0]
+      final_pos = self.init_position_rev[0][0]
+      
+      linear_coeffs = bcp.linear_chebyshev_coefficients(init_pos, final_pos, self.simulation_steps)
+      time_vec = jnp.arange(self.simulation_steps)
+      if fwd:
+        trap_fn = bcp.make_trap_fxn(time_vec, linear_coeffs, init_pos, final_pos)
+      else:
+        trap_fn = bcp.make_custom_trap_fxn_rev(time_vec,  linear_coeffs, init_pos, final_pos)
+    
+    
+    
     init_pos = self.init_position_fwd if fwd else self.init_position_rev
     energy_fn = custom if custom else self.energy_fn() # Primarily for plotting/iterative procedure
     
@@ -117,10 +162,10 @@ class MDParameters:
     if "shift" in d.keys():
       if d["shift"] == None:
         print("WARNING: Shift function inferred as space.free(). Manually change if this was unintended.")
-        d["shift"] = space.free()
+        _, d["shift"] = space.free()
       
-    self.__dict__ == d
-
+    self.__dict__ = d
+    
   @classmethod
   def copy(cls, obj):
     """Manual copy"""
@@ -164,15 +209,15 @@ def parse_args():
       p: Parameter set loaded at param_set.params_`param_name`.py
   """
   parser = ArgumentParser()
-  parser.add_argument("--landscape_name", type = str, help = "Name of underlying landscape (e.g. 25KT Sivak & Crooks).")
-  parser.add_argument("--param_suffix", type = str, help = "Suffix of parameter set inside figures/param_set directory.")
+  parser.add_argument("--landscape_name", type = str, default = "double_well", help = "Name of underlying landscape (e.g. 25KT Sivak & Crooks).")
+  parser.add_argument("--param_suffix", default = "10", type = str, help = "Suffix of parameter set inside figures/param_set directory.")
   parser.add_argument('--end_time', type=float, default = None, help='Length of the simulation in seconds.')
   parser.add_argument('--k_s', type = float, default = None, help = "Trap stiffness k_s.")
   parser.add_argument('--batch_size', type = int, default = None, help = "Number of trajectories to simulate in parallel for RECONSTRUCTION.")
   args = parser.parse_args()
   
   param_name = args.param_suffix
-  p = importlib.import_module(f"figures.param_set.params_{param_name}")
+  p = importlib.import_module(f"figures.param_set.{args.landscape_name}.params_{param_name.replace('.', '_')}kt")
   if args.k_s:
     p.param_set.k_s = args.k_s
   if args.end_time:
@@ -297,3 +342,8 @@ def make_trap_from_file(dir_name, file_names, position_protocol_maker, stiffness
     if isinstance(traps[i], list):
       traps[i] = bcp.trap_sum(params.simulation_steps, sim_cut_steps, traps[i][0], traps[i][1])
   return traps
+
+def get_trap_pos_from_params(param_set: MDParameters) -> tuple[float, float]:
+  init_pos = param_set.init_position_fwd[0][0]
+  final_pos = param_set.init_position_rev[0][0]
+  return init_pos, final_pos

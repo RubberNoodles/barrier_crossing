@@ -4,14 +4,14 @@ providing functionality for gradient descent JAX optimization.
 """
 import jax.numpy as jnp
 import copy
-
 import barrier_crossing.protocol as bcp
 from barrier_crossing.utils import MDParameters
+from copy import deepcopy
 
 class ScheduleModel:
   """
   Model designed for JAX optimization. Stores coefficients of schedule as optimizeable weights.
-  To retrieve protocol, one can call the model directly (backwards compatibility) or receive a protocol
+  To retrieve protocol, one can call the model directly or receive a protocol
   as an object using `model.protocol(coeffs)`
   """
   def __init__(self, p: MDParameters, init_pos, final_pos, coeffs = None, mode = "fwd"):
@@ -31,6 +31,14 @@ class ScheduleModel:
     self.mode = mode
     self.__check_mode()
     
+  def clone(self, coeffs = None):
+    param_copy = deepcopy(self.params.__dict__)
+    custom = param_copy.pop("custom", None)
+    new_params = self.params.__class__(**param_copy)
+    if custom:
+      new_params.set_energy_fn(custom)
+    
+    return ScheduleModel(new_params, self.init_pos, self.final_pos, coeffs = deepcopy(coeffs), mode = self.mode)
   
   @classmethod
   def from_positions(cls, p: MDParameters,  init_pos, final_pos, positions, mode = "fwd"):
@@ -55,12 +63,12 @@ class ScheduleModel:
     if self.mode not in ("rev", "fwd"):
       raise TypeError(f"Expected \'fwd\' or \'rev\' mode protocols, got {self.mode}")
   
-  def plot_protocol(self, checkpoints = None):
+  def plot_protocol(self, coeffs = None, checkpoints = None):
     t = jnp.arange(self._params.simulation_steps)
     schedules = []
     if checkpoints is not None:
       for checkpoint in checkpoints:
-        coeffs = bcp.self.coef_hist[checkpoint]
+        coeffs = self.coef_hist[checkpoint]
         if self.mode == "fwd":
           c_protocol = bcp.make_trap_fxn(t, coeffs, self.init_pos, self.final_pos)
         elif self.mode == "rev":
@@ -70,7 +78,10 @@ class ScheduleModel:
         
         schedules.append(c_protocol(t))
     else:
-      schedules = [self(t)]
+      if coeffs is not None:
+        schedules = [self.protocol(coeffs)(t)]
+      else:
+        schedules = [self(t)]
     
     return t, schedules
   
@@ -142,6 +153,19 @@ class JointModel(ScheduleModel):
     
     self.can_grad = True
   
+  def clone(self, coeffs = None):
+    model_list = []
+    if coeffs is None:
+      coeffs = [None] * len(self.models)
+      
+    for model, coeff in zip(self.models, coeffs):
+      new_model = model.clone(coeff)
+      model_list.append(new_model)
+    
+    new_param_set = new_model.params
+    
+    return JointModel(new_param_set, *model_list)
+  
   @property
   def mode(self):
     return self.models[0].mode
@@ -150,8 +174,6 @@ class JointModel(ScheduleModel):
   def mode(self, new):
     for model in self.models:
       model.mode = new
-      model.__check_mode()
-    self.mode = new
       
   @property
   def coeffs(self):
@@ -210,7 +232,7 @@ class JointModel(ScheduleModel):
     self.coef_hist = []
     for model in self.models:
       hist.append(model.pop_hist(reset = reset))
-    
+    self.coeffs = jnp.concatenate([model.coeffs for model in self.models])
     return hist
   
   def switch_trap(self, reset = True):
