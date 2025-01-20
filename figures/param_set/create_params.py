@@ -22,7 +22,7 @@ param_set = p.sc_params
 
 """
 
-barrier_heights = [2.5, 10, 20, 30, 40]
+barrier_heights = [2.5, 5, 10, 15, 20, 25, 30, 35, 40]
 base_param_set = p.sc_params
 
 X_VEC = jnp.linspace(-10,10, 1000)
@@ -106,12 +106,3 @@ for landscape_type, energy_test_fn in energy_files.items():
         with open(f"{landscape_type}/params_{str(barrier_height).replace('.', '_')}kt.py", "w") as f:
             f.write(BASE_STRING + out_string)
             
-            
-        
-                
-            
-        
-    
-"double_well", "triple_well", "asymmetric"
-    
-    

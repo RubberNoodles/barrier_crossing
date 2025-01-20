@@ -52,7 +52,7 @@ Neq = 1000
 # end_time = 4e-6 # Langevin
 # dt = 2e-9
 end_time = 3e-5 # Brownian
-dt = 1e-7 # needs to be 1e-7 to avoid drift...
+dt = 2e-7 # needs to be 1e-7 to avoid drift...
 
 sc_params = bcu.SCParameters( N = N,
                                     dim = dim,
