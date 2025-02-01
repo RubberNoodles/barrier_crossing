@@ -42,9 +42,9 @@ def estimate_gradient_work(batch_size,
     Returns:
       Callable with inputs ``coeffs`` as the Chebyshev coefficients that specify the protocol, and
       ``seed`` to set rng."""
-  if isinstance(model, bcm.JointModel) and reg < 1.0:
-    print(f"WARNING: Training joint model is not stable with low regularization. Setting to 1.0")
-    reg = 1.0
+  if isinstance(model, bcm.JointModel) and reg < 0.1:
+    print(f"WARNING: Training joint model is not stable with low regularization. Setting to 0.1")
+    reg = 0.1
   
   mapped_estimate = jax.vmap(single_estimate_work(simulate_fn, model, reg = reg), [None, 0])
 

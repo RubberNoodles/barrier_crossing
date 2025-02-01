@@ -3,8 +3,6 @@ Module to reconstruct landscapes with optimized algorithm. In addition, helper
 code to classify landscape reconstruction quality, as well as `optimize_landscape`
 code for iterative reconstruction.
 """
-import code
-import copy
 import tqdm
 from typing import Callable
 import pickle
@@ -91,6 +89,27 @@ def energy_reconstruction(works, trajectories, bins, trap_fn, ks_trap_fn, simula
   energies = -(1/beta) * jnp.log(jnp.divide(numerator, denominator))
   return jnp.array(midpoints), jnp.array(energies)
 
+
+def average_landscape(midpoints, energies):
+  ms = jnp.array(midpoints)
+  es = jnp.array(energies)
+  assert ms.shape[1] == es.shape[1], f"Expected number of bins to be the same, got {ms.shape[1]} and {es.shape[1]}"
+  
+  min_bin = ms.min()
+  max_bin = ms.max()
+  
+  new_midpoints = jnp.linspace(min_bin, max_bin, int(ms.shape[1]))
+  
+  simulate_fns = [ReconstructedLandscape(m, e) for m,e in zip(ms, es)]
+  
+  def new_energy_fn(x):
+    return jnp.mean(jnp.array([e_fn.molecule_energy(x) for e_fn in simulate_fns]))
+  
+  new_energies = jnp.array([new_energy_fn(pos) for pos in new_midpoints])
+  
+  return new_midpoints, new_energies
+  
+  
 def find_max_pos(landscape, barrier_pos):
   """
   Finds the position of the barrier (maximum)
@@ -167,7 +186,7 @@ def find_max(landscape, init, final):
   return max
 
 
-def landscape_discrepancies(ls, true_ls, first_well, r_min, r_max):
+def landscape_discrepancies(ls, true_ls, r_min, r_max):
 
   """
   Aligns landscape (ls) with first well and finds distance between
@@ -187,7 +206,7 @@ def landscape_discrepancies(ls, true_ls, first_well, r_min, r_max):
   
   no_trap_rec_fn = ReconstructedLandscape(*ls).molecule_energy
   first_well_guess = no_trap_rec_fn(r_min)
-
+  first_well = true_ls(r_min)
   diff = first_well - first_well_guess
     
   # only consider points in range (min, max)
