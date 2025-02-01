@@ -5,7 +5,8 @@ import jax
 import tqdm
 import barrier_crossing.energy as bce
 
-BASE_STRING = """import figures.param_set.params_base as p
+BASE_STRING = """import copy
+import figures.param_set.params_base as p
 
 Neq = p.Neq
 dt = p.dt
@@ -18,7 +19,7 @@ ks_final = p.ks_final
 ks_cut = p.ks_cut
 beta = p.beta
 
-param_set = p.sc_params
+param_set = copy.deepcopy(p.sc_params)
 
 """
 
