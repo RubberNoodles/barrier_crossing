@@ -1,5 +1,7 @@
 .env
+.venv
 env
+dist
 __pycache__
 */temp
 .vscode
@@ -9,6 +11,9 @@ __pycache__
 
 # Folders/Files for auto-generated outputs.
 build
+results
+results*
+output_data
 logs
 geiger_output
 *.out

@@ -1,12 +1,14 @@
 #!/bin/sh
 
-while getopts "clt" flag; do
+while getopts "cltr" flag; do
     case "$flag" in
         c) rm -rf results/*
         ;;
         l) rm -rf logs/*
         ;;
         t) train="true"
+        ;;
+        r) reconstruct_flag="-r"
         ;;
         \?)
         echo "invalid argument"
@@ -73,8 +75,8 @@ do
         sbatch -d "afterok:$jobid_string" -t 0-08:00 --mem-per-cpu=16000 plotting.sbatch $file_dir
         # sbatch plotting.sbatch $file_dir
     else
-        echo "sbatch -t 0-08:00 --mem-per-cpu=16000 plotting.sbatch $file_dir"
-        sbatch -t 0-08:00 --mem-per-cpu=16000 plotting.sbatch $file_dir
+        echo "sbatch -t 0-08:00 --mem-per-cpu=16000 plotting.sbatch $file_dir $reconstruct_flag" 
+        sbatch -t 0-08:00 --mem-per-cpu=16000 plotting.sbatch $file_dir $reconstruct_flag
     fi
 
 

@@ -18,7 +18,7 @@ import jax.numpy as jnp
 import numpy as np
 
 import barrier_crossing.plotting as plotting
-
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import seaborn as sns
 
 SEED = 42
@@ -125,8 +125,8 @@ def reconstruct_with_models(param_set: bcu.MDParameters, models: list[bcm.Schedu
 
             energies.append(bcla.interpolate_inf(E))
             midpoints.append(m)
-            
-            fes.append(jnp.mean(jnp.exp(-param_set.beta * total_work)))
+            b = param_set.beta
+            fes.append(-(1/b) * jnp.log(jnp.mean(jnp.exp(- b * total_work))))
         
         first_well, second_well = bcu.get_trap_pos_from_params(param_set)
         
@@ -181,11 +181,15 @@ def plot_landscape_bias_with_increasing_barrier_height(landscape_df, zoom = Fals
     ax = fig.gca()
     sns.lineplot(data = landscape_df, x = "barrier_height_int", y="bias", hue = "Model Name", errorbar=("sd", 1), markers="o", ax = ax)
     if zoom == True:
-        ax.set_xlim([0, 17.5])
-        _b = landscape_df[landscape_df.barrier_height_int <= 17.5]["bias"]
-        ax.set_ylim([_b.mean() - 2 *_b.std(), _b.mean() + 2*_b.std()])
+        ul_inset = fig.add_axes([0.17, 1 - 0.4 - 0.15, 0.3,0.4])
+        _b = landscape_df[landscape_df.barrier_height_int <= 17.5]
+        sns.lineplot(data = _b, x = "barrier_height_int", y="bias", hue = "Model Name", errorbar=("sd", 0), markers="o", ax = ul_inset, legend=None)
+        ul_inset.grid()
+        ul_inset.set_xlabel("")
+        ul_inset.set_ylabel("")
+    else:
+        plotting.add_energy_fn_plot(param_set, fig = fig)
         
-    plotting.add_energy_fn_plot(param_set, fig = fig)
     ax.legend(loc="upper right")
     ax.set_xlabel("Barrier Height (kT)")
     ax.set_ylabel("Landscape Bias (kT)")
@@ -233,39 +237,46 @@ if __name__ == "__main__":
     
     parser = ArgumentParser()
     parser.add_argument("file_dir")
+    parser.add_argument("-r", "--reconstruct", action = "store_true", help = "Perform all reconstructions (enable if data.csv is not available)")
     args = parser.parse_args()
     
     file_dir = args.file_dir
     
-    df = load_data_from_result(file_dir)
-    df = df.reset_index()
-    bias_results = [[], []]
-    dG_results = [[], []]
-    for index, lb_df in df.groupby(["landscape_name", "barrier_height"]):
-        with open(lb_df.params_file.iloc[0], "rb") as f:
-            param_set = pickle.load(f)
+    if args.reconstruct:
+        df = load_data_from_result(file_dir)
+        df = df.reset_index()
+        bias_results = [[], []]
+        dG_results = [[], []]
+        for index, lb_df in df.groupby(["landscape_name", "barrier_height"]):
+            with open(lb_df.params_file.iloc[0], "rb") as f:
+                param_set = pickle.load(f)
+                
+            landscape_name, barrier_height = index
+            full_name = "_".join([str(i) for i in index])
             
-        landscape_name, barrier_height = index
-        full_name = "_".join([str(i) for i in index])
+            models = []
+            names = []
+            for index, row in lb_df.iterrows():
+                models.append(load_model_from_coeff_file(param_set, row["coeff_file"], name = row["model_name"]))
+                names.append(row["model_name"])
+            
+            statistics = reconstruct_with_models(param_set, models, names, save_name = f"{full_name}kt")
+            (bias, bias_std), (dg, dg_std) = statistics
+            bias_results[0].append(pd.Series(data = bias, index = lb_df.index))
+            bias_results[1].append(pd.Series(data = bias_std, index = lb_df.index))
+            dG_results[0].append(pd.Series(data = dg, index = lb_df.index))
+            dG_results[1].append(pd.Series(data = dg_std, index = lb_df.index))
         
-        models = []
-        names = []
-        for index, row in lb_df.iterrows():
-            models.append(load_model_from_coeff_file(param_set, row["coeff_file"], name = row["model_name"]))
-            names.append(row["model_name"])
+        df["bias"] = pd.concat(bias_results[0])
+        df["bias_std"] = pd.concat(bias_results[1])
+        df["dg"] = pd.concat(dG_results[0])
+        df["dg_std"] = pd.concat(dG_results[1])
         
-        statistics = reconstruct_with_models(param_set, models, names, save_name = f"{full_name}kt")
-        (bias, bias_std), (dg, dg_std) = statistics
-        bias_results[0].append(pd.Series(data = bias, index = lb_df.index))
-        bias_results[1].append(pd.Series(data = bias_std, index = lb_df.index))
-        dG_results[0].append(pd.Series(data = dg, index = lb_df.index))
-        dG_results[1].append(pd.Series(data = dg_std, index = lb_df.index))
-    
-    df["bias"] = pd.concat(bias_results[0])
-    df["bias_std"] = pd.concat(bias_results[1])
-    df["dg"] = pd.concat(dG_results[0])
-    df["dg_std"] = pd.concat(dG_results[1])
-    
+        df.to_csv(f"{results_dir}/data.csv")
+    else:
+        assert os.path.isfile(f"{results_dir}/data.csv"), f"data.csv not found."
+        df = pd.read_csv(f"{results_dir}/data.csv")
+        
     make_df_names_nice(df)
     resampled_df = resample_rows_for_plotting(df)
     
@@ -276,6 +287,6 @@ if __name__ == "__main__":
         landscape_bias_zoomed_fig = plot_landscape_bias_with_increasing_barrier_height(landscape_df, zoom = True)
         landscape_bias_zoomed_fig.savefig(f"{results_dir}/{landscape_name}_bias_zoomed.png")
         
-        # dg_fig = plot_dg_with_increasing_barrier_height(landscape_df)
-        # dg_fig.savefig(f"{results_dir}/{landscape_name}_dg.png")
+        dg_fig = plot_dg_with_increasing_barrier_height(landscape_df)
+        dg_fig.savefig(f"{results_dir}/{landscape_name}_dg.png")
         

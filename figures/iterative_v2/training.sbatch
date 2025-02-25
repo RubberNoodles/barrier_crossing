@@ -3,8 +3,8 @@
 #SBATCH -t 0-16:00          # Runtime in D-HH:MM, minimum of 10 minutes
 #SBATCH -p seas_gpu       # Partition to submit to
 #SBATCH --mem-per-cpu=16000           # Memory pool for all cores (see also --mem-per-cpu)
-#SBATCH -o logs/out_%A_eps_%a.out  # Requires ./log directory
-#SBATCH -e logs/err_%A_eps_%a.err  # File to which STDERR will be written, %j inserts jobid
+#SBATCH -o logs/train_out_%A.out  # Requires ./log directory
+#SBATCH -e logs/train_err_%A.err  # File to which STDERR will be written, %j inserts jobid
 #SBATCH --export=ALL
 
 module load python/3.10.9-fasrc01
