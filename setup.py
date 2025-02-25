@@ -5,8 +5,8 @@ setup(
     version="0.1.0",
     packages=["barrier_crossing"],
     install_requires=[ "absl-py==1.1.0",
-    "jax==0.4.16",
-    "jax-md==0.2.8",
+    "jax-md==0.2.8", # Requires jax, which should be installed with gpu using
+    # `pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
     "matplotlib==3.5.2",
     "numpy==1.22.4",
     "optax==0.1.7",
