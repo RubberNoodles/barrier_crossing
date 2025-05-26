@@ -195,7 +195,7 @@ class JointModel(ScheduleModel):
         model.coeffs = c
         self._coeffs[i] = c
         
-    self.coef_hist.append(self._coeffs)
+    self.coef_hist.append(deepcopy(self._coeffs))
   
   @property
   def params(self):
