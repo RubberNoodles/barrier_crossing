@@ -12,9 +12,6 @@ import jax.random as random
 from typing import Iterable
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-import seaborn as sns
-import pandas as pd
-
 def _plot_energy_fn(param_set):
   
   pure_energy_fn = param_set.energy_fn(no_trap = True)
@@ -52,6 +49,8 @@ def add_energy_fn_plot(param_set: MDParameters, fig = plt, **kw):
     inset = fig.add_axes([0.15, 1 - height - 0.15, width, height])
   elif loc == "ur":
     inset = fig.add_axes([1-width - 0.15, 1 - height - 0.15, width, height])
+  elif loc == "uc":
+    inset = fig.add_axes([0.6 - width - 0.15, 1 - height - 0.15, width, height])
   else:
     raise NotImplementedError
       
@@ -65,6 +64,48 @@ def plot_protocols():
   return NotImplementedError
   
 def plot_evolving(ax = plt, label = None, **kw):
+  """Plot how a protocol or other data evolves over iterations.
+  
+  This function visualizes how a protocol (position or stiffness schedule) changes over multiple iterations.
+  It can show either the evolution of coefficients from a model's history or from provided coefficients.
+  
+  Parameters
+  ----------
+  ax : matplotlib.axes.Axes, optional
+      The axis to plot on. If not provided, uses the current axis.
+  label : str, optional
+      Label for the legend. Only shown for the final iteration.
+  **kw : dict
+      Additional keyword arguments:
+      - model : ScheduleModel or JointModel
+          The model containing the protocol to plot
+      - data : array-like
+          Alternative to model: directly provide the data to plot
+      - coeffs : list of arrays
+          Alternative to model: provide coefficients to plot
+      - num : int, default=7
+          Number of iterations to show
+      - color : str, default='k'
+          Color for the lines
+      
+  Returns
+  -------
+  list
+      List of matplotlib Line2D objects representing the plotted lines
+      
+  Examples
+  --------
+  Basic usage with a model:
+  >>> fig, ax = plt.subplots()
+  >>> plot_evolving(ax=ax, model=position_model, num=5)
+  
+  Plot with custom coefficients:
+  >>> coeffs = [model.coef_hist[i] for i in range(5)]
+  >>> plot_evolving(ax=ax, model=model, coeffs=coeffs, num=5)
+  
+  Plot with custom styling:
+  >>> plot_evolving(ax=ax, model=model, num=7, color="blue", label="My Protocol")
+  """
   model = kw.pop("model", None)
   if model is not None:
     if isinstance(model, bcm.JointModel):
@@ -137,9 +178,50 @@ def plot_with_stdev(x, label=None, n=1, axis=0, ax=plt, **kw):
   
   
 def plot_landscapes(param_set, landscapes, labels, ax = plt, **kw):
-  """Center all landscapes and plot """
-  assert len(landscapes) == len(labels), "Number of landscapes and labels must be the same"
+  """Plot energy landscapes including true and reconstructed landscapes.
   
+  This function visualizes energy landscapes, showing both the true landscape and any
+  reconstructed landscapes. It can optionally show how a landscape evolves over iterations.
+  
+  Parameters
+  ----------
+  param_set : MDParameters
+      The parameter set containing the true landscape information
+  landscapes : list of tuples
+      List of (midpoints, energies) tuples for each landscape to plot
+  labels : list of str
+      Labels for each landscape in the legend
+  ax : matplotlib.axes.Axes, optional
+      The axis to plot on. If not provided, uses the current axis.
+  **kw : dict
+      Additional keyword arguments:
+      - colors : list of str, optional
+          Colors for each landscape. If not provided, uses tableau colors
+      - iterated_index : int, optional
+          Index of the landscape to show as evolving over iterations
+      
+  Returns
+  -------
+  int
+      0 on successful completion
+      
+  Examples
+  --------
+  Basic usage with true and reconstructed landscapes:
+  >>> fig, ax = plt.subplots()
+  >>> landscapes = [(midpoints1, energies1), (midpoints2, energies2)]
+  >>> labels = ["True Landscape", "Reconstructed Landscape"]
+  >>> plot_landscapes(param_set, landscapes, labels, ax=ax)
+  
+  Plot with custom colors:
+  >>> colors = ["red", "blue"]
+  >>> plot_landscapes(param_set, landscapes, labels, ax=ax, colors=colors)
+  
+  Plot with an evolving landscape:
+  >>> # First landscape will be shown evolving
+  >>> plot_landscapes(param_set, landscapes, labels, ax=ax, iterated_index=0)
+  """
+  assert len(landscapes) == len(labels), "Number of landscapes and labels must be the same"
   
   N = len(landscapes)
   
@@ -163,7 +245,16 @@ def plot_landscapes(param_set, landscapes, labels, ax = plt, **kw):
   for (midpoints, energies), label, color in zip(landscapes, labels, colors):
     midpoints = jnp.array(midpoints)
     first_well_index = jnp.argmin(jnp.abs(midpoints - param_set.init_position_fwd[0][0]))
-    energies = jnp.array(energies) - energies[first_well_index] # Set first well = 0
+    
+    # Starting value
+    first_well_e = energies[first_well_index] 
+    for pos, e in zip(midpoints, energies):
+        if jnp.abs(pos - midpoints[first_well_index]) > 3:
+          continue
+        if first_well_e > e:
+          first_well_e = e
+      
+    energies = jnp.array(energies) - first_well_e
     
     ax.plot(midpoints, energies, label = label, color = color, linestyle = "--")
   
@@ -174,7 +265,6 @@ def plot_landscapes(param_set, landscapes, labels, ax = plt, **kw):
     energies -= energies[0, :][first_well_index]
     plot_evolving(ax = ax, label = iterated_label, color = iterated_color, xs = midpoints, data = energies, linestyle = "--")
     
-  
   return 0
     
    
@@ -224,5 +314,30 @@ def plot_hists(models, labels, ax = plt):
     outline_x = np.repeat(bin_edges, 2)[1:-1]  
     outline_y = np.repeat(counts, 2)  
     ax.plot(outline_x, outline_y, color=color, lw = 2, label = label)
+    
+    # print(label, " ", jnp.mean(jnp.exp(-model.params.beta * total_works)))
 
-  
+
+def print_jarzynski_free_energy_difference(models, labels, num_samples, batch_key = random.PRNGKey(1001)):
+  dgs = []
+  print("Jarzynski Free Energy Differences")
+  for model, label in zip(models, labels):
+    if isinstance(model, bcm.JointModel):
+        simulate_fn = lambda key: model.params.simulate_fn(*model.models, key = key)
+    else:
+        if isinstance(model, bcm.ScheduleModel):
+            is_stiffness = (model.init_pos == model.final_pos)
+        else:
+            raise NotImplementedError
+        if is_stiffness:
+            simulate_fn = lambda key: model.params.simulate_fn(trap_fn = False, ks_trap_fn = model, key = key)
+        else:
+            simulate_fn = lambda key: model.params.simulate_fn(trap_fn = model, ks_trap_fn = model.params.k_s, key = key)
+      
+    total_works, _ = bcs.batch_simulate_harmonic(num_samples, simulate_fn, batch_key)
+    b = model.params.beta
+    dg = -(1/b) * jnp.log(jnp.mean(jnp.exp(-b * total_works)))
+    print(f"{label}: {dg}")
+    dgs.append(dg)
+
+  return dgs
