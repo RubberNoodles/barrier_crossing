@@ -1,3 +1,4 @@
+import copy
 import figures.param_set.params_base as p
 
 Neq = p.Neq
@@ -11,7 +12,7 @@ ks_final = p.ks_final
 ks_cut = p.ks_cut
 beta = p.beta
 
-param_set = p.sc_params
+param_set = copy.deepcopy(p.sc_params)
 
 factor = 1.438113007545471
 param_set.kappa_l = factor * 2.6258/(p.beta* p.x_m **2)
